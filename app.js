@@ -137,6 +137,7 @@
             activeCompassLens: "movement",
             activeLensPreset: "",
             shellFilter: null,
+            shellFilterEnabled: false,
             replayingSessionId: 0
         };
 
@@ -736,6 +737,7 @@
             runtimeState.temporalFocus = null;
             runtimeState.activeLensPreset = "";
             runtimeState.activeCompassLens = "movement";
+            runtimeState.shellFilterEnabled = false;
             runtimeState.multilingualEntityLabels = {};
             buildShellFilter();
             setActiveButton(modeButtons, modeButtons.find((button) => button.dataset.mode === "observatory"));
@@ -998,6 +1000,9 @@
             if (preset === "cross-language") {
                 return "";
             }
+            if (!runtimeState.shellFilterEnabled) {
+                return "";
+            }
             return runtimeState.activeCompassLens || "movement";
         }
 
@@ -1068,9 +1073,10 @@
             }
         }
 
-        async function applyShellLens(lens, preset = "") {
+        async function applyShellLens(lens, preset = "", enableFilter = true) {
             runtimeState.activeCompassLens = lens || runtimeState.activeCompassLens || "movement";
             runtimeState.activeLensPreset = preset;
+            runtimeState.shellFilterEnabled = enableFilter;
             buildShellFilter();
             renderLensControls();
             updateLensNarrative();
@@ -2199,14 +2205,12 @@
                 }
 
                 // Clear the graph and cache for fresh start
-                console.log("Clearing old graph data");
                 resetGraphState();
 
                 // Clear the graph visualization
                 const graphContainer = document.querySelector("svg");
                 if (graphContainer) {
                     graphContainer.innerHTML = "";
-                    console.log("Cleared SVG graph");
                 }
 
                 renderConstellation();
@@ -2716,7 +2720,6 @@
                 const htmlMode = button.dataset.mode;
                 const multilingualMode = modeMapping[htmlMode] || htmlMode;
 
-                console.log(`Mode button clicked: ${htmlMode} -> ${multilingualMode}`);
                 setActiveButton(modeButtons, button);
                 runtimeState.currentMode = htmlMode;
 
@@ -2728,14 +2731,10 @@
 
                 try {
                     if (typeof window.ui.etat.basculer_visualisation === "function") {
-                        console.log(`Calling basculer_visualisation with mode: ${multilingualMode}`);
                         await window.ui.etat.basculer_visualisation(multilingualMode);
-                        console.log("basculer_visualisation completed");
-                    } else {
-                        console.warn("basculer_visualisation not found");
                     }
                 } catch (error) {
-                    console.error("Error switching visualization mode:", error);
+                    runtimeState.lastError = "Visualization switch warning: " + error.message;
                 }
 
                 renderRuntimeState();
@@ -2745,13 +2744,10 @@
         langButtons.forEach((button) => {
             button.addEventListener("click", () => {
                 const language = button.dataset.language;
-                console.log(`Language button clicked: ${language}`);
                 try {
                     setActiveButton(langButtons, button);
                     updateLanguageSurface(language);
-                    console.log(`Language switched to: ${language}`);
                 } catch (error) {
-                    console.error(`Error switching language to ${language}:`, error);
                     runtimeState.lastError = `Language switch failed: ${error.message}`;
                     renderRuntimeState();
                 }
@@ -2761,7 +2757,7 @@
         compassPoleButtons.forEach((button) => {
             button.addEventListener("click", async () => {
                 const lens = button.dataset.lens || "movement";
-                await applyShellLens(lens, "");
+                await applyShellLens(lens, "", true);
             });
         });
 
@@ -2769,10 +2765,10 @@
             button.addEventListener("click", async () => {
                 const preset = button.dataset.preset || "";
                 if (runtimeState.activeLensPreset === preset) {
-                    await applyShellLens(runtimeState.activeCompassLens || "movement", "");
+                    await applyShellLens(runtimeState.activeCompassLens || "movement", "", false);
                     return;
                 }
-                await applyShellLens(runtimeState.activeCompassLens || "movement", preset);
+                await applyShellLens(runtimeState.activeCompassLens || "movement", preset, true);
             });
         });
 
@@ -2785,97 +2781,3 @@
         buildShellFilter();
         loadQueryInventory();
         updateLanguageSurface("fr");
-
-        // Log available buttons for debugging
-        console.log("=== Top Bar Buttons ===");
-        console.log("Mode buttons:", modeButtons.length, modeButtons.map(b => b.dataset.mode));
-        console.log("Language buttons:", langButtons.length, langButtons.map(b => b.dataset.language));
-        console.log("Mode mappings:", modeMapping);
-
-        // Test function for button functionality - call from console: testButtons()
-        window.testButtons = function() {
-            console.log("\n=== Button Functionality Test ===\n");
-
-            // Test mode buttons
-            console.log("Testing mode buttons:");
-            modeButtons.forEach((button, index) => {
-                const mode = button.dataset.mode;
-                const multilingualMode = modeMapping[mode];
-                const isActive = button.classList.contains("is-active");
-                console.log(`  [${index}] ${mode} -> ${multilingualMode} (active: ${isActive})`);
-            });
-
-            // Test language buttons
-            console.log("\nTesting language buttons:");
-            langButtons.forEach((button, index) => {
-                const lang = button.dataset.language;
-                const isActive = button.classList.contains("is-active");
-                console.log(`  [${index}] ${lang} (active: ${isActive})`);
-            });
-
-            // Test search input
-            const searchInput = document.getElementById("search-input");
-            console.log("\nSearch input status:");
-            console.log(`  Found: ${!!searchInput}`);
-            console.log(`  Visible: ${searchInput && searchInput.offsetParent !== null}`);
-            console.log(`  Focused: ${document.activeElement === searchInput}`);
-
-            // Test detail panel
-            const detailPanel = document.getElementById("detail-panel-container");
-            console.log("\nDetail panel status:");
-            console.log(`  Found: ${!!detailPanel}`);
-            console.log(`  Active class: ${detailPanel && detailPanel.classList.contains("is-active")}`);
-
-            console.log("\n=== Button Test Complete ===\n");
-            console.log("To test a specific button, click it in the UI or call:");
-            console.log("  modeButtons[0].click()  // Click first mode button");
-            console.log("  langButtons[1].click()  // Click second language button");
-        };
-
-        // Test detail panel rendering
-        window.testDetailPanel = function() {
-            console.log("\n=== Detail Panel Test ===\n");
-
-            const detailPanel = document.getElementById("detail-panel-container");
-            const detailRoot = document.getElementById("__ml_detail_root");
-
-            console.log("Detail panel container:", detailPanel);
-            console.log("Detail root:", detailRoot);
-            console.log("Detail panel visible class:", detailPanel?.classList.contains("is-active"));
-            console.log("Detail root HTML length:", detailRoot?.innerHTML.length || 0);
-
-            // Check state
-            if (window.ui && window.ui.etat) {
-                console.log("UI state exists");
-                console.log("panneau_detail_visible:", window.ui.etat.panneau_detail_visible);
-                console.log("entite_selectionnee_id:", window.ui.etat.entite_selectionnee_id);
-                console.log("entite_selectionnee_type:", window.ui.etat.entite_selectionnee_type);
-            }
-
-            if (typeof rendre_panneau_detail === "function") {
-                try {
-                    const html = rendre_panneau_detail();
-                    console.log("rendre_panneau_detail() returned HTML length:", html?.length || 0);
-                    console.log("HTML preview:", html?.substring(0, 200) || "empty");
-                } catch (e) {
-                    console.error("Error calling rendre_panneau_detail:", e);
-                }
-            } else {
-                console.warn("rendre_panneau_detail function not found");
-            }
-
-            if (typeof obtenir_entite_selectionnee === "function") {
-                try {
-                    const entite = obtenir_entite_selectionnee();
-                    console.log("obtenir_entite_selectionnee() returned:", entite);
-                } catch (e) {
-                    console.error("Error getting selected entity:", e);
-                }
-            } else {
-                console.warn("obtenir_entite_selectionnee function not found");
-            }
-
-            console.log("\n=== Detail Panel Test Complete ===\n");
-        };
-
-        console.log("Test functions available: testButtons(), testDetailPanel()");

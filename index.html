@@ -1,267 +1,287 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MotusArtium - Polyglot query observatory for art history using Wikidata GraphQL and Multilingual">
-    <title>MotusArtium</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="shell">
-        <header class="topbar panel">
-            <div class="brand">
-                <span class="eyebrow" id="brand-eyebrow">Multilingual x Wikidata GraphQL</span>
-                <h1 id="brand-title">MotusArtium</h1>
-                <p id="brand-subtitle">Polyglot query observatory for tracing movements, artists, works, places, and influence across art history.</p>
-            </div>
 
-            <nav class="mode-switcher" aria-label="Application modes" id="mode-switcher">
-                <button class="mode-button is-active" data-mode="observatory" title="Observatory - Graph exploration">Observatory</button>
-                <button class="mode-button" data-mode="query-theater" title="Query Theater - Live GraphQL studio">Query Theater</button>
-                <button class="mode-button" data-mode="polyglot-studio" title="Polyglot Studio - Multilingual surfaces">Polyglot Studio</button>
-                <button class="mode-button" data-mode="temporal-river" title="Temporal River - Timeline analysis">Temporal River</button>
-            </nav>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description"
+            content="MotusArtium - Polyglot query observatory for art history using Wikidata GraphQL and Multilingual">
+        <title>MotusArtium</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
 
-            <div class="search-bar-inline">
-                <input type="text" id="search-input" placeholder="Search movements, artists, works..." aria-label="Search art entities" />
-            </div>
-
-            <div class="lang-status">
-                <button class="lang-button is-active" data-language="fr">FR</button>
-                <button class="lang-button" data-language="en">EN</button>
-            </div>
-        </header>
-
-        <section class="hero panel">
-            <div class="hero-copy">
-                <span class="eyebrow" id="hero-eyebrow">Manifest</span>
-                <h2 id="hero-title">Navigate art history through live query surfaces and multilingual semantics.</h2>
-                <p id="hero-description">MotusArtium is designed as a cultural instrument rather than a dashboard: a place where GraphQL documents, semantic relationships, and language-aware exploration are visible at the same time.</p>
-
-                <div class="hero-actions">
-                    <article class="entry-card">
-                        <strong id="entry-movements-title">Start with Movements</strong>
-                        <span id="entry-movements-copy">Enter through schools, ruptures, and successions to watch art history reorganize itself as a living constellation.</span>
-                    </article>
-                    <article class="entry-card">
-                        <strong id="entry-artists-title">Start with Artists</strong>
-                        <span id="entry-artists-copy">Trace creation through people, influence, birthplace, and oeuvre while the active GraphQL path remains visible.</span>
-                    </article>
-                    <article class="entry-card">
-                        <strong id="entry-themes-title">Start with Themes</strong>
-                        <span id="entry-themes-copy">Approach the atlas by material, subject, museum, or place and let the interface reshape the narrative lens.</span>
-                    </article>
-                </div>
-            </div>
-
-            <aside class="hero-side">
-                <section class="preview-card">
-                    <h3>Featured Journey</h3>
-                    <p class="trail">
-                        <strong>Impressionism</strong>
-                        <span>&rarr;</span>
-                        <strong>Claude Monet</strong>
-                        <span>&rarr;</span>
-                        <strong>Water Lilies</strong>
-                        <span>&rarr;</span>
-                        <strong>Musee de l'Orangerie</strong>
-                    </p>
-                </section>
-
-                <section class="preview-card">
-                    <h3>Live Query Preview</h3>
-                    <pre class="graphql-preview" id="hero-query-preview">Loading dedicated GraphQL documents...</pre>
-                </section>
-
-                <section class="preview-card">
-                    <h3>Language Surface Preview</h3>
-                    <div class="polyglot-preview" id="polyglot-preview">
-                        <div class="polyglot-line"><span>FR</span><code>Rechercher un mouvement, un artiste, une oeuvre...</code></div>
-                        <div class="polyglot-line"><span>EN</span><code>Trace a movement, artist, work, or place...</code></div>
-                    </div>
-                </section>
-            </aside>
-        </section>
-
-        <main class="workspace">
-            <aside class="rail panel">
-                <section class="subpanel">
-                    <h3 class="section-title">Semantic Compass</h3>
-                    <div class="compass">
-                        <div class="compass-ring" aria-hidden="true">
-                            <div class="compass-pole is-primary" data-position="top">Movement</div>
-                            <div class="compass-pole" data-position="top-right">Artist</div>
-                            <div class="compass-pole" data-position="bottom-right">Work</div>
-                            <div class="compass-pole" data-position="bottom">Place</div>
-                            <div class="compass-pole" data-position="bottom-left">Time</div>
-                            <div class="compass-pole" data-position="top-left">Influence</div>
-                        </div>
-                    </div>
-                    <p>The compass replaces flat filters with a semantic lens: emphasize movement, artist, work, place, time, or influence and let the atlas reorganize itself.</p>
-                </section>
-
-                <section class="subpanel">
-                    <h3 class="section-title">Lens Presets</h3>
-                    <div class="preset-list">
-                        <div class="preset"><span>Lineage</span><small>movement to successor</small></div>
-                        <div class="preset"><span>Geography</span><small>country and diffusion</small></div>
-                        <div class="preset"><span>Materials</span><small>mediums and subjects</small></div>
-                        <div class="preset"><span>Cross-Language</span><small>multilingual labels</small></div>
-                    </div>
-                </section>
-
-                <section class="subpanel">
-                    <h3 class="section-title">Current Lens</h3>
-                    <dl>
-                        <div>
-                            <dt>Emphasis</dt>
-                            <dd id="lens-summary">Influence-aware, movement-centered, French surface</dd>
-                        </div>
-                        <div>
-                            <dt>Goal</dt>
-                            <dd>Make GraphQL and Multilingual visible at the same time, not hidden under a generic graph interface.</dd>
-                        </div>
-                    </dl>
-                </section>
-            </aside>
-
-            <section class="stage panel">
-                <div class="stage-head">
-                    <div>
-                        <h3>Observatory Constellation</h3>
-                        <p>The central stage is reserved for the Multilingual runtime, but the shell already frames it as a semantic instrument with visible query and language context.</p>
-                    </div>
-                    <div class="query-list">
-                        <span class="chip" id="active-doc-chip">movement_details.graphql</span>
-                        <span class="chip">languageCode: <span id="active-language-chip">fr</span></span>
-                        <span class="chip mobile-only">Mode: Observatory</span>
-                    </div>
+    <body>
+        <div class="shell">
+            <header class="topbar panel">
+                <div class="brand">
+                    <span class="eyebrow" id="brand-eyebrow">Multilingual x Wikidata GraphQL</span>
+                    <h1 id="brand-title">MotusArtium</h1>
+                    <p id="brand-subtitle">Polyglot query observatory for tracing movements, artists, works, places, and
+                        influence across art history.</p>
                 </div>
 
-                <div class="constellation">
-                    <div class="constellation-grid" aria-hidden="true"></div>
-                    <div class="constellation-links" id="constellation-links" aria-hidden="true"></div>
-                    <div class="constellation-nodes" id="constellation-nodes"></div>
+                <nav class="mode-switcher" aria-label="Application modes" id="mode-switcher">
+                    <button class="mode-button is-active" data-mode="observatory"
+                        title="Observatory - Graph exploration">Observatory</button>
+                    <button class="mode-button" data-mode="query-theater"
+                        title="Query Theater - Live GraphQL studio">Query Theater</button>
+                    <button class="mode-button" data-mode="polyglot-studio"
+                        title="Polyglot Studio - Multilingual surfaces">Polyglot Studio</button>
+                    <button class="mode-button" data-mode="temporal-river"
+                        title="Temporal River - Timeline analysis">Temporal River</button>
+                </nav>
 
-                    <div class="stage-overlay">
-                        <div class="stage-caption">
-                            <strong>Current Trail</strong>
-                            <span id="stage-trail-text">Selection should always produce a visual focus, a GraphQL document shift, and a language-aware summary. This overlay is where we can narrate those transitions.</span>
-                        </div>
-                    </div>
+                <div class="search-bar-inline">
+                    <input type="text" id="search-input" placeholder="Search movements, artists, works..."
+                        aria-label="Search art entities" />
                 </div>
 
-                <div class="app-root">
-                    <p class="app-root-hint" id="app-root-hint"><strong>Multilingual mount:</strong> this panel is reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect more of the original runtime into the Observatory shell.</p>
-                    <div id="__ml_root"></div>
-                    <div class="polyglot-studio-panel" id="polyglot-studio-panel">
-                        <section class="polyglot-card">
-                            <h4 id="polyglot-card-1-title">Interface Surface</h4>
-                            <p id="polyglot-card-1-copy">The shell changes prompts, labels, and interpretation text with the active language.</p>
+                <div class="lang-status">
+                    <button class="lang-button is-active" data-language="fr">FR</button>
+                    <button class="lang-button" data-language="en">EN</button>
+                </div>
+            </header>
+
+            <section class="top-dashboard">
+                <section class="hero panel">
+                    <div class="hero-copy">
+                        <span class="eyebrow" id="hero-eyebrow">Manifest</span>
+                        <h2 id="hero-title">Navigate art history through live query surfaces and multilingual semantics.
+                        </h2>
+                        <p id="hero-description">MotusArtium is designed as a cultural instrument rather than a
+                            dashboard: a place where GraphQL documents, semantic relationships, and language-aware
+                            exploration are visible at the same time.</p>
+
+                        <div class="hero-actions">
+                            <article class="entry-card">
+                                <strong id="entry-movements-title">Start with Movements</strong>
+                                <span id="entry-movements-copy">Enter through schools, ruptures, and successions to
+                                    watch art history reorganize itself as a living constellation.</span>
+                            </article>
+                            <article class="entry-card">
+                                <strong id="entry-artists-title">Start with Artists</strong>
+                                <span id="entry-artists-copy">Trace creation through people, influence, birthplace, and
+                                    oeuvre while the active GraphQL path remains visible.</span>
+                            </article>
+                            <article class="entry-card">
+                                <strong id="entry-themes-title">Start with Themes</strong>
+                                <span id="entry-themes-copy">Approach the atlas by material, subject, museum, or place
+                                    and let the interface reshape the narrative lens.</span>
+                            </article>
+                        </div>
+
+                        <section class="preview-card hero-journey">
+                            <h3>Featured Journey</h3>
+                            <p class="trail">
+                                <strong>Impressionism</strong>
+                                <span>&rarr;</span>
+                                <strong>Claude Monet</strong>
+                                <span>&rarr;</span>
+                                <strong>Water Lilies</strong>
+                                <span>&rarr;</span>
+                                <strong>Musee de l'Orangerie</strong>
+                            </p>
                         </section>
-                        <section class="polyglot-card">
-                            <h4 id="polyglot-card-2-title">Entity Surface</h4>
-                            <p id="polyglot-card-2-copy">Selected entities can be read through different language surfaces while keeping the same Wikidata identity.</p>
-                        </section>
-                        <section class="polyglot-card">
-                            <h4 id="polyglot-card-3-title">Source Lens</h4>
-                            <pre id="polyglot-source-snippet">asynchrone déf charger_mouvement(id):
+                    </div>
+                </section>
+
+                <aside class="rail panel">
+                    <section class="subpanel">
+                        <h3 class="section-title">Semantic Compass</h3>
+                        <div class="compass">
+                            <div class="compass-ring" aria-hidden="true">
+                                <div class="compass-pole is-primary" data-position="top">Movement</div>
+                                <div class="compass-pole" data-position="top-right">Artist</div>
+                                <div class="compass-pole" data-position="bottom-right">Work</div>
+                                <div class="compass-pole" data-position="bottom">Place</div>
+                                <div class="compass-pole" data-position="bottom-left">Time</div>
+                                <div class="compass-pole" data-position="top-left">Influence</div>
+                            </div>
+                        </div>
+                        <p>The compass replaces flat filters with a semantic lens: emphasize movement, artist, work,
+                            place, time, or influence and let the atlas reorganize itself.</p>
+                    </section>
+
+                    <section class="subpanel">
+                        <h3 class="section-title">Lens Presets</h3>
+                        <div class="preset-list">
+                            <div class="preset"><span>Lineage</span><small>movement to successor</small></div>
+                            <div class="preset"><span>Geography</span><small>country and diffusion</small></div>
+                            <div class="preset"><span>Materials</span><small>mediums and subjects</small></div>
+                            <div class="preset"><span>Cross-Language</span><small>multilingual labels</small></div>
+                        </div>
+                    </section>
+
+                    <section class="subpanel">
+                        <h3 class="section-title">Current Lens</h3>
+                        <dl>
+                            <div>
+                                <dt>Emphasis</dt>
+                                <dd id="lens-summary">Influence-aware, movement-centered, French surface</dd>
+                            </div>
+                            <div>
+                                <dt>Goal</dt>
+                                <dd>Make GraphQL and Multilingual visible at the same time, not hidden under a generic
+                                    graph interface.</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
+
+                <section class="stage panel">
+                    <div class="stage-head">
+                        <div>
+                            <h3>Observatory Constellation</h3>
+                            <p>The central stage brings entities, query logic, and language context into one visible
+                                field.</p>
+                        </div>
+                        <div class="query-list">
+                            <span class="chip" id="active-doc-chip">movement_details.graphql</span>
+                            <span class="chip">languageCode: <span id="active-language-chip">fr</span></span>
+                            <span class="chip mobile-only">Mode: Observatory</span>
+                        </div>
+                    </div>
+
+                    <div class="constellation">
+                        <div class="constellation-grid" aria-hidden="true"></div>
+                        <div class="constellation-links" id="constellation-links" aria-hidden="true"></div>
+                        <div class="constellation-nodes" id="constellation-nodes"></div>
+
+                        <div class="stage-overlay">
+                            <div class="stage-caption">
+                                <strong>Current Trail</strong>
+                                <span id="stage-trail-text">Selection should always produce a visual focus, a GraphQL
+                                    document shift, and a language-aware summary. This overlay is where we can narrate
+                                    those transitions.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-root">
+                        <p class="app-root-hint" id="app-root-hint"><strong>Multilingual mount:</strong> this panel is
+                            reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect
+                            more of the original runtime into the Observatory shell.</p>
+                        <div id="__ml_root"></div>
+                        <div class="polyglot-studio-panel" id="polyglot-studio-panel">
+                            <section class="polyglot-card">
+                                <h4 id="polyglot-card-1-title">Interface Surface</h4>
+                                <p id="polyglot-card-1-copy">The shell changes prompts, labels, and interpretation text
+                                    with the active language.</p>
+                            </section>
+                            <section class="polyglot-card">
+                                <h4 id="polyglot-card-2-title">Entity Surface</h4>
+                                <p id="polyglot-card-2-copy">Selected entities can be read through different language
+                                    surfaces while keeping the same Wikidata identity.</p>
+                            </section>
+                            <section class="polyglot-card">
+                                <h4 id="polyglot-card-3-title">Source Lens</h4>
+                                <pre id="polyglot-source-snippet">asynchrone déf charger_mouvement(id):
     attendre ui.etat.charger_mouvement(id)</pre>
-                        </section>
+                            </section>
+                        </div>
                     </div>
-                </div>
+                </section>
             </section>
 
-            <aside class="mirror panel">
-                <section class="subpanel">
-                    <h3 class="section-title">Query Mirror</h3>
-                    <div class="query-list" id="query-doc-list">
-                        <span class="chip">movement_details.graphql</span>
-                    </div>
-                </section>
+            <main class="workspace">
+                <aside class="mirror panel">
+                    <section class="subpanel">
+                        <h3 class="section-title">Query Mirror</h3>
+                        <div class="query-list" id="query-doc-list">
+                            <span class="chip">movement_details.graphql</span>
+                        </div>
+                    </section>
 
-                <section class="subpanel">
-                    <h3 class="section-title">Variables</h3>
-                    <pre class="code-box" id="query-variables">{
+                    <section class="subpanel">
+                        <h3 class="section-title">Variables</h3>
+                        <pre class="code-box" id="query-variables">{
   "id": "Q40415",
   "languageCode": "fr"
 }</pre>
-                </section>
+                    </section>
 
-                <section class="subpanel">
-                    <h3 class="section-title">Document</h3>
-                    <pre class="code-box" id="query-document">Loading document...</pre>
-                </section>
+                    <section class="subpanel">
+                        <h3 class="section-title">Document</h3>
+                        <pre class="code-box" id="query-document">Loading document...</pre>
+                    </section>
 
-                <section class="subpanel">
-                    <h3 class="section-title">Response Shape</h3>
-                    <pre class="response-box" id="query-response-shape">{
+                    <section class="subpanel">
+                        <h3 class="section-title">Response Shape</h3>
+                        <pre class="response-box" id="query-response-shape">{
   item: {
     id,
     label,
     statements(...)
   }
 }</pre>
+                    </section>
+
+                    <section class="subpanel">
+                        <h3 class="section-title">Interpretation</h3>
+                        <p id="query-explanation">This panel turns the data layer into part of the experience: the app
+                            should always be able to show which GraphQL document is active, which variables are in play,
+                            and what semantic shape is being retrieved.</p>
+                    </section>
+                </aside>
+
+                <!-- Detail Panel Container - appears when entity is selected -->
+                <div id="detail-panel-container" class="detail-panel-overlay">
+                    <div id="__ml_detail_root"></div>
+                </div>
+            </main>
+
+            <footer class="footer-rail panel">
+                <section class="timeline">
+                    <h3 class="section-title">Temporal Rail</h3>
+                    <div class="timeline-track" aria-hidden="true">
+                        <div class="timeline-window"></div>
+                    </div>
+                    <div class="timeline-labels">
+                        <span>1400</span>
+                        <span>1600</span>
+                        <span>1800</span>
+                        <span>2000</span>
+                    </div>
                 </section>
 
-                <section class="subpanel">
-                    <h3 class="section-title">Interpretation</h3>
-                    <p id="query-explanation">This panel turns the data layer into part of the experience: the app should always be able to show which GraphQL document is active, which variables are in play, and what semantic shape is being retrieved.</p>
+                <section>
+                    <h3 class="section-title">Exploration Trail</h3>
+                    <div class="trail-list" id="exploration-trail">
+                        <div class="preset"><span>Movement</span><small>Impressionism</small></div>
+                        <div class="preset"><span>Artist</span><small>Claude Monet</small></div>
+                        <div class="preset"><span>Work</span><small>Water Lilies</small></div>
+                    </div>
                 </section>
-            </aside>
 
-            <!-- Detail Panel Container - appears when entity is selected -->
-            <div id="detail-panel-container" class="detail-panel-overlay">
-                <div id="__ml_detail_root"></div>
-            </div>
-        </main>
+                <section>
+                    <h3 class="section-title">Selected Entity</h3>
+                    <div class="entity-pill" id="selected-entity-pill">
+                        <strong id="selected-entity-name">Impressionism</strong>
+                        <span class="chip" id="selected-entity-type">Movement</span>
+                        <span class="chip" id="selected-entity-meta">1860s-1880s</span>
+                        <span class="chip" id="selected-entity-action">Show Query</span>
+                    </div>
+                </section>
 
-        <footer class="footer-rail panel">
-            <section class="timeline">
-                <h3 class="section-title">Temporal Rail</h3>
-                <div class="timeline-track" aria-hidden="true">
-                    <div class="timeline-window"></div>
-                </div>
-                <div class="timeline-labels">
-                    <span>1400</span>
-                    <span>1600</span>
-                    <span>1800</span>
-                    <span>2000</span>
-                </div>
-            </section>
+                <section>
+                    <h3 class="section-title">Live Query Preview</h3>
+                    <pre class="graphql-preview footer-preview"
+                        id="hero-query-preview">Loading dedicated GraphQL documents...</pre>
+                </section>
 
-            <section>
-                <h3 class="section-title">Exploration Trail</h3>
-                <div class="trail-list" id="exploration-trail">
-                    <div class="preset"><span>Movement</span><small>Impressionism</small></div>
-                    <div class="preset"><span>Artist</span><small>Claude Monet</small></div>
-                    <div class="preset"><span>Work</span><small>Water Lilies</small></div>
-                </div>
-            </section>
+                <section>
+                    <h3 class="section-title">Status</h3>
+                    <span class="chip is-live" id="status-chip">GraphQL Live - 0 docs</span>
+                </section>
+            </footer>
+        </div>
 
-            <section>
-                <h3 class="section-title">Selected Entity</h3>
-                <div class="entity-pill" id="selected-entity-pill">
-                    <strong id="selected-entity-name">Impressionism</strong>
-                    <span class="chip" id="selected-entity-type">Movement</span>
-                    <span class="chip" id="selected-entity-meta">1860s-1880s</span>
-                    <span class="chip" id="selected-entity-action">Show Query</span>
-                </div>
-            </section>
+        <!-- Global search results dropdown (positioned via JS) -->
+        <div class="search-results-dropdown" id="search-results-dropdown"></div>
 
-            <section>
-                <h3 class="section-title">Status</h3>
-                <span class="chip is-live" id="status-chip">GraphQL Live - 0 docs</span>
-            </section>
-        </footer>
-    </div>
+        <script src="app.js"></script>
+        <script src="bundle.js"></script>
+        <script src="bootstrap.js"></script>
+    </body>
 
-    <!-- Global search results dropdown (positioned via JS) -->
-    <div class="search-results-dropdown" id="search-results-dropdown"></div>
-
-    <script src="app.js"></script>
-    <script src="bundle.js"></script>
-    <script src="bootstrap.js"></script>
-</body>
 </html>

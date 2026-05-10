@@ -1585,19 +1585,6 @@
             }
         }
 
-        .entity-header {
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .entity-label {
-            margin: 0 0 6px;
-            font-size: 1.3rem;
-            color: var(--text-main);
-            font-weight: 600;
-        }
-
         .entity-id {
             display: inline-block;
             padding: 4px 8px;
@@ -1633,6 +1620,75 @@
             font-size: 0.95rem;
             color: var(--text-soft);
             line-height: 1.5;
+        }
+
+        .property-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .property-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 8px 0 4px;
+            opacity: 0.9;
+        }
+
+        .entity-type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--accent-teal);
+            color: var(--bg-deep);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-left: 8px;
+        }
+
+        .entity-header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .entity-label {
+            margin: 0;
+            font-size: 1.3rem;
+            color: var(--text-main);
+            font-weight: 600;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .property-group.clickable .entity-link {
+            cursor: pointer;
+            color: var(--accent-cyan);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 3px;
+            transition: all 180ms ease;
+        }
+
+        .property-group.clickable .entity-link:hover {
+            color: var(--accent-gold);
+            text-decoration-style: solid;
+            transform: translateX(2px);
         }
 
         @media (max-width: 768px) {

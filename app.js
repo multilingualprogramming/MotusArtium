@@ -960,9 +960,6 @@
                 const currentLang = runtimeState.currentLanguage || "fr";
                 const displaySideBySide = snapshot.afficher_surfaces_paralleles !== false;
 
-                // Get detailed relations data if available
-                const entityDetailedData = runtimeState.stateSnapshot && runtimeState.stateSnapshot.cache_relations ? runtimeState.stateSnapshot.cache_relations[entityId] : {};
-
                 // Render polyglot studio HTML directly
                 let html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>";
 
@@ -982,13 +979,13 @@
                 if (displaySideBySide) {
                     // Side-by-side view
                     html += "<div class='polyglot-surfaces'>";
-                    html += renderPolyglotSurface(selectedEntity, labels, "fr", entityId, entityDetailedData);
-                    html += renderPolyglotSurface(selectedEntity, labels, "en", entityId, entityDetailedData);
+                    html += renderPolyglotSurface(selectedEntity, labels, "fr", entityId);
+                    html += renderPolyglotSurface(selectedEntity, labels, "en", entityId);
                     html += "</div>";
                 } else {
                     // Tabbed view
                     html += "<div class='polyglot-surface-active'>";
-                    html += renderPolyglotSurface(selectedEntity, labels, currentLang, entityId, entityDetailedData);
+                    html += renderPolyglotSurface(selectedEntity, labels, currentLang, entityId);
                     html += "</div>";
                 }
 
@@ -1002,24 +999,28 @@
             }
         }
 
-        function renderPolyglotSurface(selectedEntity, labels, lang, entityId, detailedData) {
-            // Extract the actual entity data
+        function extractLabel(field) {
+            if (!field) return null;
+            if (typeof field === "string") return field;
+            if (field.value && typeof field.value === "string") return field.value;
+            if (field.label && typeof field.label === "string") return field.label;
+            return null;
+        }
+
+        function renderPolyglotSurface(selectedEntity, labels, lang, entityId) {
             const entity = selectedEntity.donnees || selectedEntity || {};
             const entityType = selectedEntity.type || "Entity";
-            const detailed = detailedData || {};
 
-            // Get label in requested language
             const langLabels = labels[lang] || {};
             let label = langLabels.label;
 
-            // Fallback to extracting label from entity data
             if (!label) {
                 if (entityType.toLowerCase().includes("mouvement")) {
-                    label = (entity.movementLabel && entity.movementLabel.value) || entity.label || "Movement";
+                    label = extractLabel(entity.movementLabel) || entity.label || "Movement";
                 } else if (entityType.toLowerCase().includes("artist") || entityType.toLowerCase().includes("artiste")) {
-                    label = (entity.artistLabel && entity.artistLabel.value) || entity.label || "Artist";
+                    label = extractLabel(entity.artistLabel) || entity.label || "Artist";
                 } else if (entityType.toLowerCase().includes("work") || entityType.toLowerCase().includes("oeuvre")) {
-                    label = (entity.artworkLabel && entity.artworkLabel.value) || entity.label || "Work";
+                    label = extractLabel(entity.artworkLabel) || entity.label || "Work";
                 } else {
                     label = entity.label || "Entity";
                 }
@@ -1028,87 +1029,25 @@
             let html = "<div class='polyglot-surface surface-" + lang + "' lang='" + lang + "' role='region' aria-label='" + lang.toUpperCase() + " surface'>";
 
             html += "<div class='entity-header'>";
-            html += "<h3 class='entity-label'>" + String(label).substring(0, 100) + "</h3>";
+            html += "<div style='flex: 1'>";
+            html += "<h3 class='entity-label'>" + String(label || "Unknown").substring(0, 100) + "</h3>";
+            html += "</div>";
+            html += "<div style='display: flex; gap: 8px; align-items: center'>";
+            html += "<span class='entity-type-badge'>" + (lang === "fr" ? translateEntityType(entityType, "fr") : translateEntityType(entityType, "en")) + "</span>";
             html += "<span class='entity-id' title='Wikidata ID'>" + entityId + "</span>";
+            html += "</div>";
             html += "</div>";
 
             html += "<div class='entity-properties'>";
 
-            // Add entity type info
-            html += "<div class='property-group'>";
-            html += "<span class='property-label'>" + (lang === "fr" ? "Type" : "Type") + "</span>";
-            html += "<span class='property-value'>" + String(entityType) + "</span>";
-            html += "</div>";
-
-            // Render properties based on entity type
             const typeStr = String(entityType).toLowerCase();
+
             if (typeStr.includes("mouvement") || typeStr.includes("movement")) {
-                // Extract dates from entity data
-                const debut = entity.debut || (entity.begin && entity.begin.value);
-                const fin = entity.fin || (entity.end && entity.end.value);
-                if (debut || fin) {
-                    const period = (debut || "?") + " - " + (fin || "?");
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Periode" : "Period") + "</span>";
-                    html += "<span class='property-value'>" + period + "</span>";
-                    html += "</div>";
-                }
-
-                // Show countries if available
-                if (entity.pays && entity.pays.length > 0) {
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Pays" : "Countries") + "</span>";
-                    html += "<span class='property-value'>" + entity.pays.join(", ") + "</span>";
-                    html += "</div>";
-                }
+                html += renderMovementProperties(entity, lang);
             } else if (typeStr.includes("artiste") || typeStr.includes("artist")) {
-                const naissance = entity.naissance || (entity.birthDate && entity.birthDate.value);
-                const mort = entity.mort || (entity.deathDate && entity.deathDate.value);
-                if (naissance || mort) {
-                    const lifespan = (naissance || "?") + " - " + (mort || "?");
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Dates" : "Dates") + "</span>";
-                    html += "<span class='property-value'>" + lifespan + "</span>";
-                    html += "</div>";
-                }
-
-                // Show birthplace if available
-                if (entity.lieu_naissance) {
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Lieu de naissance" : "Birthplace") + "</span>";
-                    html += "<span class='property-value'>" + entity.lieu_naissance + "</span>";
-                    html += "</div>";
-                }
+                html += renderArtistProperties(entity, lang);
             } else if (typeStr.includes("work") || typeStr.includes("oeuvre")) {
-                // Show materials from detailed data
-                const materiaux = detailed.materiaux || [];
-                if (materiaux.length > 0) {
-                    const materialLabels = materiaux.map((m) => m.label || m).join(", ");
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Materiaux" : "Materials") + "</span>";
-                    html += "<span class='property-value'>" + materialLabels + "</span>";
-                    html += "</div>";
-                }
-
-                // Show subjects from detailed data
-                const sujets = detailed.sujets || [];
-                if (sujets.length > 0) {
-                    const subjectLabels = sujets.map((s) => s.label || s).join(", ");
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Sujets" : "Subjects") + "</span>";
-                    html += "<span class='property-value'>" + subjectLabels + "</span>";
-                    html += "</div>";
-                }
-
-                // Show museums from detailed data
-                const musees = detailed.musees || [];
-                if (musees.length > 0) {
-                    const museumLabels = musees.map((m) => m.label || m).join(", ");
-                    html += "<div class='property-group'>";
-                    html += "<span class='property-label'>" + (lang === "fr" ? "Musees" : "Museums") + "</span>";
-                    html += "<span class='property-value'>" + museumLabels + "</span>";
-                    html += "</div>";
-                }
+                html += renderArtworkProperties(entity, lang);
             }
 
             html += "</div>";
@@ -1117,9 +1056,251 @@
             return html;
         }
 
+        function translateEntityType(type, lang) {
+            const typeStr = String(type).toLowerCase();
+            if (lang === "fr") {
+                if (typeStr.includes("mouvement")) return "Mouvement";
+                if (typeStr.includes("artist") || typeStr.includes("artiste")) return "Artiste";
+                if (typeStr.includes("work") || typeStr.includes("oeuvre")) return "Oeuvre";
+            }
+            if (typeStr.includes("mouvement")) return "Movement";
+            if (typeStr.includes("artist") || typeStr.includes("artiste")) return "Artist";
+            if (typeStr.includes("work") || typeStr.includes("oeuvre")) return "Artwork";
+            return type;
+        }
+
+        function renderMovementProperties(entity, lang) {
+            let html = "";
+            const startLabel = lang === "fr" ? "Période" : "Period";
+            const countriesLabel = lang === "fr" ? "Pays d'origine" : "Countries";
+            const precLabel = lang === "fr" ? "Mouvements précurseurs" : "Preceding movements";
+            const succLabel = lang === "fr" ? "Mouvements successeurs" : "Succeeding movements";
+
+            html += "<div class='property-section'>";
+            html += "<div class='section-title'>" + (lang === "fr" ? "Informations principales" : "Primary information") + "</div>";
+
+            const debut = extractValue(entity.startTime);
+            const fin = extractValue(entity.endTime);
+
+            if (debut || fin) {
+                const period = (debut || "?") + " - " + (fin || "?");
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + startLabel + "</span>";
+                html += "<span class='property-value'>" + period + "</span>";
+                html += "</div>";
+            }
+
+            let countries = entity.country || [];
+            if (!Array.isArray(countries)) {
+                countries = countries ? [countries] : [];
+            }
+
+            if (countries.length > 0) {
+                const countryLabels = countries.map(extractValue).filter(Boolean).join(", ");
+                if (countryLabels) {
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + countriesLabel + "</span>";
+                    html += "<span class='property-value'>" + countryLabels + "</span>";
+                    html += "</div>";
+                }
+            }
+
+            html += "</div>";
+
+            let precMovements = entity.follows || [];
+            let succMovements = entity.followedBy || [];
+
+            if (!Array.isArray(precMovements)) {
+                precMovements = precMovements ? [precMovements] : [];
+            }
+            if (!Array.isArray(succMovements)) {
+                succMovements = succMovements ? [succMovements] : [];
+            }
+
+            if (precMovements.length > 0 || succMovements.length > 0) {
+                html += "<div class='property-section'>";
+                html += "<div class='section-title'>" + (lang === "fr" ? "Contexte historique" : "Historical context") + "</div>";
+
+                const precLabels = precMovements.map(extractValue).filter(Boolean).join(", ");
+                if (precLabels) {
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + precLabel + "</span>";
+                    html += "<span class='property-value'>" + precLabels + "</span>";
+                    html += "</div>";
+                }
+
+                const succLabels = succMovements.map(extractValue).filter(Boolean).join(", ");
+                if (succLabels) {
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + succLabel + "</span>";
+                    html += "<span class='property-value'>" + succLabels + "</span>";
+                    html += "</div>";
+                }
+
+                html += "</div>";
+            }
+
+            return html;
+        }
+
+        function renderArtistProperties(entity, lang) {
+            let html = "";
+            const datesLabel = lang === "fr" ? "Dates de vie" : "Lifespan";
+            const birthplaceLabel = lang === "fr" ? "Lieu de naissance" : "Birthplace";
+            const deathplaceLabel = lang === "fr" ? "Lieu de décès" : "Deathplace";
+            const movementsLabel = lang === "fr" ? "Mouvements artistiques" : "Artistic movements";
+
+            html += "<div class='property-section'>";
+            html += "<div class='section-title'>" + (lang === "fr" ? "Biographie" : "Biography") + "</div>";
+
+            const birthDate = extractValue(entity.birthDate);
+            const deathDate = extractValue(entity.deathDate);
+
+            if (birthDate || deathDate) {
+                const lifespan = (birthDate || "?") + " - " + (deathDate || "?");
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + datesLabel + "</span>";
+                html += "<span class='property-value'>" + lifespan + "</span>";
+                html += "</div>";
+            }
+
+            const birthplaceVal = extractValue(entity.birthplace);
+            if (birthplaceVal) {
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + birthplaceLabel + "</span>";
+                html += "<span class='property-value'>" + birthplaceVal + "</span>";
+                html += "</div>";
+            }
+
+            const deathplaceVal = extractValue(entity.deathplace);
+            if (deathplaceVal) {
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + deathplaceLabel + "</span>";
+                html += "<span class='property-value'>" + deathplaceVal + "</span>";
+                html += "</div>";
+            }
+
+            html += "</div>";
+
+            let movements = entity.movement || [];
+            if (!Array.isArray(movements)) {
+                movements = movements ? [movements] : [];
+            }
+
+            if (movements.length > 0) {
+                html += "<div class='property-section'>";
+                html += "<div class='section-title'>" + (lang === "fr" ? "Affiliations artistiques" : "Artistic affiliations") + "</div>";
+
+                const movementLabels = movements.map(extractValue).filter(Boolean).join(", ");
+                if (movementLabels) {
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + movementsLabel + "</span>";
+                    html += "<span class='property-value'>" + movementLabels + "</span>";
+                    html += "</div>";
+                }
+
+                html += "</div>";
+            }
+
+            return html;
+        }
+
+        function extractValue(field) {
+            if (!field) return "";
+            if (typeof field === "string") return field;
+            if (typeof field === "object") {
+                if (typeof field.value === "string") return field.value;
+                if (typeof field.label === "string") return field.label;
+                if (typeof field.content === "string") return field.content;
+                if (typeof field.time === "string") return field.time;
+            }
+            return "";
+        }
+
+        function renderArtworkProperties(entity, lang) {
+            let html = "";
+            const creatorLabel = lang === "fr" ? "Créateur" : "Creator";
+            const dateLabel = lang === "fr" ? "Date de création" : "Date created";
+            const museumLabel = lang === "fr" ? "Localisation" : "Location";
+            const materialLabel = lang === "fr" ? "Matériaux" : "Materials";
+            const depictsLabel = lang === "fr" ? "Sujets représentés" : "Subjects depicted";
+
+            html += "<div class='property-section'>";
+            html += "<div class='section-title'>" + (lang === "fr" ? "Informations principales" : "Primary information") + "</div>";
+
+            // Creator
+            const creatorVal = extractValue(entity.creator);
+            if (creatorVal) {
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + creatorLabel + "</span>";
+                html += "<span class='property-value'>" + creatorVal + "</span>";
+                html += "</div>";
+            }
+
+            // Date
+            const dateVal = extractValue(entity.inceptionDate || entity.creationDate);
+            if (dateVal) {
+                let year = String(dateVal);
+                // Handle ISO format like "+1503-00-00T00:00:00Z" or "-500-00-00T00:00:00Z"
+                year = year.replace(/^[+-]/, "").substring(0, 4);
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + dateLabel + "</span>";
+                html += "<span class='property-value'>" + year + "</span>";
+                html += "</div>";
+            }
+
+            // Museum
+            const museumVal = extractValue(entity.museum);
+            if (museumVal) {
+                html += "<div class='property-group'>";
+                html += "<span class='property-label'>" + museumLabel + "</span>";
+                html += "<span class='property-value'>" + museumVal + "</span>";
+                html += "</div>";
+            }
+
+            html += "</div>";
+
+            // Materials and subjects
+            let materials = entity.material || [];
+            let depicts = entity.depicts || [];
+
+            if (!Array.isArray(materials)) materials = materials ? [materials] : [];
+            if (!Array.isArray(depicts)) depicts = depicts ? [depicts] : [];
+
+            if (materials.length > 0 || depicts.length > 0) {
+                html += "<div class='property-section'>";
+                html += "<div class='section-title'>" + (lang === "fr" ? "Caractéristiques physiques" : "Physical characteristics") + "</div>";
+
+                if (materials.length > 0) {
+                    const materialLabels = materials.map(extractValue).filter(Boolean).join(", ");
+                    if (materialLabels) {
+                        html += "<div class='property-group'>";
+                        html += "<span class='property-label'>" + materialLabel + "</span>";
+                        html += "<span class='property-value'>" + materialLabels + "</span>";
+                        html += "</div>";
+                    }
+                }
+
+                if (depicts.length > 0) {
+                    const depictLabels = depicts.map(extractValue).filter(Boolean).join(", ");
+                    if (depictLabels) {
+                        html += "<div class='property-group'>";
+                        html += "<span class='property-label'>" + depictsLabel + "</span>";
+                        html += "<span class='property-value'>" + depictLabels + "</span>";
+                        html += "</div>";
+                    }
+                }
+
+                html += "</div>";
+            }
+
+            return html;
+        }
+
         function attachPolyglotEventListeners(entityId, container) {
             const langButtons = container.querySelectorAll(".language-toggle");
             const viewToggle = container.querySelector("#polyglot-toggle-view");
+            const entityLinks = container.querySelectorAll(".entity-link");
 
             langButtons.forEach((btn) => {
                 btn.addEventListener("click", async () => {
@@ -1140,6 +1321,18 @@
                     initializePolyglotStudioVisualization(entityId);
                 });
             }
+
+            entityLinks.forEach((link) => {
+                link.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    const linkedEntityId = link.dataset.entityId;
+                    const linkedEntityType = link.dataset.entityType || "unknown";
+                    if (linkedEntityId && window.selectEntity) {
+                        await window.selectEntity(linkedEntityId, linkedEntityType);
+                        initializePolyglotStudioVisualization(linkedEntityId);
+                    }
+                });
+            });
         }
 
         function setShellMode(mode) {

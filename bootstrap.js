@@ -125,6 +125,8 @@
                         ? (readDetailValue(donnees.artworkLabel) || entity.id)
                         : type === "musee"
                             ? (readDetailValue(donnees.museumLabel || donnees.label) || entity.id)
+                        : type === "sujet"
+                            ? (readDetailValue(donnees.subjectLabel || donnees.label) || entity.id)
                         : entity.id;
             const metaRows = [];
 
@@ -165,6 +167,11 @@
                 const count = readDetailValue(donnees.artworkCount);
                 if (count) {
                     metaRows.push(`<p class="detail-row">Oeuvres chargees: ${escapeHtml(count)}</p>`);
+                }
+            } else if (type === "sujet") {
+                const count = readDetailValue(donnees.artworkCount);
+                if (count) {
+                    metaRows.push(`<p class="detail-row">Oeuvres liees: ${escapeHtml(count)}</p>`);
                 }
             }
 
@@ -271,6 +278,16 @@
                                 await window.ui.etat.charger_musee(entityId);
                                 return true;
                             }
+                        } else if (frenchType === "sujet") {
+                            console.log("Loading subject:", entityId);
+                            if (typeof charger_sujet === "function") {
+                                await charger_sujet(entityId);
+                                return true;
+                            }
+                            if (window.ui && window.ui.etat && typeof window.ui.etat.charger_sujet === "function") {
+                                await window.ui.etat.charger_sujet(entityId);
+                                return true;
+                            }
                         }
 
                         return false;
@@ -293,7 +310,8 @@
                         const frenchType = (entityType === "mouvement" || entityType === "movement") ? "mouvement" :
                                           (entityType === "artiste" || entityType === "artist") ? "artiste" :
                                           (entityType === "oeuvre" || entityType === "artwork") ? "oeuvre" :
-                                          (entityType === "musee" || entityType === "museum" || entityType === "gallery") ? "musee" : null;
+                                          (entityType === "musee" || entityType === "museum" || entityType === "gallery") ? "musee" :
+                                          (entityType === "sujet" || entityType === "subject") ? "sujet" : null;
 
                         if (frenchType) {
                             const loaded = await loadInitialEntity(entityId, frenchType);
@@ -389,7 +407,7 @@
                     return "artwork";
                 }
 
-                return "movement";
+                return "subject";
             }
 
             function rankSearchResultType(type) {
@@ -405,7 +423,10 @@
                 if (type === "movement") {
                     return 3;
                 }
-                return 4;
+                if (type === "subject") {
+                    return 4;
+                }
+                return 5;
             }
 
             function inferTypeFromClaims(claimIds, fallbackType) {
@@ -421,6 +442,9 @@
                 }
                 if (ids.has("Q3305213") || ids.has("Q838948")) {
                     return "artwork";
+                }
+                if (ids.has("Q82550") || ids.has("Q157957") || ids.has("Q1790144")) {
+                    return "subject";
                 }
                 return fallbackType;
             }
@@ -472,12 +496,14 @@
                     });
             }
 
-            async function loadSearchSelection(entityId, entityType) {
+            async function loadSearchSelection(entityId, entityType, displayLabel) {
                 const canonicalType = entityType === "artwork"
                     ? "oeuvre"
                     : (entityType === "artist"
                         ? "artiste"
-                        : (entityType === "museum" ? "musee" : "mouvement"));
+                        : (entityType === "museum"
+                            ? "musee"
+                            : (entityType === "subject" ? "sujet" : "mouvement")));
 
                 if (window.history && typeof window.history.replaceState === "function") {
                     window.history.replaceState({}, "", `?entity=${encodeURIComponent(entityId)}&type=${encodeURIComponent(entityType)}`);
@@ -488,6 +514,9 @@
                 }
 
                 if (window.ui && window.ui.etat) {
+                    if (typeof window.ui.etat.amorcer_entite === "function") {
+                        window.ui.etat.amorcer_entite(entityId, canonicalType, displayLabel);
+                    }
                     window.ui.etat.entite_selectionnee_id = entityId;
                     window.ui.etat.entite_selectionnee_type = canonicalType;
                 }
@@ -521,6 +550,17 @@
                     }
                     if (window.ui && window.ui.etat && typeof window.ui.etat.charger_musee === "function") {
                         await window.ui.etat.charger_musee(entityId);
+                        return;
+                    }
+                }
+
+                if (entityType === "subject") {
+                    if (typeof charger_sujet === "function") {
+                        await charger_sujet(entityId);
+                        return;
+                    }
+                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_sujet === "function") {
+                        await window.ui.etat.charger_sujet(entityId);
                         return;
                     }
                 }
@@ -585,7 +625,7 @@
                                         searchDropdown.classList.remove("is-active");
                                         try {
                                             searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted);">Loading selection...</div>';
-                                            await loadSearchSelection(entityId, entityType);
+                                        await loadSearchSelection(entityId, entityType, label);
                                         } catch (error) {
                                             console.error("Selection loading error:", error);
                                             searchDropdown.classList.add("is-active");

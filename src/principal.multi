@@ -49,21 +49,8 @@ déf obtenir_entite_selectionnee():
 
 
 déf obtenir_etat_courant():
-    """Construire un instantané léger de l'état réactif"""
-    entite = ui.etat.obtenir_entite_selectionnee()
-
-    {
-        "entite_selectionnee_id": ui.etat.entite_selectionnee_id,
-        "entite_selectionnee_type": ui.etat.entite_selectionnee_type,
-        "mode_visualisation": ui.etat.mode_visualisation,
-        "affichage_chargement": ui.etat.affichage_chargement,
-        "message_erreur": ui.etat.message_erreur,
-        "plage_temporelle_debut": ui.etat.plage_temporelle_debut,
-        "plage_temporelle_fin": ui.etat.plage_temporelle_fin,
-        "total_noeuds": ui.etat.graphe.compter_noeuds(),
-        "total_relations": ui.etat.graphe.compter_relations(),
-        "entite_selectionnee": entite
-    }
+    """Construire un instantané riche de l'état réactif"""
+    ui.etat.obtenir_instantane_etat()
 
 
 asynchrone déf principal():

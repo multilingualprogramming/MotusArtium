@@ -620,6 +620,49 @@
             color: var(--text-main);
         }
 
+        .polyglot-studio-panel {
+            display: none;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .polyglot-studio-panel.is-visible {
+            display: grid;
+        }
+
+        .polyglot-card {
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .polyglot-card h4 {
+            margin: 0 0 8px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-cyan);
+        }
+
+        .polyglot-card p,
+        .polyglot-card pre {
+            margin: 0;
+            color: var(--text-soft);
+            line-height: 1.5;
+        }
+
+        .polyglot-card pre {
+            white-space: pre-wrap;
+            font-family: "Courier New", monospace;
+            font-size: 0.8rem;
+            color: var(--accent-gold);
+        }
+
         .card-stack {
             display: grid;
             gap: 14px;
@@ -868,6 +911,10 @@
                 padding: 16px;
             }
 
+            .polyglot-studio-panel.is-visible {
+                grid-template-columns: 1fr;
+            }
+
             .brand h1 {
                 font-size: 2.25rem;
             }
@@ -894,12 +941,12 @@
     <div class="shell">
         <header class="topbar panel">
             <div class="brand">
-                <span class="eyebrow">Multilingual x Wikidata GraphQL</span>
-                <h1>MotusArtium</h1>
-                <p>Polyglot query observatory for tracing movements, artists, works, places, and influence across art history.</p>
+                <span class="eyebrow" id="brand-eyebrow">Multilingual x Wikidata GraphQL</span>
+                <h1 id="brand-title">MotusArtium</h1>
+                <p id="brand-subtitle">Polyglot query observatory for tracing movements, artists, works, places, and influence across art history.</p>
             </div>
 
-            <nav class="mode-switcher" aria-label="Application modes">
+            <nav class="mode-switcher" aria-label="Application modes" id="mode-switcher">
                 <button class="mode-button is-active" data-mode="observatory">Observatory</button>
                 <button class="mode-button" data-mode="query-theater">Query Theater</button>
                 <button class="mode-button" data-mode="polyglot-studio">Polyglot Studio</button>
@@ -915,22 +962,22 @@
 
         <section class="hero panel">
             <div class="hero-copy">
-                <span class="eyebrow">Manifest</span>
-                <h2>Navigate art history through live query surfaces and multilingual semantics.</h2>
-                <p>MotusArtium is designed as a cultural instrument rather than a dashboard: a place where GraphQL documents, semantic relationships, and language-aware exploration are visible at the same time.</p>
+                <span class="eyebrow" id="hero-eyebrow">Manifest</span>
+                <h2 id="hero-title">Navigate art history through live query surfaces and multilingual semantics.</h2>
+                <p id="hero-description">MotusArtium is designed as a cultural instrument rather than a dashboard: a place where GraphQL documents, semantic relationships, and language-aware exploration are visible at the same time.</p>
 
                 <div class="hero-actions">
                     <article class="entry-card">
-                        <strong>Start with Movements</strong>
-                        <span>Enter through schools, ruptures, and successions to watch art history reorganize itself as a living constellation.</span>
+                        <strong id="entry-movements-title">Start with Movements</strong>
+                        <span id="entry-movements-copy">Enter through schools, ruptures, and successions to watch art history reorganize itself as a living constellation.</span>
                     </article>
                     <article class="entry-card">
-                        <strong>Start with Artists</strong>
-                        <span>Trace creation through people, influence, birthplace, and oeuvre while the active GraphQL path remains visible.</span>
+                        <strong id="entry-artists-title">Start with Artists</strong>
+                        <span id="entry-artists-copy">Trace creation through people, influence, birthplace, and oeuvre while the active GraphQL path remains visible.</span>
                     </article>
                     <article class="entry-card">
-                        <strong>Start with Themes</strong>
-                        <span>Approach the atlas by material, subject, museum, or place and let the interface reshape the narrative lens.</span>
+                        <strong id="entry-themes-title">Start with Themes</strong>
+                        <span id="entry-themes-copy">Approach the atlas by material, subject, museum, or place and let the interface reshape the narrative lens.</span>
                     </article>
                 </div>
             </div>
@@ -1033,8 +1080,23 @@
                 </div>
 
                 <div class="app-root">
-                    <p class="app-root-hint"><strong>Multilingual mount:</strong> this panel is reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect more of the original runtime into the Observatory shell.</p>
+                    <p class="app-root-hint" id="app-root-hint"><strong>Multilingual mount:</strong> this panel is reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect more of the original runtime into the Observatory shell.</p>
                     <div id="__ml_root"></div>
+                    <div class="polyglot-studio-panel" id="polyglot-studio-panel">
+                        <section class="polyglot-card">
+                            <h4 id="polyglot-card-1-title">Interface Surface</h4>
+                            <p id="polyglot-card-1-copy">The shell changes prompts, labels, and interpretation text with the active language.</p>
+                        </section>
+                        <section class="polyglot-card">
+                            <h4 id="polyglot-card-2-title">Entity Surface</h4>
+                            <p id="polyglot-card-2-copy">Selected entities can be read through different language surfaces while keeping the same Wikidata identity.</p>
+                        </section>
+                        <section class="polyglot-card">
+                            <h4 id="polyglot-card-3-title">Source Lens</h4>
+                            <pre id="polyglot-source-snippet">asynchrone déf charger_mouvement(id):
+    attendre ui.etat.charger_mouvement(id)</pre>
+                        </section>
+                    </div>
                 </div>
             </section>
 
@@ -1126,6 +1188,8 @@
         const queryExplanationEl = document.getElementById("query-explanation");
         const lensSummaryEl = document.getElementById("lens-summary");
         const polyglotPreviewEl = document.getElementById("polyglot-preview");
+        const polyglotStudioPanelEl = document.getElementById("polyglot-studio-panel");
+        const polyglotEntitySurfaceEl = document.getElementById("polyglot-card-2-copy");
         const stageTrailTextEl = document.getElementById("stage-trail-text");
         const explorationTrailEl = document.getElementById("exploration-trail");
         const selectedEntityNameEl = document.getElementById("selected-entity-name");
@@ -1134,6 +1198,80 @@
         const selectedEntityActionEl = document.getElementById("selected-entity-action");
         const constellationNodesEl = document.getElementById("constellation-nodes");
         const constellationLinksEl = document.getElementById("constellation-links");
+        const translatableElements = {
+            "brand-eyebrow": {
+                fr: "Multilingual x Wikidata GraphQL",
+                en: "Multilingual x Wikidata GraphQL"
+            },
+            "brand-title": {
+                fr: "MotusArtium",
+                en: "MotusArtium"
+            },
+            "brand-subtitle": {
+                fr: "Observatoire polyglotte de requetes pour suivre mouvements, artistes, oeuvres, lieux et influences dans l'histoire de l'art.",
+                en: "Polyglot query observatory for tracing movements, artists, works, places, and influence across art history."
+            },
+            "hero-eyebrow": {
+                fr: "Manifeste",
+                en: "Manifest"
+            },
+            "hero-title": {
+                fr: "Parcourez l'histoire de l'art a travers des surfaces de requete en direct et des semantiques multilingues.",
+                en: "Navigate art history through live query surfaces and multilingual semantics."
+            },
+            "hero-description": {
+                fr: "MotusArtium se conçoit comme un instrument culturel plutot qu'un tableau de bord : un espace ou les documents GraphQL, les relations semantiques et l'exploration linguistique restent visibles ensemble.",
+                en: "MotusArtium is designed as a cultural instrument rather than a dashboard: a place where GraphQL documents, semantic relationships, and language-aware exploration are visible at the same time."
+            },
+            "entry-movements-title": {
+                fr: "Commencer par les mouvements",
+                en: "Start with Movements"
+            },
+            "entry-movements-copy": {
+                fr: "Entrez par les ecoles, ruptures et successions pour voir l'histoire de l'art se reorganiser comme une constellation vivante.",
+                en: "Enter through schools, ruptures, and successions to watch art history reorganize itself as a living constellation."
+            },
+            "entry-artists-title": {
+                fr: "Commencer par les artistes",
+                en: "Start with Artists"
+            },
+            "entry-artists-copy": {
+                fr: "Suivez la creation par les personnes, l'influence, le lieu de naissance et l'oeuvre tout en gardant la trajectoire GraphQL visible.",
+                en: "Trace creation through people, influence, birthplace, and oeuvre while the active GraphQL path remains visible."
+            },
+            "entry-themes-title": {
+                fr: "Commencer par les themes",
+                en: "Start with Themes"
+            },
+            "entry-themes-copy": {
+                fr: "Abordez l'atlas par materiau, sujet, musee ou lieu et laissez l'interface reformuler la lentille narrative.",
+                en: "Approach the atlas by material, subject, museum, or place and let the interface reshape the narrative lens."
+            },
+            "app-root-hint": {
+                fr: "<strong>Montage Multilingual :</strong> ce panneau accueille les fragments d'interface Multilingual integres progressivement dans l'Observatory.",
+                en: "<strong>Multilingual mount:</strong> this panel is reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect more of the original runtime into the Observatory shell."
+            },
+            "polyglot-card-1-title": {
+                fr: "Surface d'interface",
+                en: "Interface Surface"
+            },
+            "polyglot-card-1-copy": {
+                fr: "La coque change invites, libelles et interpretation avec la langue active.",
+                en: "The shell changes prompts, labels, and interpretation text with the active language."
+            },
+            "polyglot-card-2-title": {
+                fr: "Surface d'entite",
+                en: "Entity Surface"
+            },
+            "polyglot-card-2-copy": {
+                fr: "Les entites selectionnees peuvent etre lues selon plusieurs surfaces linguistiques tout en gardant la meme identite Wikidata.",
+                en: "Selected entities can be read through different language surfaces while keeping the same Wikidata identity."
+            },
+            "polyglot-card-3-title": {
+                fr: "Lentille source",
+                en: "Source Lens"
+            }
+        };
 
         const runtimeState = {
             knownDocs: [],
@@ -1143,6 +1281,7 @@
                 languageCode: "fr"
             },
             currentLanguage: "fr",
+            currentMode: "observatory",
             selectedEntity: {
                 id: "Q40415",
                 type: "Movement",
@@ -1152,7 +1291,8 @@
             responseShape: "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}",
             lastStatus: "Bootstrapping",
             lastError: "",
-            lastRequestedEntityId: ""
+            lastRequestedEntityId: "",
+            multilingualEntityLabels: {}
         };
 
         const modeSummaries = {
@@ -1354,6 +1494,84 @@
             activeDocChipEl.textContent = runtimeState.currentDocument;
         }
 
+        function applyInterfaceLanguage(languageCode) {
+            Object.entries(translatableElements).forEach(([id, values]) => {
+                const element = document.getElementById(id);
+                if (!element) {
+                    return;
+                }
+                const value = values[languageCode] || values.en || values.fr;
+                if (id === "app-root-hint") {
+                    element.innerHTML = value;
+                } else {
+                    element.textContent = value;
+                }
+            });
+
+            const modeLabels = {
+                fr: {
+                    observatory: "Observatoire",
+                    "query-theater": "Theatre GraphQL",
+                    "polyglot-studio": "Studio Polyglotte",
+                    "temporal-river": "Riviere Temporelle"
+                },
+                en: {
+                    observatory: "Observatory",
+                    "query-theater": "Query Theater",
+                    "polyglot-studio": "Polyglot Studio",
+                    "temporal-river": "Temporal River"
+                }
+            };
+
+            modeButtons.forEach((button) => {
+                const labels = modeLabels[languageCode] || modeLabels.en;
+                button.textContent = labels[button.dataset.mode] || button.textContent;
+            });
+
+            const sourceSnippetByLanguage = {
+                fr: "asynchrone déf charger_mouvement(id):\n    attendre ui.etat.charger_mouvement(id)",
+                en: "async def load_movement(id):\n    await ui.state.load_movement(id)"
+            };
+            const sourceSnippetEl = document.getElementById("polyglot-source-snippet");
+            if (sourceSnippetEl) {
+                sourceSnippetEl.textContent = sourceSnippetByLanguage[languageCode] || sourceSnippetByLanguage.en;
+            }
+        }
+
+        function updatePolyglotStudioVisibility() {
+            polyglotStudioPanelEl.classList.toggle("is-visible", runtimeState.currentMode === "polyglot-studio");
+        }
+
+        async function refreshMultilingualEntityLabels() {
+            const entityId = runtimeState.selectedEntity.id || browserAdapterState.entite_selectionnee_id;
+            if (!entityId) {
+                runtimeState.multilingualEntityLabels = {};
+                return;
+            }
+
+            const languages = ["fr", "en"];
+            const labels = {};
+
+            for (const languageCode of languages) {
+                try {
+                    labels[languageCode] = await fetchEntityLabelInLanguage(entityId, languageCode);
+                } catch (error) {
+                    labels[languageCode] = "";
+                }
+            }
+
+            runtimeState.multilingualEntityLabels = labels;
+
+            const summary = languages
+                .filter((languageCode) => labels[languageCode])
+                .map((languageCode) => languageCode.toUpperCase() + ": " + labels[languageCode])
+                .join(" | ");
+
+            if (summary) {
+                polyglotEntitySurfaceEl.textContent = summary;
+            }
+        }
+
         function renderSelectedEntity() {
             const activeEntity = browserAdapterState.cache_entites[browserAdapterState.entite_selectionnee_id] || {};
             let metaText = runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
@@ -1370,6 +1588,15 @@
             selectedEntityTypeEl.textContent = runtimeState.selectedEntity.type || "Entity";
             selectedEntityMetaEl.textContent = metaText;
             selectedEntityActionEl.textContent = runtimeState.currentDocument || "Show Query";
+
+            const labels = runtimeState.multilingualEntityLabels || {};
+            const alternates = Object.entries(labels)
+                .filter(([code, label]) => code !== runtimeState.currentLanguage && label)
+                .map(([code, label]) => code.toUpperCase() + ": " + label);
+
+            if (alternates.length) {
+                selectedEntityMetaEl.textContent = metaText + " | " + alternates.join(" | ");
+            }
         }
 
         function renderTrail() {
@@ -1408,6 +1635,8 @@
             } else if (browserAdapterState.affichage_chargement) {
                 queryExplanationEl.textContent = "Loading live GraphQL data for " + (runtimeState.lastRequestedEntityId || runtimeState.selectedEntity.id || "selection") + ".";
             }
+            applyInterfaceLanguage(runtimeState.currentLanguage);
+            updatePolyglotStudioVisibility();
             renderQueryDocList();
             renderSelectedEntity();
             renderTrail();
@@ -1464,6 +1693,18 @@
             }
             runtimeState.lastError = "";
             return body.data || {};
+        }
+
+        async function fetchEntityLabelInLanguage(entityId, languageCode) {
+            if (!entityId) {
+                return "";
+            }
+            const data = await executeGraphQLDocument("entity_label.graphql", {
+                id: entityId,
+                languageCode
+            });
+            const item = data.item || {};
+            return item.label || "";
         }
 
         function normaliseMovementDetails(item) {
@@ -1614,6 +1855,47 @@
                 meta: describeEntityMeta(browserAdapterState.entite_selectionnee_type, entity),
                 totalNoeuds: browserAdapterState.graphe.noeuds.size,
                 totalRelations: browserAdapterState.graphe.relations.length
+            };
+        }
+
+        function browserAdapterSnapshot() {
+            const selectedId = browserAdapterState.entite_selectionnee_id;
+            return {
+                entite_selectionnee_id: selectedId,
+                entite_selectionnee_type: browserAdapterState.entite_selectionnee_type,
+                mode_visualisation: browserAdapterState.mode_visualisation,
+                affichage_chargement: browserAdapterState.affichage_chargement,
+                message_erreur: browserAdapterState.message_erreur,
+                plage_temporelle_debut: browserAdapterState.plage_temporelle_debut,
+                plage_temporelle_fin: browserAdapterState.plage_temporelle_fin,
+                mouvement_etendu_id: browserAdapterState.expandedMovementId,
+                artiste_etendu_id: browserAdapterState.expandedArtistId,
+                oeuvre_etendue_id: browserAdapterState.expandedArtworkId,
+                oeuvre_focus_id: browserAdapterState.focusedArtworkId,
+                entite_selectionnee: {
+                    id: selectedId,
+                    type: browserAdapterState.entite_selectionnee_type,
+                    donnees: browserAdapterState.cache_entites[selectedId] || {},
+                    labels_multilingues: runtimeState.multilingualEntityLabels || {}
+                },
+                graphe: {
+                    noeuds: Array.from(browserAdapterState.graphe.noeuds.values()).map((node) => ({
+                        id: node.id,
+                        type: node.type,
+                        etiquette: node.etiquette,
+                        donnees: node.donnees || {}
+                    })),
+                    relations: browserAdapterState.graphe.relations.map((relation) => ({
+                        source: relation.source,
+                        target: relation.target,
+                        type: relation.type,
+                        poids: 1
+                    })),
+                    stats: {
+                        total_noeuds: browserAdapterState.graphe.noeuds.size,
+                        total_relations: browserAdapterState.graphe.relations.length
+                    }
+                }
             };
         }
 
@@ -1832,6 +2114,7 @@
             }
             renderConstellation();
             renderRuntimeState();
+            refreshMultilingualEntityLabels();
         }
 
         window.ui = window.ui || {};
@@ -2021,7 +2304,11 @@
             },
 
             obtenir_entite_selectionnee() {
-                return browserAdapterState.cache_entites[browserAdapterState.entite_selectionnee_id] || {};
+                return browserAdapterSnapshot().entite_selectionnee;
+            },
+
+            obtenir_instantane_etat() {
+                return browserAdapterSnapshot();
             }
         };
 
@@ -2157,11 +2444,13 @@
         modeButtons.forEach((button) => {
             button.addEventListener("click", () => {
                 setActiveButton(modeButtons, button);
+                runtimeState.currentMode = button.dataset.mode;
                 const config = modeSummaries[button.dataset.mode];
                 if (config) {
                     queryExplanationEl.textContent = config.explanation;
                     lensSummaryEl.textContent = config.lens;
                 }
+                renderRuntimeState();
             });
         });
 

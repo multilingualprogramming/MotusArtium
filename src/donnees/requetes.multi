@@ -552,3 +552,87 @@ asynchrone déf obtenir_chronologie_mouvements(debut: nombre, fin: nombre) -> li
             resultats.ajouter(entree)
 
     retourner resultats
+
+
+# ============================================================================
+# Contrats GraphQL de plus haut niveau pour le graphe applicatif
+# ============================================================================
+
+asynchrone déf obtenir_etiquette_entite(entite_id: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
+    """Recuperer une etiquette simple pour une entite."""
+    donnees = attendre executer_requete_graphql(
+        "entity_label.graphql",
+        {
+            "id": entite_id,
+            "languageCode": langue
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    retourner {
+        "id": item.obtenir("id", ""),
+        "label": item.obtenir("label", "")
+    }
+
+
+asynchrone déf obtenir_etiquettes_entite(entite_id: chaine, langues: liste = ["fr", "en"]) -> dictionnaire:
+    """Recuperer plusieurs etiquettes d'une meme entite."""
+    etiquettes = {}
+
+    pour langue dans langues ou []:
+        si non langue:
+            passe
+
+        etiquette = attendre obtenir_etiquette_entite(entite_id, langue)
+        observer etiquettes[langue] = etiquette.obtenir("label", "")
+
+    retourner etiquettes
+
+
+asynchrone déf obtenir_graphe_mouvement(mouvement_id: chaine, limite: nombre = 50) -> dictionnaire:
+    """Retourner le contrat de graphe canonique pour un mouvement."""
+    mouvement = attendre obtenir_mouvement_details(mouvement_id)
+    artistes = attendre obtenir_artistes_mouvement(mouvement_id, limite)
+
+    retourner {
+        "mouvement": mouvement,
+        "artistes": artistes
+    }
+
+
+asynchrone déf obtenir_graphe_artiste(artiste_id: chaine, limite: nombre = 50) -> dictionnaire:
+    """Retourner le contrat de graphe canonique pour un artiste."""
+    artiste = attendre obtenir_artiste_details(artiste_id)
+    oeuvres = attendre obtenir_oeuvres_artiste(artiste_id, limite)
+    influences = attendre obtenir_influences_artiste(artiste_id)
+
+    retourner {
+        "artiste": artiste,
+        "oeuvres": oeuvres,
+        "influences": influences
+    }
+
+
+asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
+    """Retourner le contrat de graphe canonique pour une oeuvre."""
+    donnees = attendre executer_requete_graphql(
+        "artwork_details.graphql",
+        {
+            "id": oeuvre_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    oeuvre = {}
+
+    si item:
+        oeuvre = _normaliser_oeuvre_detail(item)
+
+    retourner {
+        "oeuvre": oeuvre,
+        "musee": _extraire_item(item.obtenir("museum", [])),
+        "musees": _extraire_items(item.obtenir("museum", [])),
+        "sujets": _extraire_items(item.obtenir("depicts", [])),
+        "materiaux": _extraire_items(item.obtenir("material", []))
+    }

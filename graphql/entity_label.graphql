@@ -1,0 +1,6 @@
+query EntityLabel($id: ItemId!, $languageCode: LanguageCode!) {
+  item(id: $id) {
+    id
+    label(languageCode: $languageCode)
+  }
+}

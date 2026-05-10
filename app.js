@@ -162,6 +162,129 @@
             ]
         };
 
+        const heroActionContent = {
+            observatory: {
+                fr: [
+                    {
+                        title: "Lire la constellation",
+                        copy: "Commencez par cliquer un mouvement, un artiste ou une oeuvre au centre. Interpretez cette vue comme le champ semantique principal : les noeuds montrent les entites visibles et les liens montrent les relations actives."
+                    },
+                    {
+                        title: "Passer au Theatre GraphQL",
+                        copy: "Utilisez ce mode quand vous voulez comprendre la requete en direct. Lisez la colonne Query Mirror comme une trace d'execution : document, variables, forme de reponse, puis mise a jour du graphe."
+                    },
+                    {
+                        title: "Passer a Temporal River",
+                        copy: "Utilisez ce mode pour interpreter le graphe par periodes, successions et influences. La rail temporelle montre la fenetre active et la constellation met en avant les entites qui appartiennent a cette tranche."
+                    }
+                ],
+                en: [
+                    {
+                        title: "Read the Constellation",
+                        copy: "Start by clicking a movement, artist, or work in the center. Read this view as the main semantic field: nodes are the visible entities and links are the active relationships."
+                    },
+                    {
+                        title: "Switch to Query Theater",
+                        copy: "Use this mode when you want to understand the live query. Read the Query Mirror as an execution trace: document, variables, response shape, then graph update."
+                    },
+                    {
+                        title: "Switch to Temporal River",
+                        copy: "Use this mode to interpret the graph through periods, succession, and influence. The temporal rail shows the active window and the constellation highlights the entities that belong to that slice."
+                    }
+                ]
+            },
+            "query-theater": {
+                fr: [
+                    {
+                        title: "Choisir une entite",
+                        copy: "Cliquez une entite dans la constellation pour declencher une requete. Le centre reste la scene principale, mais l'attention se deplace vers le document GraphQL active."
+                    },
+                    {
+                        title: "Lire la trace de requete",
+                        copy: "Interpretez les panneaux de gauche comme une trace pedagogique : Session Flow montre l'ordre des appels, Variables montre l'entree, et Response Shape montre la structure retournee."
+                    },
+                    {
+                        title: "Interpreter la mise a jour",
+                        copy: "Comparez le document actif avec les nouveaux noeuds et liens. Si le graphe change, cela signifie que la requete a ouvert une nouvelle branche semantique dans l'observatoire."
+                    }
+                ],
+                en: [
+                    {
+                        title: "Choose an Entity",
+                        copy: "Click an entity in the constellation to trigger a query. The center stays the main stage, but attention shifts to the active GraphQL document."
+                    },
+                    {
+                        title: "Read the Query Trace",
+                        copy: "Interpret the left panels as a teaching trace: Session Flow shows call order, Variables shows the input, and Response Shape shows the returned structure."
+                    },
+                    {
+                        title: "Interpret the Update",
+                        copy: "Compare the active document with the new nodes and links. When the graph changes, the query has opened a new semantic branch in the observatory."
+                    }
+                ]
+            },
+            "temporal-river": {
+                fr: [
+                    {
+                        title: "Fixer une periode",
+                        copy: "Selectionnez un mouvement, un artiste ou une oeuvre datee pour etablir une fenetre temporelle. La rail inferieure devient le repere principal pour lire la scene."
+                    },
+                    {
+                        title: "Lire le flux",
+                        copy: "Interpretez Temporal Focus, Active Entities et Flow comme un resume chronologique. Ils montrent la plage active, les entites contemporaines et les successions ou influences visibles."
+                    },
+                    {
+                        title: "Comparer centre et temps",
+                        copy: "Les noeuds lumineux appartiennent a la fenetre active, les noeuds attenues restent hors plage. Lisez donc la constellation comme une carte temporelle plutot que comme un simple graphe general."
+                    }
+                ],
+                en: [
+                    {
+                        title: "Set a Time Window",
+                        copy: "Select a movement, artist, or dated work to establish a time window. The lower rail becomes the main reference for reading the scene."
+                    },
+                    {
+                        title: "Read the Flow",
+                        copy: "Interpret Temporal Focus, Active Entities, and Flow as a chronological summary. They show the active range, overlapping entities, and visible succession or influence paths."
+                    },
+                    {
+                        title: "Compare Center and Time",
+                        copy: "Bright nodes belong to the active window, while muted nodes sit outside it. Read the constellation as a temporal map rather than only a general graph."
+                    }
+                ]
+            },
+            "polyglot-studio": {
+                fr: [
+                    {
+                        title: "Comparer les langues",
+                        copy: "Basculez entre FR et EN pour voir comment les memes entites changent de surface linguistique sans changer d'identite Wikidata."
+                    },
+                    {
+                        title: "Lire les etiquettes",
+                        copy: "Interpretez les cartes polyglottes comme plusieurs lectures de la meme source. La variation de libelle n'indique pas une nouvelle entite, mais une nouvelle surface de lecture."
+                    },
+                    {
+                        title: "Relier langue et source",
+                        copy: "Gardez un oeil sur le document GraphQL actif pendant que la langue change. Cela montre que la couche multilingue et la couche de requete travaillent ensemble."
+                    }
+                ],
+                en: [
+                    {
+                        title: "Compare Languages",
+                        copy: "Switch between FR and EN to see how the same entities change linguistic surface without changing Wikidata identity."
+                    },
+                    {
+                        title: "Read the Labels",
+                        copy: "Interpret the polyglot cards as multiple readings of the same source. A label change does not mean a new entity, only a new reading surface."
+                    },
+                    {
+                        title: "Relate Language and Source",
+                        copy: "Keep an eye on the active GraphQL document while the language changes. This shows the multilingual layer and the query layer working together."
+                    }
+                ]
+            }
+        };
+
         function setActiveButton(buttons, selected) {
             buttons.forEach((button) => {
                 button.classList.toggle("is-active", button === selected);
@@ -410,6 +533,27 @@
             activeDocChipEl.textContent = runtimeState.currentDocument;
         }
 
+        function renderHeroActions(languageCode, mode) {
+            const cards = heroActionContent[mode] || heroActionContent.observatory;
+            const localizedCards = cards[languageCode] || cards.en || cards.fr || [];
+            const targets = [
+                { titleId: "entry-movements-title", copyId: "entry-movements-copy" },
+                { titleId: "entry-artists-title", copyId: "entry-artists-copy" },
+                { titleId: "entry-themes-title", copyId: "entry-themes-copy" }
+            ];
+
+            targets.forEach((target, index) => {
+                const titleEl = document.getElementById(target.titleId);
+                const copyEl = document.getElementById(target.copyId);
+                const card = localizedCards[index] || localizedCards[localizedCards.length - 1];
+                if (!titleEl || !copyEl || !card) {
+                    return;
+                }
+                titleEl.textContent = card.title;
+                copyEl.textContent = card.copy;
+            });
+        }
+
         function renderQuerySession() {
             if (!querySessionListEl) {
                 return;
@@ -484,6 +628,8 @@
             if (sourceSnippetEl) {
                 sourceSnippetEl.textContent = sourceSnippetByLanguage[languageCode] || sourceSnippetByLanguage.en;
             }
+
+            renderHeroActions(languageCode, runtimeState.currentMode);
         }
 
         function updatePolyglotStudioVisibility() {

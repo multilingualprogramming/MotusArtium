@@ -1,52 +1,78 @@
-# MotusArtium - GraphQL-first Wikidata showcase
+# MotusArtium - GraphQL-first bridge to reactive UI state
 
-importer donnees.requetes
+importer ui.etat
 
-exporter executer_requete_graphql
 exporter charger_mouvement
-exporter charger_artistes
-exporter charger_oeuvres
+exporter charger_artiste
+exporter charger_oeuvre
 exporter charger_chronologie
 exporter basculer_visualisation
+exporter obtenir_entite_selectionnee
+exporter obtenir_etat_courant
 exporter principal
 exporter initialiser_application
 
 
-asynchrone déf executer_requete_graphql(nom_document, variables = {}):
-    """Exécuter une requête GraphQL Wikidata depuis un document dédié"""
-    retourner attendre donnees.requetes.executer_requete_graphql(nom_document, variables)
-
-
 asynchrone déf charger_mouvement(mouvement_id):
-    """Charger les détails d'un mouvement via GraphQL"""
-    retourner attendre donnees.requetes.obtenir_mouvement_details(mouvement_id)
+    """Charger un mouvement et retourner l'entité sélectionnée"""
+    attendre ui.etat.charger_mouvement(mouvement_id)
+    ui.etat.obtenir_entite_selectionnee()
 
 
-asynchrone déf charger_artistes(mouvement_id):
-    """Charger les artistes d'un mouvement via GraphQL"""
-    retourner attendre donnees.requetes.obtenir_artistes_mouvement(mouvement_id)
+asynchrone déf charger_artiste(artiste_id):
+    """Charger un artiste et retourner l'entité sélectionnée"""
+    attendre ui.etat.charger_artiste(artiste_id)
+    ui.etat.obtenir_entite_selectionnee()
 
 
-asynchrone déf charger_oeuvres(artiste_id):
-    """Charger les œuvres d'un artiste via GraphQL"""
-    retourner attendre donnees.requetes.obtenir_oeuvres_artiste(artiste_id)
+asynchrone déf charger_oeuvre(oeuvre_id):
+    """Charger une œuvre et retourner l'entité sélectionnée"""
+    attendre ui.etat.charger_oeuvre(oeuvre_id)
+    ui.etat.obtenir_entite_selectionnee()
 
 
 asynchrone déf charger_chronologie(debut, fin):
-    """Charger la chronologie des mouvements via GraphQL"""
-    retourner attendre donnees.requetes.obtenir_chronologie_mouvements(debut, fin)
+    """Charger une chronologie et retourner un instantané d'état"""
+    attendre ui.etat.charger_chronologie(debut, fin)
+    obtenir_etat_courant()
 
 
 asynchrone déf basculer_visualisation(mode):
-    """Point d'extension pour les modes de visualisation"""
-    retourner mode
+    """Basculer le mode de visualisation"""
+    attendre ui.etat.basculer_visualisation(mode)
+    obtenir_etat_courant()
+
+
+déf obtenir_entite_selectionnee():
+    """Expose l'entité actuellement sélectionnée"""
+    ui.etat.obtenir_entite_selectionnee()
+
+
+déf obtenir_etat_courant():
+    """Construire un instantané léger de l'état réactif"""
+    entite = ui.etat.obtenir_entite_selectionnee()
+
+    {
+        "entite_selectionnee_id": ui.etat.entite_selectionnee_id,
+        "entite_selectionnee_type": ui.etat.entite_selectionnee_type,
+        "mode_visualisation": ui.etat.mode_visualisation,
+        "affichage_chargement": ui.etat.affichage_chargement,
+        "message_erreur": ui.etat.message_erreur,
+        "plage_temporelle_debut": ui.etat.plage_temporelle_debut,
+        "plage_temporelle_fin": ui.etat.plage_temporelle_fin,
+        "total_noeuds": ui.etat.graphe.compter_noeuds(),
+        "total_relations": ui.etat.graphe.compter_relations(),
+        "entite_selectionnee": entite
+    }
 
 
 asynchrone déf principal():
-    """Point d'entrée principal GraphQL"""
-    retourner attendre initialiser_application()
+    """Point d'entrée principal de l'application"""
+    attendre initialiser_application()
+    obtenir_etat_courant()
 
 
 asynchrone déf initialiser_application():
-    """Initialiser l'application avec le mouvement par défaut"""
-    retourner attendre charger_mouvement("Q968159")
+    """Initialiser l'application avec un mouvement de départ"""
+    attendre ui.etat.charger_mouvement("Q40415")
+    obtenir_etat_courant()

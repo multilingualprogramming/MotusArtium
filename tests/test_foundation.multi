@@ -1,0 +1,235 @@
+importer asyncio
+importer semantique.graphe
+importer donnees.requetes
+importer interface.etat
+
+# ============================================================================
+# Tests du graphe
+# ============================================================================
+
+test asynchrone déf test_creation_graphe():
+    """Test: Créer un graphe vide"""
+    g = graphe.Graphe()
+    assertion g.compter_noeuds() == 0
+    assertion g.compter_relations() == 0
+    afficher "✓ Création de graphe réussie"
+
+
+test asynchrone déf test_ajouter_noeuds():
+    """Test: Ajouter des nœuds au graphe"""
+    g = graphe.Graphe()
+
+    g.ajouter_noeud("Q40415", "mouvement", "Impressionism", {"description": "Art movement"})
+    g.ajouter_noeud("Q51", "artiste", "Claude Monet", {"birth": 1840})
+    g.ajouter_noeud("Q3030", "oeuvre", "Mona Lisa", {"creator": "Q762"})
+
+    assertion g.compter_noeuds() == 3
+
+    noeud = g.obtenir_noeud("Q51")
+    assertion noeud.etiquette == "Claude Monet"
+    assertion noeud.type == "artiste"
+
+    afficher "✓ Ajout de nœuds réussi"
+
+
+test asynchrone déf test_ajouter_relations():
+    """Test: Ajouter des relations entre nœuds"""
+    g = graphe.Graphe()
+
+    g.ajouter_noeud("Q40415", "mouvement", "Impressionism", {})
+    g.ajouter_noeud("Q51", "artiste", "Claude Monet", {})
+
+    g.ajouter_relation("Q40415", "Q51", "contient_artiste", 1.0)
+
+    assertion g.compter_relations() == 1
+
+    voisins = g.obtenir_voisins("Q40415")
+    assertion "Q51" dans voisins
+
+    afficher "✓ Ajout de relations réussi"
+
+
+test asynchrone déf test_obtenir_voisins():
+    """Test: Obtenir les voisins d'un nœud"""
+    g = graphe.Graphe()
+
+    g.ajouter_noeud("A", "mouvement", "A", {})
+    g.ajouter_noeud("B", "artiste", "B", {})
+    g.ajouter_noeud("C", "oeuvre", "C", {})
+
+    g.ajouter_relation("A", "B", "type1", 1.0)
+    g.ajouter_relation("A", "C", "type2", 2.0)
+
+    voisins = g.obtenir_voisins("A")
+    assertion len(voisins) == 2
+    assertion "B" dans voisins
+    assertion "C" dans voisins
+
+    afficher "✓ Obtention des voisins réussie"
+
+
+test asynchrone déf test_chemin_plus_court():
+    """Test: Trouver le chemin le plus court"""
+    g = graphe.Graphe()
+
+    # Créer une petite chaîne: A - B - C - D
+    pour noeud dans ["A", "B", "C", "D"]:
+        g.ajouter_noeud(noeud, "test", noeud, {})
+
+    g.ajouter_relation("A", "B", "lien", 1.0)
+    g.ajouter_relation("B", "C", "lien", 1.0)
+    g.ajouter_relation("C", "D", "lien", 1.0)
+
+    chemin = g.chemin_plus_court("A", "D")
+    assertion len(chemin) == 4
+    assertion chemin == ["A", "B", "C", "D"]
+
+    afficher "✓ Chemin le plus court trouvé"
+
+
+# ============================================================================
+# Tests des requêtes Wikidata
+# ============================================================================
+
+test asynchrone déf test_connexion_wikidata():
+    """Test: Connexion à Wikidata"""
+    # Test simple avec une requête basique
+    requete = """
+    SELECT ?item ?itemLabel
+    WHERE {
+        ?item wdt:P31 wd:Q217026.
+        BIND(wd:Q40415 AS ?item)
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    }
+    LIMIT 1
+    """
+
+    resultats = attendre donnees.requetes.executer_requete_sparql(requete)
+    assertion isinstance(resultats, liste)
+    afficher "✓ Connexion à Wikidata réussie"
+
+
+test asynchrone déf test_obtenir_mouvement():
+    """Test: Récupérer les détails d'un mouvement"""
+    # Impressionism = Q40415
+    mouvement = attendre donnees.requetes.obtenir_mouvement_details("Q40415")
+
+    assertion isinstance(mouvement, dictionnaire)
+    assertion "movementLabel" dans mouvement ou "movement" dans mouvement
+
+    afficher "✓ Récupération de mouvement réussie"
+
+
+# ============================================================================
+# Tests de l'état réactif
+# ============================================================================
+
+test asynchrone déf test_initialisation_etat():
+    """Test: État initial de l'application"""
+    assertion interface.etat.entite_selectionnee_id == ""
+    assertion interface.etat.mode_visualisation == "graphe"
+    assertion interface.etat.affichage_chargement == faux
+
+    afficher "✓ Initialisation de l'état réussie"
+
+
+test asynchrone déf test_charger_mouvement():
+    """Test: Charger un mouvement et mettre à jour l'état"""
+    attendre interface.etat.charger_mouvement("Q40415")
+
+    assertion interface.etat.entite_selectionnee_id == "Q40415"
+    assertion interface.etat.entite_selectionnee_type == "mouvement"
+    assertion interface.etat.panneau_detail_visible == vrai
+
+    afficher "✓ Chargement de mouvement réussi"
+
+
+test asynchrone déf test_cache_entites():
+    """Test: Les entités sont mises en cache"""
+    attendre interface.etat.charger_mouvement("Q40415")
+
+    assertion "Q40415" dans interface.etat.cache_entites
+    entite_cached = interface.etat.cache_entites["Q40415"]
+    assertion isinstance(entite_cached, dictionnaire)
+
+    afficher "✓ Mise en cache réussie"
+
+
+test asynchrone déf test_basculer_visualisation():
+    """Test: Basculer entre modes de visualisation"""
+    modes = ["graphe", "galaxie", "riviere", "chronologie"]
+
+    pour mode dans modes:
+        attendre interface.etat.basculer_visualisation(mode)
+        assertion interface.etat.mode_visualisation == mode
+
+    afficher "✓ Basculement de visualisation réussi"
+
+
+test asynchrone déf test_reinitialiser_etat():
+    """Test: Réinitialiser l'état"""
+    attendre interface.etat.charger_mouvement("Q40415")
+    assertion interface.etat.entite_selectionnee_id != ""
+
+    attendre interface.etat.réinitialiser_etat()
+
+    assertion interface.etat.entite_selectionnee_id == ""
+    assertion interface.etat.affichage_chargement == faux
+    assertion interface.etat.panneau_detail_visible == faux
+
+    afficher "✓ Réinitialisation de l'état réussie"
+
+
+# ============================================================================
+# Fonction de test principale
+# ============================================================================
+
+asynchrone déf executer_tests():
+    """Exécuter tous les tests"""
+    afficher "\n" + "="*80
+    afficher "TESTS FONDATION MOTUS ARTIUM"
+    afficher "="*80 + "\n"
+
+    tests = [
+        ("Création de graphe", test_creation_graphe),
+        ("Ajout de nœuds", test_ajouter_noeuds),
+        ("Ajout de relations", test_ajouter_relations),
+        ("Obtention des voisins", test_obtenir_voisins),
+        ("Chemin le plus court", test_chemin_plus_court),
+        ("Connexion à Wikidata", test_connexion_wikidata),
+        ("Récupération de mouvement", test_obtenir_mouvement),
+        ("Initialisation de l'état", test_initialisation_etat),
+        ("Chargement de mouvement", test_charger_mouvement),
+        ("Mise en cache d'entités", test_cache_entites),
+        ("Basculement de visualisation", test_basculer_visualisation),
+        ("Réinitialisation de l'état", test_reinitialiser_etat),
+    ]
+
+    tests_reussis = 0
+    tests_echoues = 0
+
+    pour nom_test, fonction_test dans tests:
+        chercher:
+            afficher "Exécution: " + nom_test + "...",
+            attendre fonction_test()
+            tests_reussis = tests_reussis + 1
+        exception e:
+            afficher "ÉCHEC"
+            afficher "  Erreur: " + chaine(e)
+            tests_echoues = tests_echoues + 1
+
+    afficher "\n" + "="*80
+    afficher "RÉSUMÉ DES TESTS"
+    afficher "="*80
+    afficher "Réussis: " + chaine(tests_reussis)
+    afficher "Échoués: " + chaine(tests_echoues)
+    afficher "Total: " + chaine(len(tests))
+    afficher "="*80 + "\n"
+
+    retourner tests_echoues == 0
+
+
+si __name__ == "__main__":
+    reussi = attendre executer_tests()
+    si non reussi:
+        sortir(1)

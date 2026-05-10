@@ -1,0 +1,68 @@
+name: Build and Deploy MotusArtium
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout MotusArtium
+        uses: actions/checkout@v4
+
+      - name: Checkout multilingualprogramming
+        uses: actions/checkout@v4
+        with:
+          repository: multilingualprogramming/multilingual
+          path: multilingual
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install multilingualprogramming
+        run: |
+          cd multilingual
+          pip install --upgrade pip
+          pip install -e ".[wasm]"
+          cd ..
+
+      - name: Build MotusArtium UI bundle
+        run: |
+          mkdir -p _build
+          python -m multilingualprogramming build-ui-bundle src/principal.multi --lang fr --out-dir _build
+
+      - name: Copy bundle.js to root
+        run: |
+          cp _build/bundle.js bundle.js
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

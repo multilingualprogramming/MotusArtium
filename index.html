@@ -1869,18 +1869,6 @@
             }
         }
 
-        function adapterEntitySummary() {
-            const entity = browserAdapterState.cache_entites[browserAdapterState.entite_selectionnee_id] || {};
-            return {
-                id: browserAdapterState.entite_selectionnee_id,
-                type: browserAdapterState.entite_selectionnee_type,
-                label: inferDisplayLabel(entity, browserAdapterState.entite_selectionnee_id),
-                meta: describeEntityMeta(browserAdapterState.entite_selectionnee_type, entity),
-                totalNoeuds: browserAdapterState.graphe.noeuds.size,
-                totalRelations: browserAdapterState.graphe.relations.length
-            };
-        }
-
         function browserAdapterSnapshot() {
             const selectedId = browserAdapterState.entite_selectionnee_id;
             return {

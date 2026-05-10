@@ -1,9 +1,6 @@
 # MotusArtium - GraphQL-first bridge to reactive UI state
-
-importer ui.etat
-importer ui.composants.barre_recherche
-importer ui.composants.panneau_detail
-importer ui.interactions.recherche
+# Note: ui.etat, ui.composants.*, and ui.interactions.* are provided by the HTML
+# These are not imported to avoid including their implementations in the bundle
 
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retour l'entité sélectionnée"""

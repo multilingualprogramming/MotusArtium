@@ -30,32 +30,32 @@ TAILLES_NOEUD = {
 
 déf obtenir_couleur_type(type: chaine) -> chaine:
     """Obtenir la couleur pour un type d'entité"""
-    retourner COULEURS_TYPE.obtenir(type, "#888888")
+    retour COULEURS_TYPE.obtenir(type, "#888888")
 
 
 déf obtenir_couleur_relation(type: chaine) -> chaine:
     """Obtenir la couleur pour un type de relation"""
-    retourner COULEURS_RELATION.obtenir(type, "#CCCCCC")
+    retour COULEURS_RELATION.obtenir(type, "#CCCCCC")
 
 
 déf obtenir_taille_noeud(type: chaine) -> nombre:
     """Obtenir la taille de rendu pour un type"""
-    retourner TAILLES_NOEUD.obtenir(type, 12)
+    retour TAILLES_NOEUD.obtenir(type, 12)
 
 
 déf obtenir_epaisseur_trait_relation(poids: nombre) -> nombre:
     """Obtenir l'épaisseur du trait basée sur le poids"""
-    retourner clamp(poids * 2, 1, 5)
+    retour clamp(poids * 2, 1, 5)
 
 
 déf clamp(valeur: nombre, min_val: nombre, max_val: nombre) -> nombre:
     """Clamp une valeur"""
     si valeur < min_val:
-        retourner min_val
+        retour min_val
     sinon si valeur > max_val:
-        retourner max_val
+        retour max_val
     sinon:
-        retourner valeur
+        retour valeur
 
 
 # ============================================================================
@@ -181,9 +181,9 @@ classe RenduGrapheCanvas:
             distance = math.sqrt((x - pos_x) ** 2 + (y - pos_y) ** 2)
 
             si distance < 15:  # Rayon de sélection
-                retourner id
+                retour id
 
-        retourner ""
+        retour ""
 
     déf gerer_zoom(direction: nombre, x: nombre, y: nombre):
         """Gérer le zoom (direction: 1 pour zoom in, -1 pour zoom out)"""
@@ -292,4 +292,4 @@ classe RenduTimelineSVG:
 
     déf creer_element_svg(tag: chaine) -> element:
         """Créer un élément SVG"""
-        retourner creer_element("svg:" + tag)
+        retour creer_element("svg:" + tag)

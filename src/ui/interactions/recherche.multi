@@ -7,7 +7,7 @@ asynchrone déf lancer_recherche(requete: chaine):
     """Lancer une recherche: cache + Wikidata, fusionner et afficher"""
     si non requete ou len(requete) < 2:
         ui.etat.resultats_recherche = []
-        retourner
+        retour
 
     # Rechercher dans le cache (entités déjà chargées)
     resultats_cache = _rechercher_cache(requete)
@@ -53,7 +53,7 @@ déf _rechercher_cache(requete: chaine) -> liste:
                 "type": type_noeud
             })
 
-    retourner resultats
+    retour resultats
 
 
 asynchrone déf selectionner_resultat_recherche(entite_id: chaine, entite_type: chaine):

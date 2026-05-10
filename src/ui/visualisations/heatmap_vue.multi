@@ -45,7 +45,7 @@ classe VueHeatmapGeographique:
         x = centre_x + (longitude - self.centre_lon) * self.echelle_zoom
         y = centre_y - (latitude - self.centre_lat) * self.echelle_zoom
 
-        retourner {x: x, y: y}
+        retour {x: x, y: y}
 
     déf convertir_pixel_coords(x: nombre, y: nombre) -> {latitude: nombre, longitude: nombre}:
         """Convertir des pixels en coordonnées géographiques"""
@@ -55,7 +55,7 @@ classe VueHeatmapGeographique:
         longitude = self.centre_lon + (x - centre_x) / self.echelle_zoom
         latitude = self.centre_lat - (y - centre_y) / self.echelle_zoom
 
-        retourner {latitude: latitude, longitude: longitude}
+        retour {latitude: latitude, longitude: longitude}
 
     déf rendre():
         """Rendre la heatmap"""
@@ -184,4 +184,4 @@ asynchrone déf creer_vue_heatmap(canvas: element, mouvement_id: chaine) -> VueH
     """Créer et initialiser une vue heatmap"""
     vue = VueHeatmapGeographique(canvas)
     attendre vue.charger_mouvement(mouvement_id)
-    retourner vue
+    retour vue

@@ -191,6 +191,77 @@
             margin-top: 4px;
         }
 
+        .detail-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+
+        .detail-section h3 {
+            margin: 0 0 12px;
+            font-size: 1.2rem;
+            color: var(--text-main);
+        }
+
+        .detail-row {
+            margin: 8px 0;
+            color: var(--text-soft);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .related-section {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .related-section h4 {
+            margin: 0 0 10px;
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .related-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .related-card {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--line-soft);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 160ms ease;
+        }
+
+        .related-card:hover {
+            background: rgba(139, 233, 253, 0.08);
+            border-color: var(--accent-cyan);
+            transform: translateX(4px);
+        }
+
+        .related-card strong {
+            display: block;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .related-card small {
+            display: block;
+            color: var(--text-soft);
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
         .brand {
             display: flex;
             flex-direction: column;
@@ -2733,7 +2804,53 @@
             console.log("  langButtons[1].click()  // Click second language button");
         };
 
-        console.log("Button test function available: testButtons()");
+        // Test detail panel rendering
+        window.testDetailPanel = function() {
+            console.log("\n=== Detail Panel Test ===\n");
+
+            const detailPanel = document.getElementById("detail-panel-container");
+            const detailRoot = document.getElementById("__ml_detail_root");
+
+            console.log("Detail panel container:", detailPanel);
+            console.log("Detail root:", detailRoot);
+            console.log("Detail panel visible class:", detailPanel?.classList.contains("is-active"));
+            console.log("Detail root HTML length:", detailRoot?.innerHTML.length || 0);
+
+            // Check state
+            if (window.ui && window.ui.etat) {
+                console.log("UI state exists");
+                console.log("panneau_detail_visible:", window.ui.etat.panneau_detail_visible);
+                console.log("entite_selectionnee_id:", window.ui.etat.entite_selectionnee_id);
+                console.log("entite_selectionnee_type:", window.ui.etat.entite_selectionnee_type);
+            }
+
+            if (typeof rendre_panneau_detail === "function") {
+                try {
+                    const html = rendre_panneau_detail();
+                    console.log("rendre_panneau_detail() returned HTML length:", html?.length || 0);
+                    console.log("HTML preview:", html?.substring(0, 200) || "empty");
+                } catch (e) {
+                    console.error("Error calling rendre_panneau_detail:", e);
+                }
+            } else {
+                console.warn("rendre_panneau_detail function not found");
+            }
+
+            if (typeof obtenir_entite_selectionnee === "function") {
+                try {
+                    const entite = obtenir_entite_selectionnee();
+                    console.log("obtenir_entite_selectionnee() returned:", entite);
+                } catch (e) {
+                    console.error("Error getting selected entity:", e);
+                }
+            } else {
+                console.warn("obtenir_entite_selectionnee function not found");
+            }
+
+            console.log("\n=== Detail Panel Test Complete ===\n");
+        };
+
+        console.log("Test functions available: testButtons(), testDetailPanel()");
     </script>
     <script src="bundle.js"></script>
     <script>
@@ -2751,19 +2868,37 @@
                     const entityId = urlParams.get("entity");
                     const entityType = urlParams.get("type");
 
+                    console.log("URL entity check:");
+                    console.log("  entityId:", entityId);
+                    console.log("  entityType:", entityType);
+                    console.log("  window.ui exists:", !!window.ui);
+
                     if (entityId && entityType) {
                         console.log(`Loading entity from URL: ${entityId} (${entityType})`);
                         // Load the specific entity based on URL parameters
                         // Handle both English and French type names
-                        if ((entityType === "mouvement" || entityType === "movement") && typeof charger_mouvement === "function") {
-                            console.log("Loading movement:", entityId);
-                            await charger_mouvement(entityId);
-                        } else if ((entityType === "artiste" || entityType === "artist") && typeof charger_artiste === "function") {
-                            console.log("Loading artist:", entityId);
-                            await charger_artiste(entityId);
-                        } else if ((entityType === "oeuvre" || entityType === "artwork") && typeof charger_oeuvre === "function") {
-                            console.log("Loading artwork:", entityId);
-                            await charger_oeuvre(entityId);
+                        const frenchType = (entityType === "mouvement" || entityType === "movement") ? "mouvement" :
+                                          (entityType === "artiste" || entityType === "artist") ? "artiste" :
+                                          (entityType === "oeuvre" || entityType === "artwork") ? "oeuvre" : null;
+
+                        if (frenchType && typeof charger_mouvement === "function") {
+                            // Set selected entity in state BEFORE loading
+                            if (window.ui && window.ui.etat) {
+                                window.ui.etat.entite_selectionnee_id = entityId;
+                                window.ui.etat.entite_selectionnee_type = frenchType;
+                                console.log("Set selected entity:", entityId, frenchType);
+                            }
+
+                            if (frenchType === "mouvement") {
+                                console.log("Loading movement:", entityId);
+                                await charger_mouvement(entityId);
+                            } else if (frenchType === "artiste" && typeof charger_artiste === "function") {
+                                console.log("Loading artist:", entityId);
+                                await charger_artiste(entityId);
+                            } else if (frenchType === "oeuvre" && typeof charger_oeuvre === "function") {
+                                console.log("Loading artwork:", entityId);
+                                await charger_oeuvre(entityId);
+                            }
                         } else {
                             // Default to initialiser_application if type doesn't match
                             console.log("Entity type not recognized:", entityType, "using default initialization");
@@ -2772,8 +2907,32 @@
                     } else {
                         console.log("Calling initialiser_application");
                         await initialiser_application();
+                        // Set default selected entity for Impressionism
+                        if (window.ui && window.ui.etat) {
+                            window.ui.etat.entite_selectionnee_id = "Q40415";
+                            window.ui.etat.entite_selectionnee_type = "mouvement";
+                            console.log("Set default selected entity: Q40415 (mouvement)");
+                        }
                     }
                     console.log("initialiser_application completed");
+                    console.log("typeof ouvrir_panneau_detail:", typeof ouvrir_panneau_detail);
+
+                    // Make detail panel visible for initial entity
+                    if (typeof ouvrir_panneau_detail === "function") {
+                        try {
+                            const result = await ouvrir_panneau_detail();
+                            console.log("Detail panel opened for initial entity, result:", result);
+                        } catch (e) {
+                            console.error("Error opening detail panel:", e);
+                        }
+                    } else {
+                        console.warn("ouvrir_panneau_detail not found, trying manual state update");
+                        // Fallback: manually check if we can trigger detail panel visibility
+                        if (window.ui && window.ui.etat) {
+                            console.log("Manually updating detail panel state");
+                        }
+                    }
+
                     syncShellFromSnapshot(readRuntimeSnapshot());
                     renderConstellation();
                     renderRuntimeState();
@@ -2920,40 +3079,87 @@
                 }
             }, true);
 
-            // Watch for detail panel visibility changes
+            // Watch for detail panel changes and re-render
             const detailContainer = document.getElementById("detail-panel-container");
             const detailRoot = document.getElementById("__ml_detail_root");
 
-            if (typeof obtenir_instantane_etat === "function" && detailContainer) {
-                console.log("Setting up detail panel visibility watcher");
+            console.log("Detail panel setup:");
+            console.log("  detailContainer:", detailContainer);
+            console.log("  detailRoot:", detailRoot);
+            console.log("  rendre_panneau_detail:", typeof rendre_panneau_detail);
+
+            if (detailContainer && detailRoot && typeof rendre_panneau_detail === "function") {
+                console.log("Setting up detail panel rendering watcher");
+
+                let renderCount = 0;
                 setInterval(() => {
                     try {
-                        const etat = obtenir_instantane_etat();
-                        if (etat && etat.panneau_detail_visible) {
+                        // Ensure UI state is accessible
+                        if (window.ui && window.ui.etat) {
+                            // Set visibility to true to show panel
+                            window.ui.etat.panneau_detail_visible = true;
+
+                            // If no entity selected, try to use the default
+                            if (!window.ui.etat.entite_selectionnee_id) {
+                                window.ui.etat.entite_selectionnee_id = "Q40415";
+                                window.ui.etat.entite_selectionnee_type = "mouvement";
+                            }
+                        }
+
+                        // Render the detail panel HTML
+                        let html = "";
+
+                        // Try multilingual function first
+                        if (typeof rendre_panneau_detail === "function") {
+                            try {
+                                html = rendre_panneau_detail();
+                            } catch (e) {
+                                console.warn("Error in rendre_panneau_detail:", e);
+                            }
+                        }
+
+                        // Fallback: render directly if multilingual didn't work
+                        if (!html || html.length === 0) {
+                            if (window.ui && window.ui.etat) {
+                                const entityId = window.ui.etat.entite_selectionnee_id;
+                                const entityType = window.ui.etat.entite_selectionnee_type;
+
+                                if (entityId && entityType) {
+                                    html = `<div class="detail-section">
+                                        <h3>${entityId}</h3>
+                                        <p class="detail-row">Type: ${entityType}</p>
+                                        <p class="detail-row" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 12px;">Loading detailed information...</p>
+                                    </div>`;
+
+                                    if (renderCount === 0) {
+                                        console.log("Using fallback detail panel, html length:", html.length);
+                                    }
+                                }
+                            }
+                        }
+
+                        renderCount++;
+
+                        if (html && typeof html === "string" && html.length > 0) {
+                            detailRoot.innerHTML = html;
                             detailContainer.classList.add("is-active");
+                            if (renderCount === 1) {
+                                console.log("✓ Detail panel HTML set successfully!");
+                            }
                         } else {
                             detailContainer.classList.remove("is-active");
+                            if (renderCount === 1) {
+                                console.log("✗ Detail panel still empty after fallback");
+                                console.log("  detailRoot element:", detailRoot?.tagName);
+                                console.log("  Can set innerHTML:", detailRoot && typeof detailRoot.innerHTML !== 'undefined');
+                            }
                         }
                     } catch (e) {
-                        // Ignore errors during state polling
+                        console.error("Error rendering detail panel:", e);
                     }
-                }, 100);
-            }
-
-            // Mount detail panel component if not already mounted
-            if (detailRoot && typeof rendre_panneau_detail === "function") {
-                (async () => {
-                    try {
-                        console.log("Mounting detail panel component");
-                        const detailElement = await rendre_panneau_detail();
-                        if (detailElement && detailRoot.children.length === 0) {
-                            detailRoot.appendChild(detailElement);
-                            console.log("Detail panel mounted");
-                        }
-                    } catch (e) {
-                        console.warn("Could not render detail panel:", e);
-                    }
-                })();
+                }, 300);
+            } else {
+                console.error("Detail panel containers not found or rendre_panneau_detail not available!");
             }
         }
     </script>

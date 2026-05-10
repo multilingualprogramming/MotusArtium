@@ -84,4 +84,4 @@ asynchrone déf creer_vue_galaxie(canvas: element, noeud_id: chaine) -> VueGalax
     """Créer et initialiser une vue galaxie"""
     vue = VueGalaxie(canvas)
     attendre vue.initialiser_depuis_centre(noeud_id)
-    retourner vue
+    retour vue

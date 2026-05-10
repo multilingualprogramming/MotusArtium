@@ -12,7 +12,7 @@ CACHE_DOCUMENTS_GRAPHQL = {}
 asynchrone déf charger_document_graphql(nom_document: chaine) -> chaine:
     """Charger un document GraphQL dédié depuis le dépôt statique"""
     si nom_document dans CACHE_DOCUMENTS_GRAPHQL:
-        retourner CACHE_DOCUMENTS_GRAPHQL[nom_document]
+        retour CACHE_DOCUMENTS_GRAPHQL[nom_document]
 
     chemin = "graphql/" + nom_document
     reponse = attendre fetch(chemin)
@@ -22,7 +22,7 @@ asynchrone déf charger_document_graphql(nom_document: chaine) -> chaine:
 
     document = attendre reponse.text()
     CACHE_DOCUMENTS_GRAPHQL[nom_document] = document
-    retourner document
+    retour document
 
 
 asynchrone déf executer_requete_graphql(nom_document: chaine, variables: dictionnaire = {}) -> dictionnaire:
@@ -56,26 +56,26 @@ asynchrone déf executer_requete_graphql(nom_document: chaine, variables: dictio
         message = erreurs[0].obtenir("message", "Erreur GraphQL inconnue")
         lever Exception(message)
 
-    retourner donnees.obtenir("data", {})
+    retour donnees.obtenir("data", {})
 
 
 déf _champ_valeur(valeur) -> dictionnaire:
     si valeur est nul ou valeur == "":
-        retourner {}
-    retourner {"value": valeur}
+        retour {}
+    retour {"value": valeur}
 
 
 déf _uri_entite(entite_id: chaine) -> chaine:
     si non entite_id:
-        retourner ""
-    retourner "http://www.wikidata.org/entity/" + entite_id
+        retour ""
+    retour "http://www.wikidata.org/entity/" + entite_id
 
 
 déf _champ_entite(entite_id: chaine) -> dictionnaire:
     uri = _uri_entite(entite_id)
     si non uri:
-        retourner {}
-    retourner {"value": uri}
+        retour {}
+    retour {"value": uri}
 
 
 déf _extraire_temps(entrees: liste) -> chaine:
@@ -83,8 +83,8 @@ déf _extraire_temps(entrees: liste) -> chaine:
         valeur = entree.obtenir("value", {})
         temps = valeur.obtenir("time", "")
         si temps:
-            retourner temps
-    retourner ""
+            retour temps
+    retour ""
 
 
 déf _extraire_texte(entrees: liste) -> chaine:
@@ -92,8 +92,8 @@ déf _extraire_texte(entrees: liste) -> chaine:
         valeur = entree.obtenir("value", {})
         contenu = valeur.obtenir("content", "")
         si contenu:
-            retourner contenu
-    retourner ""
+            retour contenu
+    retour ""
 
 
 déf _extraire_item(entrees: liste) -> dictionnaire:
@@ -101,11 +101,11 @@ déf _extraire_item(entrees: liste) -> dictionnaire:
         valeur = entree.obtenir("value", {})
         entite_id = valeur.obtenir("id", "")
         si entite_id:
-            retourner {
+            retour {
                 "id": entite_id,
                 "label": valeur.obtenir("label", "")
             }
-    retourner {}
+    retour {}
 
 
 déf _extraire_items(entrees: liste) -> liste:
@@ -121,7 +121,7 @@ déf _extraire_items(entrees: liste) -> liste:
                 "label": valeur.obtenir("label", "")
             })
 
-    retourner resultats
+    retour resultats
 
 
 déf _extraire_coordonnees(entrees: liste) -> dictionnaire:
@@ -131,12 +131,12 @@ déf _extraire_coordonnees(entrees: liste) -> dictionnaire:
         longitude = valeur.obtenir("longitude", nul)
 
         si latitude n'est pas nul et longitude n'est pas nul:
-            retourner {
+            retour {
                 "latitude": latitude,
                 "longitude": longitude
             }
 
-    retourner {}
+    retour {}
 
 
 déf _normaliser_mouvement_detail(item: dictionnaire) -> dictionnaire:
@@ -144,7 +144,7 @@ déf _normaliser_mouvement_detail(item: dictionnaire) -> dictionnaire:
     precedent = _extraire_item(item.obtenir("follows", []))
     suivant = _extraire_item(item.obtenir("followedBy", []))
 
-    retourner {
+    retour {
         "movement": _champ_entite(item.obtenir("id", "")),
         "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
         "startTime": _champ_valeur(_extraire_temps(item.obtenir("startTime", []))),
@@ -163,7 +163,7 @@ déf _normaliser_artiste_detail(item: dictionnaire) -> dictionnaire:
     lieu_deces = _extraire_item(item.obtenir("deathplace", []))
     mouvement = _extraire_item(item.obtenir("movement", []))
 
-    retourner {
+    retour {
         "artist": _champ_entite(item.obtenir("id", "")),
         "artistLabel": _champ_valeur(item.obtenir("artistLabel", "")),
         "birthDate": _champ_valeur(_extraire_temps(item.obtenir("birthDate", []))),
@@ -183,7 +183,7 @@ déf _normaliser_oeuvre_detail(item: dictionnaire) -> dictionnaire:
     sujet = _extraire_item(item.obtenir("depicts", []))
     materiau = _extraire_item(item.obtenir("material", []))
 
-    retourner {
+    retour {
         "artwork": _champ_entite(item.obtenir("id", "")),
         "artworkLabel": _champ_valeur(item.obtenir("artworkLabel", "")),
         "creator": _champ_entite(createur.obtenir("id", "")),
@@ -202,7 +202,7 @@ déf _normaliser_oeuvre_detail(item: dictionnaire) -> dictionnaire:
 déf _normaliser_artiste_resume(item: dictionnaire) -> dictionnaire:
     lieu_naissance = _extraire_item(item.obtenir("birthplace", []))
 
-    retourner {
+    retour {
         "artist": _champ_entite(item.obtenir("id", "")),
         "artistLabel": _champ_valeur(item.obtenir("artistLabel", "")),
         "birthDate": _champ_valeur(_extraire_temps(item.obtenir("birthDate", []))),
@@ -217,7 +217,7 @@ déf _normaliser_oeuvre_resume(item: dictionnaire) -> dictionnaire:
     musee = _extraire_item(item.obtenir("museum", []))
     sujet = _extraire_item(item.obtenir("subject", []))
 
-    retourner {
+    retour {
         "artwork": _champ_entite(item.obtenir("id", "")),
         "artworkLabel": _champ_valeur(item.obtenir("artworkLabel", "")),
         "creator": _champ_entite(createur.obtenir("id", "")),
@@ -231,7 +231,7 @@ déf _normaliser_oeuvre_resume(item: dictionnaire) -> dictionnaire:
 
 
 déf _normaliser_chronologie(item: dictionnaire) -> dictionnaire:
-    retourner {
+    retour {
         "movement": _champ_entite(item.obtenir("id", "")),
         "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
         "startTime": _champ_valeur(_extraire_temps(item.obtenir("startTime", []))),
@@ -241,16 +241,16 @@ déf _normaliser_chronologie(item: dictionnaire) -> dictionnaire:
 
 déf _annee_depuis_temps(temps: chaine) -> nombre:
     si non temps ou len(temps) < 4:
-        retourner 0
+        retour 0
 
     texte = temps
     si texte[0] == "+":
         texte = texte[1:]
 
     chercher:
-        retourner nombre(texte[0:4])
+        retour nombre(texte[0:4])
     exception:
-        retourner 0
+        retour 0
 
 
 asynchrone déf _recuperer_mouvements_catalogue() -> liste:
@@ -267,7 +267,7 @@ asynchrone déf _recuperer_mouvements_catalogue() -> liste:
         si noeud:
             resultats.ajouter(noeud)
 
-    retourner resultats
+    retour resultats
 
 
 # ============================================================================
@@ -286,8 +286,8 @@ asynchrone déf obtenir_mouvement_details(mouvement_id: chaine) -> dictionnaire:
 
     item = donnees.obtenir("item", {})
     si item:
-        retourner _normaliser_mouvement_detail(item)
-    retourner {}
+        retour _normaliser_mouvement_detail(item)
+    retour {}
 
 
 asynchrone déf obtenir_mouvements_par_periode(debut_annee: nombre, fin_annee: nombre) -> liste:
@@ -303,7 +303,7 @@ asynchrone déf obtenir_mouvements_par_periode(debut_annee: nombre, fin_annee: n
         si debut et fin et debut >= debut_annee et fin <= fin_annee:
             resultats.ajouter(entree)
 
-    retourner resultats
+    retour resultats
 
 
 asynchrone déf obtenir_mouvements_evolution(mouvement_id: chaine) -> dictionnaire:
@@ -321,7 +321,7 @@ asynchrone déf obtenir_mouvements_evolution(mouvement_id: chaine) -> dictionnai
     suivant = _extraire_item(item.obtenir("followedBy", []))
     parent = _extraire_item(item.obtenir("partOf", []))
 
-    retourner {
+    retour {
         "movement": _champ_entite(item.obtenir("id", "")),
         "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
         "follows": _champ_entite(precedent.obtenir("id", "")),
@@ -349,8 +349,8 @@ asynchrone déf obtenir_artiste_details(artiste_id: chaine) -> dictionnaire:
 
     item = donnees.obtenir("item", {})
     si item:
-        retourner _normaliser_artiste_detail(item)
-    retourner {}
+        retour _normaliser_artiste_detail(item)
+    retour {}
 
 
 asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre = 50) -> liste:
@@ -371,7 +371,7 @@ asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre 
         si noeud and len(resultats) < limite:
             resultats.ajouter(_normaliser_artiste_resume(noeud))
 
-    retourner resultats
+    retour resultats
 
 
 asynchrone déf obtenir_influences_artiste(artiste_id: chaine) -> dictionnaire:
@@ -388,7 +388,7 @@ asynchrone déf obtenir_influences_artiste(artiste_id: chaine) -> dictionnaire:
     influence_recue = _extraire_item(item.obtenir("influencedBy", []))
     influence_donnee = _extraire_item(item.obtenir("influenced", []))
 
-    retourner {
+    retour {
         "artist": _champ_entite(item.obtenir("id", "")),
         "artistLabel": _champ_valeur(item.obtenir("artistLabel", "")),
         "influencedBy": _champ_entite(influence_recue.obtenir("id", "")),
@@ -414,8 +414,8 @@ asynchrone déf obtenir_oeuvre_details(oeuvre_id: chaine) -> dictionnaire:
 
     item = donnees.obtenir("item", {})
     si item:
-        retourner _normaliser_oeuvre_detail(item)
-    retourner {}
+        retour _normaliser_oeuvre_detail(item)
+    retour {}
 
 
 asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50) -> liste:
@@ -436,7 +436,7 @@ asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50)
         si noeud and len(resultats) < limite:
             resultats.ajouter(_normaliser_oeuvre_resume(noeud))
 
-    retourner resultats
+    retour resultats
 
 
 asynchrone déf obtenir_oeuvres_par_sujet(sujet_id: chaine, limite: nombre = 50) -> liste:
@@ -457,7 +457,7 @@ asynchrone déf obtenir_oeuvres_par_sujet(sujet_id: chaine, limite: nombre = 50)
         si noeud and len(resultats) < limite:
             resultats.ajouter(_normaliser_oeuvre_resume(noeud))
 
-    retourner resultats
+    retour resultats
 
 
 # ============================================================================
@@ -479,7 +479,7 @@ asynchrone déf obtenir_diffusion_geographique(mouvement_id: chaine) -> liste:
     ids_pays = [entree.obtenir("id", "") pour entree dans pays si entree.obtenir("id", "")]
 
     si non ids_pays:
-        retourner []
+        retour []
 
     donnees_pays = attendre executer_requete_graphql(
         "countries_coordinates.graphql",
@@ -510,7 +510,7 @@ asynchrone déf obtenir_diffusion_geographique(mouvement_id: chaine) -> liste:
             "coordinate": _champ_valeur(coordonnees)
         })
 
-    retourner resultats
+    retour resultats
 
 
 asynchrone déf obtenir_oeuvres_musee(musee_id: chaine, limite: nombre = 50) -> liste:
@@ -531,7 +531,7 @@ asynchrone déf obtenir_oeuvres_musee(musee_id: chaine, limite: nombre = 50) -> 
         si noeud and len(resultats) < limite:
             resultats.ajouter(_normaliser_oeuvre_resume(noeud))
 
-    retourner resultats
+    retour resultats
 
 
 # ============================================================================
@@ -551,7 +551,7 @@ asynchrone déf obtenir_chronologie_mouvements(debut: nombre, fin: nombre) -> li
         si debut_mouvement et fin_mouvement and debut_mouvement >= debut and fin_mouvement <= fin:
             resultats.ajouter(entree)
 
-    retourner resultats
+    retour resultats
 
 
 # ============================================================================
@@ -569,7 +569,7 @@ asynchrone déf obtenir_etiquette_entite(entite_id: chaine, langue: chaine = LAN
     )
 
     item = donnees.obtenir("item", {})
-    retourner {
+    retour {
         "id": item.obtenir("id", ""),
         "label": item.obtenir("label", "")
     }
@@ -586,7 +586,7 @@ asynchrone déf obtenir_etiquettes_entite(entite_id: chaine, langues: liste = ["
         etiquette = attendre obtenir_etiquette_entite(entite_id, langue)
         observer etiquettes[langue] = etiquette.obtenir("label", "")
 
-    retourner etiquettes
+    retour etiquettes
 
 
 asynchrone déf obtenir_graphe_mouvement(mouvement_id: chaine, limite: nombre = 50) -> dictionnaire:
@@ -594,7 +594,7 @@ asynchrone déf obtenir_graphe_mouvement(mouvement_id: chaine, limite: nombre = 
     mouvement = attendre obtenir_mouvement_details(mouvement_id)
     artistes = attendre obtenir_artistes_mouvement(mouvement_id, limite)
 
-    retourner {
+    retour {
         "mouvement": mouvement,
         "artistes": artistes
     }
@@ -606,7 +606,7 @@ asynchrone déf obtenir_graphe_artiste(artiste_id: chaine, limite: nombre = 50) 
     oeuvres = attendre obtenir_oeuvres_artiste(artiste_id, limite)
     influences = attendre obtenir_influences_artiste(artiste_id)
 
-    retourner {
+    retour {
         "artiste": artiste,
         "oeuvres": oeuvres,
         "influences": influences
@@ -629,7 +629,7 @@ asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
     si item:
         oeuvre = _normaliser_oeuvre_detail(item)
 
-    retourner {
+    retour {
         "oeuvre": oeuvre,
         "musee": _extraire_item(item.obtenir("museum", [])),
         "musees": _extraire_items(item.obtenir("museum", [])),
@@ -645,7 +645,7 @@ asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
 asynchrone déf rechercher_entites_wikidata(terme: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> liste:
     """Rechercher des entités sur Wikidata par texte/mot-clé"""
     si non terme ou len(terme) < 2:
-        retourner []
+        retour []
 
     donnees = attendre executer_requete_graphql(
         "recherche_par_texte.graphql",
@@ -691,4 +691,4 @@ asynchrone déf rechercher_entites_wikidata(terme: chaine, langue: chaine = LANG
                 "type": type_entite
             })
 
-    retourner resultats
+    retour resultats

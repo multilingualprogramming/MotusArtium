@@ -14,22 +14,22 @@ asynchrone déf fermer_panneau_detail():
 déf rendre_panneau_detail():
     """Rendre le panneau de détails avec les informations de l'entité sélectionnée"""
     si non ui.etat.panneau_detail_visible:
-        retourner ""
+        retour ""
 
     entite = ui.etat.obtenir_entite_selectionnee()
     si non entite:
-        retourner ""
+        retour ""
 
     type_entite = entite.obtenir("type", "")
 
     si type_entite == "mouvement":
-        retourner _rendre_detail_mouvement(entite)
+        retour _rendre_detail_mouvement(entite)
     sinon si type_entite == "artiste":
-        retourner _rendre_detail_artiste(entite)
+        retour _rendre_detail_artiste(entite)
     sinon si type_entite == "oeuvre":
-        retourner _rendre_detail_oeuvre(entite)
+        retour _rendre_detail_oeuvre(entite)
     sinon:
-        retourner _rendre_detail_generique(entite)
+        retour _rendre_detail_generique(entite)
 
 
 déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
@@ -59,7 +59,7 @@ déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
         html = html + '<p class="detail-row">Pays: ' + pays_label + '</p>'
 
     html = html + '</div>'
-    retourner html
+    retour html
 
 
 déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
@@ -88,7 +88,7 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
         html = html + '<p class="detail-row">Lieu de naissance: ' + lieu_naissance_label + '</p>'
 
     html = html + '</div>'
-    retourner html
+    retour html
 
 
 déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
@@ -118,7 +118,7 @@ déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
         html = html + '<p class="detail-row">Musée: ' + musee_label + '</p>'
 
     html = html + '</div>'
-    retourner html
+    retour html
 
 
 déf _rendre_detail_generique(entite: dictionnaire) -> chaine:
@@ -130,4 +130,4 @@ déf _rendre_detail_generique(entite: dictionnaire) -> chaine:
     html = html + '<h3>' + entite_id + '</h3>'
     html = html + '<p class="detail-row">Type: ' + entite.obtenir("type", "inconnu") + '</p>'
     html = html + '</div>'
-    retourner html
+    retour html

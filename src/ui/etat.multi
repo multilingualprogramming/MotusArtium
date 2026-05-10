@@ -33,52 +33,52 @@ observer var oeuvre_focus_id = ""
 déf _extraire_id_entite(champ: dictionnaire) -> chaine:
     valeur = champ.obtenir("value", "")
     si non valeur:
-        retourner ""
-    retourner valeur.remplacer("http://www.wikidata.org/entity/", "")
+        retour ""
+    retour valeur.remplacer("http://www.wikidata.org/entity/", "")
 
 
 déf _etiquette_entite(entite: dictionnaire, cles: liste, etiquette_par_defaut: chaine) -> chaine:
     pour cle dans cles ou []:
         valeur = entite.obtenir(cle, {}).obtenir("value", "")
         si valeur:
-            retourner valeur
-    retourner etiquette_par_defaut
+            retour valeur
+    retour etiquette_par_defaut
 
 
 déf _mettre_a_jour_selection(entite_id: chaine, entite_type: chaine):
-    observer entite_selectionnee_id = entite_id
-    observer entite_selectionnee_type = entite_type
-    observer panneau_detail_visible = vrai
+    entite_selectionnee_id = entite_id
+    entite_selectionnee_type = entite_type
+    panneau_detail_visible = vrai
 
 
 déf _mettre_en_cache(entite_id: chaine, donnees: dictionnaire):
     si non entite_id:
-        retourner
+        retour
     observer cache_entites[entite_id] = donnees
 
 
 # Multilingual try/except syntax not working - stub for now
 asynchrone déf _rafraichir_etiquettes_multilingues(entite_id: chaine):
     si non entite_id:
-        retourner
+        retour
     observer etiquettes_multilingues[entite_id] = {"fr": "", "en": ""}
 
 
 déf _ajouter_noeud(entite_id: chaine, type_noeud: chaine, etiquette: chaine, donnees: dictionnaire = {}):
     si non entite_id:
-        retourner
+        retour
     graphe.ajouter_noeud(entite_id, type_noeud, etiquette, donnees)
 
 
 déf _ajouter_relation(source_id: chaine, cible_id: chaine, type_relation: chaine):
     si non source_id ou non cible_id:
-        retourner
+        retour
     graphe.ajouter_relation(source_id, cible_id, type_relation, 1.0)
 
 
 déf _supprimer_entites_graphe(ids: liste):
     si non ids:
-        retourner
+        retour
 
     pour entite_id dans ids:
         si entite_id dans graphe.noeuds:
@@ -104,7 +104,7 @@ déf _obtenir_cibles_relations(source_id: chaine, type_relation: chaine) -> list
     pour relation dans graphe.relations:
         si relation.source_id == source_id et relation.type == type_relation:
             ids.ajouter(relation.target_id)
-    retourner ids
+    retour ids
 
 
 déf _reduire_branche_oeuvre(oeuvre_id: chaine):
@@ -130,8 +130,8 @@ déf _reduire_branche_artiste(artiste_id: chaine):
 
     si artiste_etendu_id == artiste_id:
         observer artiste_etendu_id = ""
-    observer oeuvre_etendue_id = ""
-    observer oeuvre_focus_id = ""
+    oeuvre_etendue_id = ""
+    oeuvre_focus_id = ""
 
 
 déf _reduire_branche_mouvement(mouvement_id: chaine):
@@ -144,14 +144,14 @@ déf _reduire_branche_mouvement(mouvement_id: chaine):
 
     si mouvement_etendu_id == mouvement_id:
         observer mouvement_etendu_id = ""
-    observer artiste_etendu_id = ""
-    observer oeuvre_etendue_id = ""
-    observer oeuvre_focus_id = ""
+    artiste_etendu_id = ""
+    oeuvre_etendue_id = ""
+    oeuvre_focus_id = ""
 
 
 déf _focaliser_oeuvre_dans_branche_artiste(artiste_id: chaine, oeuvre_id: chaine):
     si non artiste_id:
-        retourner
+        retour
 
     oeuvres = _obtenir_cibles_relations(artiste_id, "a_cree")
     oeuvres_a_supprimer = []
@@ -162,7 +162,7 @@ déf _focaliser_oeuvre_dans_branche_artiste(artiste_id: chaine, oeuvre_id: chain
             oeuvres_a_supprimer.ajouter(oeuvre_courante_id)
 
     _supprimer_entites_graphe(oeuvres_a_supprimer)
-    observer oeuvre_focus_id = oeuvre_id
+    oeuvre_focus_id = oeuvre_id
 
 
 déf _ajouter_references_oeuvre(oeuvre_id: chaine, references: liste, type_noeud: chaine, type_relation: chaine, etiquette_par_defaut: chaine):
@@ -181,7 +181,7 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
     si mouvement_etendu_id == mouvement_id et entite_selectionnee_id == mouvement_id:
         _reduire_branche_mouvement(mouvement_id)
         _mettre_a_jour_selection(mouvement_id, "mouvement")
-        retourner obtenir_entite_selectionnee()
+        retour obtenir_entite_selectionnee()
 
     si artiste_etendu_id:
         _reduire_branche_artiste(artiste_etendu_id)
@@ -189,8 +189,8 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
     si mouvement_etendu_id et mouvement_etendu_id != mouvement_id:
         _reduire_branche_mouvement(mouvement_etendu_id)
 
-    observer affichage_chargement = vrai
-    observer message_erreur = ""
+    affichage_chargement = vrai
+    message_erreur = ""
     _mettre_a_jour_selection(mouvement_id, "mouvement")
 
     essayer:
@@ -201,7 +201,7 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
         si non mouvement:
             observer message_erreur = "Mouvement non trouve"
             observer affichage_chargement = faux
-            retourner {}
+            retour {}
 
         _mettre_en_cache(mouvement_id, mouvement)
         observer cache_relations[mouvement_id] = contrat
@@ -223,12 +223,12 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
         observer oeuvre_focus_id = ""
         observer affichage_chargement = faux
         attendre _rafraichir_etiquettes_multilingues(mouvement_id)
-        retourner mouvement
+        retour mouvement
 
     sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
-        retourner {}
+        retour {}
 
 
 asynchrone déf charger_artiste(artiste_id: chaine):
@@ -236,13 +236,13 @@ asynchrone déf charger_artiste(artiste_id: chaine):
     si artiste_etendu_id == artiste_id et entite_selectionnee_id == artiste_id:
         _reduire_branche_artiste(artiste_id)
         _mettre_a_jour_selection(artiste_id, "artiste")
-        retourner obtenir_entite_selectionnee()
+        retour obtenir_entite_selectionnee()
 
     si artiste_etendu_id et artiste_etendu_id != artiste_id:
         _reduire_branche_artiste(artiste_etendu_id)
 
-    observer affichage_chargement = vrai
-    observer message_erreur = ""
+    affichage_chargement = vrai
+    message_erreur = ""
     _mettre_a_jour_selection(artiste_id, "artiste")
 
     essayer:
@@ -254,7 +254,7 @@ asynchrone déf charger_artiste(artiste_id: chaine):
         si non artiste:
             observer message_erreur = "Artiste non trouve"
             observer affichage_chargement = faux
-            retourner {}
+            retour {}
 
         _mettre_en_cache(artiste_id, artiste)
         observer cache_relations[artiste_id] = contrat
@@ -282,12 +282,12 @@ asynchrone déf charger_artiste(artiste_id: chaine):
         observer oeuvre_focus_id = ""
         observer affichage_chargement = faux
         attendre _rafraichir_etiquettes_multilingues(artiste_id)
-        retourner artiste
+        retour artiste
 
     sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
-        retourner {}
+        retour {}
 
 
 asynchrone déf charger_oeuvre(oeuvre_id: chaine):
@@ -295,13 +295,13 @@ asynchrone déf charger_oeuvre(oeuvre_id: chaine):
     si oeuvre_etendue_id == oeuvre_id et entite_selectionnee_id == oeuvre_id:
         _reduire_branche_oeuvre(oeuvre_id)
         _mettre_a_jour_selection(oeuvre_id, "oeuvre")
-        retourner obtenir_entite_selectionnee()
+        retour obtenir_entite_selectionnee()
 
     si oeuvre_etendue_id et oeuvre_etendue_id != oeuvre_id:
         _reduire_branche_oeuvre(oeuvre_etendue_id)
 
-    observer affichage_chargement = vrai
-    observer message_erreur = ""
+    affichage_chargement = vrai
+    message_erreur = ""
     _mettre_a_jour_selection(oeuvre_id, "oeuvre")
 
     essayer:
@@ -311,7 +311,7 @@ asynchrone déf charger_oeuvre(oeuvre_id: chaine):
         si non oeuvre:
             observer message_erreur = "Oeuvre non trouvee"
             observer affichage_chargement = faux
-            retourner {}
+            retour {}
 
         _mettre_en_cache(oeuvre_id, oeuvre)
         observer cache_relations[oeuvre_id] = contrat
@@ -329,18 +329,18 @@ asynchrone déf charger_oeuvre(oeuvre_id: chaine):
         observer oeuvre_focus_id = oeuvre_id
         observer affichage_chargement = faux
         attendre _rafraichir_etiquettes_multilingues(oeuvre_id)
-        retourner oeuvre
+        retour oeuvre
 
     sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
-        retourner {}
+        retour {}
 
 
 asynchrone déf charger_chronologie(debut: nombre, fin: nombre):
     """Charger la chronologie des mouvements pour une periode."""
-    observer affichage_chargement = vrai
-    observer message_erreur = ""
+    affichage_chargement = vrai
+    message_erreur = ""
 
     essayer:
         mouvements = attendre donnees.requetes.obtenir_chronologie_mouvements(debut, fin)
@@ -357,18 +357,18 @@ asynchrone déf charger_chronologie(debut: nombre, fin: nombre):
         observer plage_temporelle_fin = fin
         observer mode_visualisation = "chronologie"
         observer affichage_chargement = faux
-        retourner mouvements
+        retour mouvements
 
     sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
-        retourner liste()
+        retour liste()
 
 
 asynchrone déf basculer_visualisation(mode: chaine):
     """Basculer le mode de visualisation et charger les données nécessaires."""
-    observer affichage_chargement = vrai
-    observer message_erreur = ""
+    affichage_chargement = vrai
+    message_erreur = ""
 
     essayer:
         si mode == "heatmap" et entite_selectionnee_id:
@@ -383,12 +383,12 @@ asynchrone déf basculer_visualisation(mode: chaine):
 
         observer mode_visualisation = mode
         observer affichage_chargement = faux
-        retourner obtenir_instantane_etat()
+        retour obtenir_instantane_etat()
 
     sauf erreur:
         observer message_erreur = "Erreur lors du changement de visualisation: " + chaine(erreur)
         observer affichage_chargement = faux
-        retourner {}
+        retour {}
 
 
 asynchrone déf _charger_donnees_heatmap(entite_id: chaine):
@@ -418,8 +418,8 @@ asynchrone déf appliquer_filtre(lentille_semantique: chaine, mode_conjonction: 
     """Appliquer un filtre sémantique au graphe courant."""
     importer semantique.filtres
 
-    observer affichage_chargement = vrai
-    observer message_erreur = ""
+    affichage_chargement = vrai
+    message_erreur = ""
 
     essayer:
         filtre = semantique.filtres.FiltreSlentique(lentille_semantique)
@@ -444,36 +444,36 @@ asynchrone déf appliquer_filtre(lentille_semantique: chaine, mode_conjonction: 
 
         filtres_actifs.ajouter(lentille_semantique)
         observer affichage_chargement = faux
-        retourner cache_relations["graphe_filtre"]
+        retour cache_relations["graphe_filtre"]
 
     sauf erreur:
         observer message_erreur = "Erreur lors de l'application du filtre: " + chaine(erreur)
         observer affichage_chargement = faux
-        retourner {}
+        retour {}
 
 
 asynchrone déf reinitialiser_filtre():
     """Réinitialiser tous les filtres appliqués."""
-    observer affichage_chargement = vrai
+    affichage_chargement = vrai
 
     essayer:
         si "graphe_filtre" dans cache_relations:
             supprimer cache_relations["graphe_filtre"]
 
         observer affichage_chargement = faux
-        retourner obtenir_instantane_etat()
+        retour obtenir_instantane_etat()
 
     sauf erreur:
         observer message_erreur = "Erreur lors de la réinitialisation du filtre"
         observer affichage_chargement = faux
-        retourner {}
+        retour {}
 
 
 asynchrone déf executer_recherche(requete: chaine):
     """Executer une recherche textuelle simple dans le cache local."""
-    observer affichage_chargement = vrai
-    observer barre_recherche_active = vrai
-    observer resultats_recherche = []
+    affichage_chargement = vrai
+    barre_recherche_active = vrai
+    resultats_recherche = []
 
     resultats = []
 
@@ -487,20 +487,20 @@ asynchrone déf executer_recherche(requete: chaine):
                 "entite": entite
             })
 
-    observer resultats_recherche = resultats
-    observer affichage_chargement = faux
-    retourner resultats
+    resultats_recherche = resultats
+    affichage_chargement = faux
+    retour resultats
 
 
 déf obtenir_entite_selectionnee() -> dictionnaire:
     """Obtenir l'entite actuellement selectionnee."""
     si non entite_selectionnee_id:
-        retourner {}
+        retour {}
 
     entite = cache_entites.obtenir(entite_selectionnee_id, {})
     labels = etiquettes_multilingues.obtenir(entite_selectionnee_id, {})
 
-    retourner {
+    retour {
         "id": entite_selectionnee_id,
         "type": entite_selectionnee_type,
         "donnees": entite,
@@ -511,13 +511,13 @@ déf obtenir_entite_selectionnee() -> dictionnaire:
 déf obtenir_noeud_selectionne() -> NoeudGraphe:
     """Obtenir le noeud du graphe actuellement selectionne."""
     si entite_selectionnee_id:
-        retourner graphe.obtenir_noeud(entite_selectionnee_id)
-    retourner nul
+        retour graphe.obtenir_noeud(entite_selectionnee_id)
+    retour nul
 
 
 déf obtenir_instantane_etat() -> dictionnaire:
     """Construire un instantane riche de l'etat pour la coquille web."""
-    retourner {
+    retour {
         "entite_selectionnee_id": entite_selectionnee_id,
         "entite_selectionnee_type": entite_selectionnee_type,
         "mode_visualisation": mode_visualisation,
@@ -536,20 +536,20 @@ déf obtenir_instantane_etat() -> dictionnaire:
 
 asynchrone déf reinitialiser_etat():
     """Reinitialiser l'etat global sans recreer la structure reactive."""
-    observer entite_selectionnee_id = ""
-    observer entite_selectionnee_type = ""
-    observer mode_visualisation = "graphe"
-    observer affichage_chargement = faux
-    observer message_erreur = ""
-    observer panneau_detail_visible = faux
-    observer barre_recherche_active = faux
-    observer resultats_recherche = []
-    observer mouvement_etendu_id = ""
-    observer artiste_etendu_id = ""
-    observer oeuvre_etendue_id = ""
-    observer oeuvre_focus_id = ""
-    observer cache_entites = {}
-    observer cache_relations = {}
-    observer etiquettes_multilingues = {}
+    entite_selectionnee_id = ""
+    entite_selectionnee_type = ""
+    mode_visualisation = "graphe"
+    affichage_chargement = faux
+    message_erreur = ""
+    panneau_detail_visible = faux
+    barre_recherche_active = faux
+    resultats_recherche = []
+    mouvement_etendu_id = ""
+    artiste_etendu_id = ""
+    oeuvre_etendue_id = ""
+    oeuvre_focus_id = ""
+    cache_entites = {}
+    cache_relations = {}
+    etiquettes_multilingues = {}
     graphe.noeuds ={}
     graphe.relations =[]

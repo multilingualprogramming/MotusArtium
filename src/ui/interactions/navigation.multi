@@ -74,14 +74,14 @@ asynchrone déf explorer_mouvements_evolution(mouvement_id: chaine):
     successeurs = interface.etat.graphe.obtenir_voisins(mouvement_courant, "suivi_par")
     mouvements_successifs.etendre(successeurs)
 
-    retourner mouvements_successifs
+    retour mouvements_successifs
 
 
 asynchrone déf obtenir_chemin_influence(artiste1_id: chaine, artiste2_id: chaine) -> liste:
     """Obtenir le chemin d'influence entre deux artistes"""
     chemin = interface.etat.graphe.chemin_plus_court(artiste1_id, artiste2_id)
 
-    retourner chemin
+    retour chemin
 
 
 asynchrone déf obtenir_entites_liees(entite_id: chaine) -> dictionnaire:
@@ -89,7 +89,7 @@ asynchrone déf obtenir_entites_liees(entite_id: chaine) -> dictionnaire:
     entite = interface.etat.graphe.obtenir_noeud(entite_id)
 
     si non entite:
-        retourner {}
+        retour {}
 
     voisins = interface.etat.graphe.obtenir_voisins(entite_id)
 
@@ -116,7 +116,7 @@ asynchrone déf obtenir_entites_liees(entite_id: chaine) -> dictionnaire:
                 "etiquette": voisin.etiquette
             })
 
-    retourner entites_liees
+    retour entites_liees
 
 
 asynchrone déf obtenir_composante_connexe(entite_id: chaine) -> liste:
@@ -125,6 +125,6 @@ asynchrone déf obtenir_composante_connexe(entite_id: chaine) -> liste:
 
     pour composante in composantes:
         si entite_id in composante:
-            retourner composante
+            retour composante
 
-    retourner [entite_id]
+    retour [entite_id]

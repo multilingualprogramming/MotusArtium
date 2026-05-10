@@ -8,22 +8,22 @@ déf distance_euclidienne(x1: nombre, y1: nombre, x2: nombre, y2: nombre) -> nom
     """Calculer la distance euclidienne entre deux points"""
     dx = x2 - x1
     dy = y2 - y1
-    retourner math.sqrt(dx * dx + dy * dy)
+    retour math.sqrt(dx * dx + dy * dy)
 
 
 déf clamp(valeur: nombre, min_val: nombre, max_val: nombre) -> nombre:
     """Clamp une valeur entre min et max"""
     si valeur < min_val:
-        retourner min_val
+        retour min_val
     sinon si valeur > max_val:
-        retourner max_val
+        retour max_val
     sinon:
-        retourner valeur
+        retour valeur
 
 
 déf interpoler(debut: nombre, fin: nombre, progression: nombre) -> nombre:
     """Interpolation linéaire"""
-    retourner debut + (fin - debut) * progression
+    retour debut + (fin - debut) * progression
 
 
 déf normaliser_vecteur(vx: nombre, vy: nombre) -> {x: nombre, y: nombre}:
@@ -31,9 +31,9 @@ déf normaliser_vecteur(vx: nombre, vy: nombre) -> {x: nombre, y: nombre}:
     magnitude = math.sqrt(vx * vx + vy * vy)
 
     si magnitude == 0:
-        retourner {x: 0, y: 0}
+        retour {x: 0, y: 0}
 
-    retourner {
+    retour {
         x: vx / magnitude,
         y: vy / magnitude
     }
@@ -43,7 +43,7 @@ déf angle_entre_points(x1: nombre, y1: nombre, x2: nombre, y2: nombre) -> nombr
     """Calculer l'angle entre deux points (en radians)"""
     dx = x2 - x1
     dy = y2 - y1
-    retourner math.atan2(dy, dx)
+    retour math.atan2(dy, dx)
 
 
 # ============================================================================
@@ -105,8 +105,8 @@ classe DispositionForceGraphe:
         """Obtenir un nœud par son ID"""
         pour noeud dans self.noeuds:
             si noeud["id"] == id:
-                retourner noeud
-        retourner nul
+                retour noeud
+        retour nul
 
     asynchrone déf simuler_iteration():
         """Exécuter une itération de la simulation de forces"""
@@ -199,7 +199,7 @@ classe DispositionForceGraphe:
                 "y": noeud["y"]
             }
 
-        retourner positions
+        retour positions
 
 
 # ============================================================================
@@ -253,4 +253,4 @@ classe DispositionRadiale:
 
                 positions[noeud_id] = {"x": x, "y": y}
 
-        retourner positions
+        retour positions

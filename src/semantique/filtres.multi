@@ -98,7 +98,7 @@ classe FiltreSlentique:
             si self.correspond_au_filtre(noeud):
                 resultats.ajouter(id)
 
-        retourner resultats
+        retour resultats
 
     déf correspond_au_filtre(noeud) -> booleen:
         """Vérifier si un nœud correspond au filtre"""
@@ -116,9 +116,9 @@ classe FiltreSlentique:
         # Vérifier la correspondance
         pour sujet in sujets_noeud:
             si sujet dans self.sujets_actifs:
-                retourner non self.booleen_inverse
+                retour non self.booleen_inverse
 
-        retourner self.booleen_inverse
+        retour self.booleen_inverse
 
 
 classe GestionnaireFiltres:
@@ -144,7 +144,7 @@ classe GestionnaireFiltres:
     déf appliquer_tous(noeuds: dictionnaire) -> liste:
         """Appliquer tous les filtres aux nœuds"""
         si non self.filtres_actifs:
-            retourner liste(noeuds.keys())
+            retour liste(noeuds.keys())
 
         resultats_filtres = []
 
@@ -164,7 +164,7 @@ classe GestionnaireFiltres:
             pour resultats in resultats_filtres:
                 resultat_final = resultat_final.union(resultats)
 
-        retourner liste(resultat_final)
+        retour liste(resultat_final)
 
     déf filtrer_graphe(graphe) -> dictionnaire:
         """Filtrer un graphe complet"""
@@ -187,7 +187,7 @@ classe GestionnaireFiltres:
             si relation.source_id dans noeuds_acceptes_ids et relation.target_id dans noeuds_acceptes_ids:
                 graphe_filtre["relations"].ajouter(relation)
 
-        retourner graphe_filtre
+        retour graphe_filtre
 
 
 # ============================================================================
@@ -201,7 +201,7 @@ asynchrone déf analyser_palette_couleur(oeuvre_id: chaine) -> dictionnaire:
 
     oeuvre = interface.etat.cache_entites.obtenir(oeuvre_id, {})
 
-    retourner {
+    retour {
         "dominante": "#FF6B6B",
         "secondaires": ["#4ECDC4", "#FFE66D"],
         "confiance": 0.75  # Placeholder pour CV
@@ -220,14 +220,14 @@ asynchrone déf analyser_contenu_symbolique(oeuvre_id: chaine) -> liste:
         si depicts:
             sujets.ajouter(depicts)
 
-    retourner sujets
+    retour sujets
 
 
 asynchrone déf categoriser_emotion(oeuvre_id: chaine) -> dictionnaire:
     """Catégoriser les émotions véhiculées par une œuvre"""
     # Stub pour analyse future basée sur IA
 
-    retourner {
+    retour {
         "emotions": [],
         "valence": 0.5,  # -1 (négatif) à +1 (positif)
         "arousal": 0.5   # 0 (calme) à 1 (excité)
@@ -238,7 +238,7 @@ asynchrone déf analyser_geometrie(oeuvre_id: chaine) -> dictionnaire:
     """Analyser les propriétés géométriques d'une œuvre"""
     # Stub pour analyse visuelle future
 
-    retourner {
+    retour {
         "formes_dominantes": [],
         "symetrie": 0.5,
         "complexite": 0.5
@@ -270,7 +270,7 @@ déf filtrer_par_periode(noeuds: dictionnaire, debut: nombre, fin: nombre) -> li
         exception:
             passe
 
-    retourner resultats
+    retour resultats
 
 
 déf filtrer_par_type(noeuds: dictionnaire, type_entite: chaine) -> liste:
@@ -281,7 +281,7 @@ déf filtrer_par_type(noeuds: dictionnaire, type_entite: chaine) -> liste:
         si noeud.type == type_entite:
             resultats.ajouter(id)
 
-    retourner resultats
+    retour resultats
 
 
 déf filtrer_par_importance(noeuds: dictionnaire, graphe, seuil: nombre = 2) -> liste:
@@ -294,7 +294,7 @@ déf filtrer_par_importance(noeuds: dictionnaire, graphe, seuil: nombre = 2) -> 
         si len(voisins) >= seuil:
             resultats.ajouter(id)
 
-    retourner resultats
+    retour resultats
 
 
 déf filtrer_par_etiquette(noeuds: dictionnaire, motif: chaine) -> liste:
@@ -306,4 +306,4 @@ déf filtrer_par_etiquette(noeuds: dictionnaire, motif: chaine) -> liste:
         si motif_lower dans noeud.etiquette.lower():
             resultats.ajouter(id)
 
-    retourner resultats
+    retour resultats

@@ -68,7 +68,7 @@ classe Graphe:
 
     déf obtenir_noeud(id: chaine) -> NoeudGraphe:
         """Obtenir un nœud par ID"""
-        retourner self.noeuds.obtenir(id, nul)
+        retour self.noeuds.obtenir(id, nul)
 
     déf obtenir_voisins(noeud_id: chaine, type_relation: chaine = "") -> liste:
         """Obtenir les nœuds adjacents"""
@@ -82,7 +82,7 @@ classe Graphe:
                 si type_relation == "" ou relation.type_noeud == type_relation:
                     voisins.ajouter(relation.source_id)
 
-        retourner voisins
+        retour voisins
 
     déf obtenir_relations_noeud(noeud_id: chaine) -> liste:
         """Obtenir toutes les relations d'un nœud"""
@@ -92,15 +92,15 @@ classe Graphe:
             si relation.source_id == noeud_id ou relation.target_id == noeud_id:
                 rels.ajouter(relation)
 
-        retourner rels
+        retour rels
 
     déf compter_noeuds() -> nombre:
         """Compter le nombre de nœuds"""
-        retourner len(self.noeuds)
+        retour len(self.noeuds)
 
     déf compter_relations() -> nombre:
         """Compter le nombre de relations"""
-        retourner len(self.relations)
+        retour len(self.relations)
 
     déf obtenir_noeuds_par_type(type: chaine) -> liste:
         """Obtenir tous les nœuds d'un type donné"""
@@ -110,7 +110,7 @@ classe Graphe:
             si noeud.type_noeud == type:
                 resultats.ajouter(noeud)
 
-        retourner resultats
+        retour resultats
 
     déf obtenir_relations_par_type(type: chaine) -> liste:
         """Obtenir toutes les relations d'un type donné"""
@@ -120,15 +120,15 @@ classe Graphe:
             si relation.type_noeud == type:
                 resultats.ajouter(relation)
 
-        retourner resultats
+        retour resultats
 
     déf chemin_plus_court(noeud_depart_id: chaine, noeud_arrivee_id: chaine) -> liste:
         """Trouver le chemin le plus court entre deux nœuds (BFS)"""
         si noeud_depart_id non dans self.noeuds ou noeud_arrivee_id non dans self.noeuds:
-            retourner []
+            retour []
 
         si noeud_depart_id == noeud_arrivee_id:
-            retourner [noeud_depart_id]
+            retour [noeud_depart_id]
 
         visites = {noeud_depart_id}
         queue = [[noeud_depart_id]]
@@ -139,13 +139,13 @@ classe Graphe:
 
             pour voisin_id dans self.obtenir_voisins(noeud_actuel):
                 si voisin_id == noeud_arrivee_id:
-                    retourner chemin + [voisin_id]
+                    retour chemin + [voisin_id]
 
                 si voisin_id non dans visites:
                     visites.ajouter(voisin_id)
                     queue.ajouter(chemin + [voisin_id])
 
-        retourner []
+        retour []
 
     déf obtenir_voisinage(noeud_id: chaine, profondeur: nombre = 2) -> dictionnaire:
         """Obtenir le voisinage d'un nœud jusqu'à une certaine profondeur"""
@@ -181,7 +181,7 @@ classe Graphe:
             si non couche_actuelle:
                 pause
 
-        retourner voisinage
+        retour voisinage
 
     déf obtenir_composantes_connexes() -> liste:
         """Obtenir les composantes connexes du graphe"""
@@ -207,7 +207,7 @@ classe Graphe:
                 si composante:
                     composantes.ajouter(composante)
 
-        retourner composantes
+        retour composantes
 
     déf exporter_json() -> dictionnaire:
         """Exporter le graphe en JSON"""
@@ -229,7 +229,7 @@ classe Graphe:
                 "poids": rel.poids
             })
 
-        retourner {
+        retour {
             "noeuds": noeuds_json,
             "relations": relations_json,
             "stats": {

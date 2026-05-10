@@ -238,11 +238,11 @@ asynchrone déf creer_vue_chronologie(conteneur: element, debut: nombre, fin: no
     """Créer une vue chronologie"""
     vue = VueChronologie(conteneur)
     attendre vue.charger_periode(debut, fin)
-    retourner vue
+    retour vue
 
 
 asynchrone déf creer_vue_riviere(conteneur: element, debut: nombre, fin: nombre) -> VueRivière:
     """Créer une vue rivière"""
     vue = VueRivière(conteneur)
     attendre vue.initialiser(debut, fin)
-    retourner vue
+    retour vue

@@ -155,4 +155,4 @@ asynchrone déf creer_vue_graphe(canvas: element, graphe: element) -> VueGrapheF
     vue = VueGrapheForce(canvas)
     attendre vue.initialiser_graphe(graphe)
     attendre vue.animer()
-    retourner vue
+    retour vue

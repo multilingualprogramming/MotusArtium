@@ -29,7 +29,7 @@ classe LocalisationGeographique:
 
     déf compter_entites() -> nombre:
         """Compter les entités"""
-        retourner len(self.entite_ids)
+        retour len(self.entite_ids)
 
 
 déf calculer_distance_haversine(lat1: nombre, lon1: nombre, lat2: nombre, lon2: nombre) -> nombre:
@@ -47,7 +47,7 @@ déf calculer_distance_haversine(lat1: nombre, lon1: nombre, lat2: nombre, lon2:
 
     distance = R * c
 
-    retourner distance
+    retour distance
 
 
 asynchrone déf charger_donnees_geographiques(mouvement_id: chaine) -> liste:
@@ -70,7 +70,7 @@ asynchrone déf charger_donnees_geographiques(mouvement_id: chaine) -> liste:
 
             localisations.ajouter(loc)
 
-    retourner localisations
+    retour localisations
 
 
 asynchrone déf obtenir_artistes_par_region(region_id: chaine) -> dictionnaire:
@@ -92,7 +92,7 @@ asynchrone déf obtenir_artistes_par_region(region_id: chaine) -> dictionnaire:
                     "type": "naissance"
                 })
 
-    retourner artistes_par_ville
+    retour artistes_par_ville
 
 
 asynchrone déf calculer_diffusion_chronologique(mouvement_id: chaine) -> liste:
@@ -110,7 +110,7 @@ asynchrone déf calculer_diffusion_chronologique(mouvement_id: chaine) -> liste:
             "intensite": 0.5  # Placeholder
         })
 
-    retourner diffusion_temporelle
+    retour diffusion_temporelle
 
 
 classe VisualisationCartographique:
@@ -148,7 +148,7 @@ classe VisualisationCartographique:
                 "count": loc.compter_entites()
             })
 
-        retourner points_chaleur
+        retour points_chaleur
 
     déf obtenir_points_cluster() -> liste:
         """Obtenir les clusters de localisations"""
@@ -163,7 +163,7 @@ classe VisualisationCartographique:
                 "entites": loc.entite_ids
             })
 
-        retourner clusters
+        retour clusters
 
     déf filtrer_par_boite(lat_min: nombre, lat_max: nombre, lon_min: nombre, lon_max: nombre) -> liste:
         """Filtrer les localisations dans une boîte géographique"""
@@ -174,7 +174,7 @@ classe VisualisationCartographique:
                loc.longitude >= lon_min et loc.longitude <= lon_max:
                 resultats.ajouter(loc)
 
-        retourner resultats
+        retour resultats
 
     déf filtrer_par_rayon(centre_lat: nombre, centre_lon: nombre, rayon_km: nombre) -> liste:
         """Filtrer les localisations dans un rayon donné"""
@@ -186,7 +186,7 @@ classe VisualisationCartographique:
             si distance <= rayon_km:
                 resultats.ajouter(loc)
 
-        retourner resultats
+        retour resultats
 
 
 # ============================================================================
@@ -196,7 +196,7 @@ classe VisualisationCartographique:
 déf analyser_concentration_mouvement(mouvement_id: chaine, localisations: liste) -> dictionnaire:
     """Analyser la concentration géographique d'un mouvement"""
     si non localisations:
-        retourner {
+        retour {
             "concentration": 0,
             "dispersion": 0,
             "centre_geographique": {}
@@ -226,7 +226,7 @@ déf analyser_concentration_mouvement(mouvement_id: chaine, localisations: liste
 
     concentration = 1.0 / (1.0 + dispersion / 1000.0)  # Normaliser
 
-    retourner {
+    retour {
         "concentration": concentration,
         "dispersion": dispersion,
         "centre_geographique": {
@@ -258,14 +258,14 @@ déf obtenir_pays_principaux(localisations: liste, limite: nombre = 5) -> liste:
             "count": count
         })
 
-    retourner resultats
+    retour resultats
 
 
 asynchrone déf obtenir_trajectoire_diffusion(mouvement_id: chaine) -> liste:
     """Obtenir la trajectoire de diffusion d'un mouvement au fil du temps"""
     # Stub - dans une implémentation réelle, cela combinerait données géographiques + timeline
 
-    retourner [
+    retour [
         {
             "epoque": "1850-1880",
             "epicentre": {"latitude": 48.8566, "longitude": 2.3522},  # Paris

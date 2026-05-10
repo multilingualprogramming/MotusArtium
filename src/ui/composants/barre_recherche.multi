@@ -15,7 +15,7 @@ asynchrone déf fermer_barre_recherche():
 déf rendre_barre_recherche():
     """Rendre la barre de recherche et la liste des résultats"""
     si non ui.etat.barre_recherche_active:
-        retourner ""
+        retour ""
 
     # Rendre l'input de recherche
     html = '<div class="search-bar-container">'
@@ -40,4 +40,4 @@ déf rendre_barre_recherche():
     html = html + '</div>'
     html = html + '</div>'
 
-    retourner html
+    retour html

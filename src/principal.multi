@@ -6,25 +6,25 @@ importer ui.composants.panneau_detail
 importer ui.interactions.recherche
 
 asynchrone déf charger_mouvement(mouvement_id):
-    """Charger un mouvement et retourner l'entité sélectionnée"""
+    """Charger un mouvement et retour l'entité sélectionnée"""
     attendre ui.etat.charger_mouvement(mouvement_id)
     ui.etat.obtenir_entite_selectionnee()
 
 
 asynchrone déf charger_artiste(artiste_id):
-    """Charger un artiste et retourner l'entité sélectionnée"""
+    """Charger un artiste et retour l'entité sélectionnée"""
     attendre ui.etat.charger_artiste(artiste_id)
     ui.etat.obtenir_entite_selectionnee()
 
 
 asynchrone déf charger_oeuvre(oeuvre_id):
-    """Charger une œuvre et retourner l'entité sélectionnée"""
+    """Charger une œuvre et retour l'entité sélectionnée"""
     attendre ui.etat.charger_oeuvre(oeuvre_id)
     ui.etat.obtenir_entite_selectionnee()
 
 
 asynchrone déf charger_chronologie(debut, fin):
-    """Charger une chronologie et retourner un instantané d'état"""
+    """Charger une chronologie et retour un instantané d'état"""
     attendre ui.etat.charger_chronologie(debut, fin)
     ui.etat.obtenir_instantane_etat()
 
@@ -44,3 +44,9 @@ asynchrone déf principal():
 asynchrone déf initialiser_application():
     """Initialiser l'application avec un mouvement de départ"""
     attendre ui.etat.charger_mouvement("Q40415")
+
+
+# Re-export search function from interactions module
+asynchrone déf lancer_recherche(requete):
+    """Lancer une recherche textuelle"""
+    attendre ui.interactions.recherche.lancer_recherche(requete)

@@ -28,7 +28,7 @@ classe EvenementTemporel:
 
     déf duree() -> nombre:
         """Calculer la durée de l'événement"""
-        retourner self.temps_fin - self.temps_debut
+        retour self.temps_fin - self.temps_debut
 
 
 classe Chronologie:
@@ -58,7 +58,7 @@ classe Chronologie:
             si evt.temps_debut <= fin et evt.temps_fin >= debut:
                 resultats.ajouter(evt)
 
-        retourner resultats
+        retour resultats
 
     déf obtenir_evenements_tries() -> liste:
         """Obtenir les événements triés par date de début"""
@@ -69,7 +69,7 @@ classe Chronologie:
         mouvement = obtenir_evenement_par_id(mouvement_id)
 
         si non mouvement:
-            retourner []
+            retour []
 
         contemporains = []
 
@@ -79,14 +79,14 @@ classe Chronologie:
                 si evt.temps_debut <= mouvement.temps_fin et evt.temps_fin >= mouvement.temps_debut:
                     contemporains.ajouter(evt)
 
-        retourner contemporains
+        retour contemporains
 
     déf obtenir_succession_mouvement(mouvement_id: chaine) -> liste:
         """Obtenir la chaîne de mouvements qui se sont succédés"""
         mouvement_initial = obtenir_evenement_par_id(mouvement_id)
 
         si non mouvement_initial:
-            retourner []
+            retour []
 
         succession = [mouvement_initial]
 
@@ -122,15 +122,15 @@ classe Chronologie:
             sinon:
                 pause
 
-        retourner succession
+        retour succession
 
     déf obtenir_evenement_par_id(entite_id: chaine) -> EvenementTemporel:
         """Obtenir un événement par ID d'entité"""
         pour evt in self.evenements:
             si evt.entite_id == entite_id:
-                retourner evt
+                retour evt
 
-        retourner nul
+        retour nul
 
     déf compter_evenements_par_type() -> dictionnaire:
         """Compter les événements par type"""
@@ -142,12 +142,12 @@ classe Chronologie:
 
             comptes[evt.entite_type] = comptes[evt.entite_type] + 1
 
-        retourner comptes
+        retour comptes
 
     déf obtenir_pics_activite(unite_temps: nombre = 10) -> liste:
         """Obtenir les périodes de forte activité artistique"""
         si not self.evenements:
-            retourner []
+            retour []
 
         # Diviser la chronologie en tranches
         tranches = {}
@@ -168,7 +168,7 @@ classe Chronologie:
                 "activite": count
             })
 
-        retourner pics
+        retour pics
 
 
 # ============================================================================
@@ -203,29 +203,29 @@ classe AnalyseArtiste:
 
     déf obtenir_duree_vie() -> nombre:
         """Obtenir la durée de vie"""
-        retourner self.mort - self.naissance
+        retour self.mort - self.naissance
 
     déf obtenir_periode_productive() -> nombre:
         """Obtenir la période entre la première et dernière œuvre"""
         si len(self.oeuvres) < 2:
-            retourner 0
+            retour 0
 
         oeuvres_triees = sorted(self.oeuvres)
-        retourner oeuvres_triees[-1] - oeuvres_triees[0]
+        retour oeuvres_triees[-1] - oeuvres_triees[0]
 
     déf obtenir_productivite_moyenne() -> nombre:
         """Calculer les œuvres par année"""
         periode = self.obtenir_periode_productive()
 
         si periode == 0:
-            retourner 0
+            retour 0
 
-        retourner len(self.oeuvres) / periode
+        retour len(self.oeuvres) / periode
 
     déf obtenir_pics_productivite(intervalle: nombre = 5) -> liste:
         """Obtenir les années les plus productives"""
         si not self.oeuvres:
-            retourner []
+            retour []
 
         # Compter par intervalle
         comptes_intervalle = {}
@@ -247,11 +247,11 @@ classe AnalyseArtiste:
                 "oeuvres": count
             })
 
-        retourner resultats
+        retour resultats
 
     déf est_contemporain(autre_artiste: AnalyseArtiste) -> booleen:
         """Vérifier si deux artistes ont vécu à la même époque"""
-        retourner self.naissance <= autre_artiste.mort and self.mort >= autre_artiste.naissance
+        retour self.naissance <= autre_artiste.mort and self.mort >= autre_artiste.naissance
 
 
 # ============================================================================
@@ -295,7 +295,7 @@ classe EvolutionStyle:
 
     déf obtenir_lineage_complet() -> dictionnaire:
         """Obtenir le contexte complet d'évolution du style"""
-        retourner {
+        retour {
             "mouvement": self.mouvement_nom,
             "predecesseurs": self.influences_predecesseurs,
             "successeurs": self.influences_successeurs,

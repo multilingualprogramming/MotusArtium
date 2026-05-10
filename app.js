@@ -4,6 +4,7 @@
         const heroQueryPreviewEl = document.getElementById("hero-query-preview");
         const queryDocListEl = document.getElementById("query-doc-list");
         const querySessionListEl = document.getElementById("query-session-list");
+        const clearSessionButtonEl = document.getElementById("clear-session-button");
         const statusChipEl = document.getElementById("status-chip");
         const activeDocChipEl = document.getElementById("active-doc-chip");
         const activeLanguageChipEl = document.getElementById("active-language-chip");
@@ -11,6 +12,7 @@
         const queryResponseShapeEl = document.getElementById("query-response-shape");
         const queryExplanationEl = document.getElementById("query-explanation");
         const lensSummaryEl = document.getElementById("lens-summary");
+        const compassCopyEl = document.getElementById("compass-copy");
         const polyglotPreviewEl = document.getElementById("polyglot-preview");
         const polyglotStudioPanelEl = document.getElementById("polyglot-studio-panel");
         const polyglotEntitySurfaceEl = document.getElementById("polyglot-card-2-copy");
@@ -28,6 +30,8 @@
         const timelineCaptionEl = document.getElementById("timeline-caption");
         const timelineInsightsEl = document.getElementById("timeline-insights");
         const shellEl = document.getElementById("app-shell");
+        const compassPoleButtons = Array.from(document.querySelectorAll(".compass-pole[data-lens]"));
+        const lensPresetButtons = Array.from(document.querySelectorAll(".preset-button[data-preset]"));
         const translatableElements = {
             "brand-eyebrow": {
                 fr: "Multilingual x Wikidata GraphQL",
@@ -129,7 +133,11 @@
             queryNarrative: "Awaiting first live GraphQL request.",
             temporalInsights: [],
             temporalFocus: null,
-            nextSessionId: 1
+            nextSessionId: 1,
+            activeCompassLens: "movement",
+            activeLensPreset: "",
+            shellFilter: null,
+            replayingSessionId: 0
         };
 
         const modeSummaries = {
@@ -282,6 +290,124 @@
                         copy: "Keep an eye on the active GraphQL document while the language changes. This shows the multilingual layer and the query layer working together."
                     }
                 ]
+            }
+        };
+
+        const compassLensContent = {
+            movement: {
+                fr: {
+                    title: "Mouvement",
+                    summary: "Vue ancree dans les mouvements, successions et branches artistiques.",
+                    copy: "Le compas met les mouvements au premier plan: privilegiez les noeuds de mouvement et les lignes de succession pour lire l'evolution des courants."
+                },
+                en: {
+                    title: "Movement",
+                    summary: "Movement-anchored view for succession, schools, and artistic branches.",
+                    copy: "The compass brings movements forward: prioritize movement nodes and succession lines to read the evolution of styles."
+                }
+            },
+            artist: {
+                fr: {
+                    title: "Artiste",
+                    summary: "Vue centree sur les createurs, influences et trajectoires d'oeuvres.",
+                    copy: "Mettez l'accent sur les artistes pour suivre qui cree, qui influence, et comment les branches d'oeuvres se deploient."
+                },
+                en: {
+                    title: "Artist",
+                    summary: "Creator-centered view for influence and artwork trajectories.",
+                    copy: "Emphasize artists to follow who creates, who influences, and how artwork branches unfold."
+                }
+            },
+            work: {
+                fr: {
+                    title: "Oeuvre",
+                    summary: "Vue concentree sur les oeuvres, sujets, materiaux et lieux d'exposition.",
+                    copy: "Cette lentille fait remonter les oeuvres et leurs attaches concretes: sujets, materiaux, musees et relations de creation."
+                },
+                en: {
+                    title: "Work",
+                    summary: "Work-focused view for subjects, materials, and display locations.",
+                    copy: "This lens brings works and their concrete attachments forward: subjects, materials, museums, and creation links."
+                }
+            },
+            place: {
+                fr: {
+                    title: "Lieu",
+                    summary: "Vue pour les musees, lieux d'exposition et ancrages geographiques.",
+                    copy: "Utilisez cette lentille pour lire ou les oeuvres se situent et ou les branches du graphe rencontrent les lieux."
+                },
+                en: {
+                    title: "Place",
+                    summary: "Place-oriented view for museums, display contexts, and geography.",
+                    copy: "Use this lens to read where works are situated and where graph branches meet places."
+                }
+            },
+            time: {
+                fr: {
+                    title: "Temps",
+                    summary: "Vue privilegiee pour les entites datees, chevauchements et periodes.",
+                    copy: "La lentille temporelle fait ressortir les noeuds dates pour prefigurer la lecture de Temporal River meme en mode observatoire."
+                },
+                en: {
+                    title: "Time",
+                    summary: "Time-weighted view for dated entities, overlap, and period reading.",
+                    copy: "The time lens highlights dated nodes so the observatory already hints at Temporal River style reading."
+                }
+            },
+            influence: {
+                fr: {
+                    title: "Influence",
+                    summary: "Vue pour les chaines d'influence, de succession et de transmission.",
+                    copy: "Choisissez cette lentille pour privilegier les liens d'influence et les successions entre mouvements et artistes."
+                },
+                en: {
+                    title: "Influence",
+                    summary: "Influence-first view for lineage, succession, and transmission.",
+                    copy: "Choose this lens to foreground influence links and succession between movements and artists."
+                }
+            }
+        };
+
+        const lensPresetContent = {
+            lineage: {
+                fr: {
+                    summary: "Preset actif: Lineage. Mouvements, influences et successions deviennent la lecture principale.",
+                    copy: "Lineage rassemble les trajectoires de mouvements et d'influence pour raconter comment une branche en precede ou en nourrit une autre."
+                },
+                en: {
+                    summary: "Active preset: Lineage. Movements, influence, and succession become the main reading.",
+                    copy: "Lineage gathers movement and influence trajectories to show how one branch precedes or feeds another."
+                }
+            },
+            geography: {
+                fr: {
+                    summary: "Preset actif: Geography. Musees, lieux et diffusion reorientent la lecture.",
+                    copy: "Geography fait remonter les lieux et collections pour lire la circulation des oeuvres et les ancrages du graphe."
+                },
+                en: {
+                    summary: "Active preset: Geography. Museums, places, and diffusion reframe the reading.",
+                    copy: "Geography surfaces places and collections to read circulation and spatial anchors across the graph."
+                }
+            },
+            materials: {
+                fr: {
+                    summary: "Preset actif: Materials. Oeuvres, sujets et materiaux structurent la scene.",
+                    copy: "Materials privilegie les ramifications concretes des oeuvres: ce qu'elles representent, de quoi elles sont faites et ou elles sont vues."
+                },
+                en: {
+                    summary: "Active preset: Materials. Works, subjects, and materials structure the scene.",
+                    copy: "Materials favors the concrete branches of works: what they depict, what they are made of, and where they are seen."
+                }
+            },
+            "cross-language": {
+                fr: {
+                    summary: "Preset actif: Cross-Language. Les etiquettes multilingues deviennent un outil de comparaison.",
+                    copy: "Cross-Language ne filtre pas severement le graphe: il vous invite surtout a comparer les surfaces FR et EN pour les memes entites."
+                },
+                en: {
+                    summary: "Active preset: Cross-Language. Multilingual labels become the comparison surface.",
+                    copy: "Cross-Language does not aggressively filter the graph: it mainly invites you to compare FR and EN surfaces for the same entities."
+                }
             }
         };
 
@@ -567,8 +693,10 @@
 
             querySessionListEl.innerHTML = "";
             entries.forEach((entry, index) => {
-                const wrapper = document.createElement("div");
-                wrapper.className = "session-entry" + (index === 0 ? " is-live" : "") + (entry.status === "error" ? " is-error" : "");
+                const wrapper = document.createElement("button");
+                wrapper.type = "button";
+                wrapper.className = "session-entry" + (index === 0 ? " is-live" : "") + (entry.status === "error" ? " is-error" : "") + (entry.id === runtimeState.replayingSessionId ? " is-replaying" : "");
+                wrapper.title = runtimeState.currentLanguage === "fr" ? "Cliquer pour rejouer cette requete" : "Click to replay this query";
 
                 const title = document.createElement("strong");
                 title.textContent = entry.documentName;
@@ -582,8 +710,130 @@
                 wrapper.appendChild(title);
                 wrapper.appendChild(meta);
                 wrapper.appendChild(detail);
+                wrapper.addEventListener("click", async () => {
+                    await replayQuerySession(entry);
+                });
                 querySessionListEl.appendChild(wrapper);
             });
+        }
+
+        function resetRuntimePresentationState() {
+            runtimeState.knownDocs = [];
+            runtimeState.currentDocument = "movement_details.graphql";
+            runtimeState.currentVariables = {
+                id: "Q40415",
+                languageCode: runtimeState.currentLanguage || "fr"
+            };
+            runtimeState.currentMode = "observatory";
+            runtimeState.responseShape = "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}";
+            runtimeState.lastStatus = "Session cleared";
+            runtimeState.lastError = "";
+            runtimeState.lastRequestedEntityId = "";
+            runtimeState.querySession = [];
+            runtimeState.requestPhase = "idle";
+            runtimeState.queryNarrative = "Session cleared. Restoring the default Impressionism opening scene.";
+            runtimeState.temporalInsights = [];
+            runtimeState.temporalFocus = null;
+            runtimeState.activeLensPreset = "";
+            runtimeState.activeCompassLens = "movement";
+            runtimeState.multilingualEntityLabels = {};
+            buildShellFilter();
+            setActiveButton(modeButtons, modeButtons.find((button) => button.dataset.mode === "observatory"));
+        }
+
+        async function clearSessionHistory() {
+            resetRuntimePresentationState();
+            if (window.history && typeof window.history.replaceState === "function") {
+                window.history.replaceState({}, "", window.location.pathname);
+            }
+
+            try {
+                if (typeof initialiser_application === "function") {
+                    await initialiser_application();
+                } else if (window.ui && window.ui.etat && typeof window.ui.etat.charger_mouvement === "function") {
+                    await window.ui.etat.charger_mouvement("Q40415");
+                }
+
+                syncShellFromSnapshot(readRuntimeSnapshot());
+                renderConstellation();
+                renderRuntimeState();
+                await refreshMultilingualEntityLabels();
+                if (typeof window.renderDetailPanel === "function") {
+                    window.renderDetailPanel();
+                }
+            } catch (error) {
+                runtimeState.lastError = "Session reset warning: " + error.message;
+                renderRuntimeState();
+            }
+        }
+
+        async function replayQuerySession(entry) {
+            if (!entry || !entry.documentName) {
+                return;
+            }
+
+            runtimeState.replayingSessionId = entry.id || 0;
+            renderRuntimeState();
+
+            const variables = entry.variables || {};
+            const selectedId = findSelectedEntityId(variables);
+            const documentName = entry.documentName;
+
+            try {
+                if (documentName === "movement_details.graphql" || documentName === "movement_evolution.graphql" || documentName === "artists_by_movement.graphql") {
+                    if (selectedId) {
+                        await invokeRuntimeAction("charger_mouvement", window.ui.etat.charger_mouvement.bind(window.ui.etat), [selectedId]);
+                        return;
+                    }
+                }
+
+                if (documentName === "artist_details.graphql" || documentName === "artist_influences.graphql" || documentName === "artworks_by_artist.graphql") {
+                    if (selectedId) {
+                        await invokeRuntimeAction("charger_artiste", window.ui.etat.charger_artiste.bind(window.ui.etat), [selectedId]);
+                        return;
+                    }
+                }
+
+                if (documentName === "artwork_details.graphql" && selectedId) {
+                    await invokeRuntimeAction("charger_oeuvre", window.ui.etat.charger_oeuvre.bind(window.ui.etat), [selectedId]);
+                    return;
+                }
+
+                if (documentName === "artworks_by_museum.graphql") {
+                    const museumId = variables.museumId || selectedId;
+                    if (museumId) {
+                        await invokeRuntimeAction("charger_musee", window.ui.etat.charger_musee.bind(window.ui.etat), [museumId]);
+                        return;
+                    }
+                }
+
+                if (documentName === "artworks_by_subject.graphql") {
+                    const subjectId = variables.subjectId || selectedId;
+                    if (subjectId) {
+                        await invokeRuntimeAction("charger_sujet", window.ui.etat.charger_sujet.bind(window.ui.etat), [subjectId]);
+                        return;
+                    }
+                }
+
+                if (documentName === "movements_catalog.graphql") {
+                    const start = currentSnapshot().plage_temporelle_debut || 1400;
+                    const end = currentSnapshot().plage_temporelle_fin || 2000;
+                    await window.ui.etat.charger_chronologie(start, end);
+                    syncShellFromSnapshot(readRuntimeSnapshot());
+                    renderConstellation();
+                    renderRuntimeState();
+                    return;
+                }
+
+                await executeGraphQLDocument(documentName, variables);
+                renderRuntimeState();
+            } catch (error) {
+                runtimeState.lastError = "Session replay warning: " + error.message;
+                renderRuntimeState();
+            } finally {
+                runtimeState.replayingSessionId = 0;
+                renderRuntimeState();
+            }
         }
 
         function applyInterfaceLanguage(languageCode) {
@@ -620,6 +870,49 @@
                 button.textContent = labels[button.dataset.mode] || button.textContent;
             });
 
+            if (clearSessionButtonEl) {
+                clearSessionButtonEl.textContent = languageCode === "fr" ? "Effacer la session" : "Clear Session";
+            }
+
+            const compassLabels = {
+                fr: { movement: "Mouvement", artist: "Artiste", work: "Oeuvre", place: "Lieu", time: "Temps", influence: "Influence" },
+                en: { movement: "Movement", artist: "Artist", work: "Work", place: "Place", time: "Time", influence: "Influence" }
+            };
+            compassPoleButtons.forEach((button) => {
+                const labels = compassLabels[languageCode] || compassLabels.en;
+                button.textContent = labels[button.dataset.lens] || button.textContent;
+            });
+
+            const presetLabels = {
+                fr: {
+                    lineage: ["Lignee", "mouvement vers successeur"],
+                    geography: ["Geographie", "pays, musees et diffusion"],
+                    materials: ["Materiaux", "oeuvres, sujets et matieres"],
+                    "cross-language": ["Interlangue", "etiquettes multilingues"]
+                },
+                en: {
+                    lineage: ["Lineage", "movement to successor"],
+                    geography: ["Geography", "country, museums, and diffusion"],
+                    materials: ["Materials", "works, subjects, and mediums"],
+                    "cross-language": ["Cross-Language", "multilingual labels"]
+                }
+            };
+            lensPresetButtons.forEach((button) => {
+                const labels = presetLabels[languageCode] || presetLabels.en;
+                const text = labels[button.dataset.preset];
+                if (!text) {
+                    return;
+                }
+                const title = button.querySelector("span");
+                const detail = button.querySelector("small");
+                if (title) {
+                    title.textContent = text[0];
+                }
+                if (detail) {
+                    detail.textContent = text[1];
+                }
+            });
+
             const sourceSnippetByLanguage = {
                 fr: "asynchrone déf charger_mouvement(id):\n    attendre ui.etat.charger_mouvement(id)",
                 en: "async def load_movement(id):\n    await ui.state.load_movement(id)"
@@ -643,6 +936,150 @@
             if (shellEl) {
                 shellEl.dataset.mode = mode;
             }
+        }
+
+        function selectedLensConfig(languageCode) {
+            const activePreset = runtimeState.activeLensPreset;
+            if (activePreset && lensPresetContent[activePreset]) {
+                return lensPresetContent[activePreset][languageCode] || lensPresetContent[activePreset].en;
+            }
+            const activeLens = runtimeState.activeCompassLens || "movement";
+            return (compassLensContent[activeLens] && (compassLensContent[activeLens][languageCode] || compassLensContent[activeLens].en)) || null;
+        }
+
+        function relationMatchesLensType(relationType, lens) {
+            const type = String(relationType || "");
+            const groups = {
+                movement: ["contains_artist", "follows", "followed_by", "contains_movement"],
+                artist: ["contains_artist", "created", "influenced", "influenced_by"],
+                work: ["created", "depicts", "made_of", "displayed_at", "houses_work", "subject_of"],
+                place: ["displayed_at", "houses_work"],
+                time: ["follows", "followed_by", "influenced", "influenced_by", "created"],
+                influence: ["follows", "followed_by", "influenced", "influenced_by", "contains_movement"]
+            };
+            return (groups[lens] || []).includes(type);
+        }
+
+        function nodeMatchesLensType(node, lens) {
+            const type = String((node && node.type) || "").toLowerCase();
+            const record = (node && node.donnees) || {};
+            if (lens === "movement") {
+                return type.includes("movement") || type.includes("mouvement");
+            }
+            if (lens === "artist") {
+                return type.includes("artist") || type.includes("artiste");
+            }
+            if (lens === "work") {
+                return type.includes("work") || type.includes("oeuvre") || type.includes("subject") || type.includes("material");
+            }
+            if (lens === "place") {
+                return type.includes("museum") || type.includes("musee") || Boolean(record.countryLabel);
+            }
+            if (lens === "time") {
+                return Boolean(fieldDate(record, ["startTime", "endTime", "birthDate", "deathDate", "inceptionDate", "creationDate"]));
+            }
+            if (lens === "influence") {
+                return type.includes("movement") || type.includes("mouvement") || type.includes("artist") || type.includes("artiste");
+            }
+            return true;
+        }
+
+        function getEffectiveLensKey() {
+            const preset = runtimeState.activeLensPreset;
+            if (preset === "lineage") {
+                return "influence";
+            }
+            if (preset === "geography") {
+                return "place";
+            }
+            if (preset === "materials") {
+                return "work";
+            }
+            if (preset === "cross-language") {
+                return "";
+            }
+            return runtimeState.activeCompassLens || "movement";
+        }
+
+        function buildShellFilter() {
+            const preset = runtimeState.activeLensPreset || "";
+            const effectiveLens = getEffectiveLensKey();
+            runtimeState.shellFilter = {
+                lens: runtimeState.activeCompassLens || "",
+                preset,
+                effectiveLens
+            };
+        }
+
+        function nodeMatchesShellFilter(node, snapshot) {
+            const filter = runtimeState.shellFilter;
+            if (!filter || (!filter.effectiveLens && !filter.preset)) {
+                return true;
+            }
+
+            if (filter.preset === "cross-language") {
+                return true;
+            }
+
+            if (node && node.id && node.id === ((snapshot || {}).entite_selectionnee_id || "")) {
+                return true;
+            }
+
+            return nodeMatchesLensType(node, filter.effectiveLens);
+        }
+
+        function relationMatchesShellFilter(relation, visibleNodeIds) {
+            const filter = runtimeState.shellFilter;
+            if (!filter || (!filter.effectiveLens && !filter.preset)) {
+                return true;
+            }
+            if (filter.preset === "cross-language") {
+                return true;
+            }
+            if (!visibleNodeIds.has(relation.source) || !visibleNodeIds.has(relation.target)) {
+                return false;
+            }
+            return relationMatchesLensType(relation.type, filter.effectiveLens);
+        }
+
+        function renderLensControls() {
+            const hasPreset = Boolean(runtimeState.activeLensPreset);
+            compassPoleButtons.forEach((button) => {
+                const isActive = !hasPreset && button.dataset.lens === runtimeState.activeCompassLens;
+                button.classList.toggle("is-active", isActive);
+                button.classList.toggle("is-muted", hasPreset);
+                button.classList.toggle("is-primary", isActive);
+            });
+            lensPresetButtons.forEach((button) => {
+                const isActive = button.dataset.preset === runtimeState.activeLensPreset;
+                button.classList.toggle("is-active", isActive);
+                button.classList.toggle("is-muted", !isActive && hasPreset);
+            });
+        }
+
+        function updateLensNarrative() {
+            const languageCode = runtimeState.currentLanguage || "en";
+            const config = selectedLensConfig(languageCode);
+            if (config) {
+                lensSummaryEl.textContent = config.summary;
+                if (compassCopyEl) {
+                    compassCopyEl.textContent = config.copy;
+                }
+            }
+        }
+
+        async function applyShellLens(lens, preset = "") {
+            runtimeState.activeCompassLens = lens || runtimeState.activeCompassLens || "movement";
+            runtimeState.activeLensPreset = preset;
+            buildShellFilter();
+            renderLensControls();
+            updateLensNarrative();
+            const config = selectedLensConfig(runtimeState.currentLanguage || "en");
+            if (config) {
+                queryExplanationEl.textContent = config.copy;
+            }
+            renderConstellation();
+            renderRuntimeState();
         }
 
         function currentSnapshot() {
@@ -778,6 +1215,8 @@
             applyInterfaceLanguage(runtimeState.currentLanguage);
             updatePolyglotStudioVisibility();
             setShellMode(runtimeState.currentMode);
+            renderLensControls();
+            updateLensNarrative();
             renderQueryDocList();
             renderQuerySession();
             renderSelectedEntity();
@@ -1550,8 +1989,9 @@
         function getRenderableNodes() {
             const snapshot = currentSnapshot();
             const allNodes = (((snapshot.graphe || {}).noeuds) || []).slice();
+            let nodes = allNodes;
             if (snapshot.oeuvre_focus_id) {
-                return allNodes.filter((node) => {
+                nodes = allNodes.filter((node) => {
                     const type = String(node.type || "").toLowerCase();
                     if (type.includes("work") || type.includes("oeuvre")) {
                         return node.id === snapshot.oeuvre_focus_id;
@@ -1559,7 +1999,8 @@
                     return true;
                 });
             }
-            return allNodes;
+            const filtered = nodes.filter((node) => nodeMatchesShellFilter(node, snapshot));
+            return filtered.length ? filtered : nodes;
         }
 
         function computeConstellationLayout() {
@@ -1627,7 +2068,7 @@
                 }
                 seenRelations.add(key);
 
-                if (!visibleNodeIds.has(relation.source) || !visibleNodeIds.has(relation.target)) {
+                if (!relationMatchesShellFilter(relation, visibleNodeIds)) {
                     return;
                 }
 
@@ -1656,9 +2097,10 @@
                 const position = positions.get(node.id) || { x: 50, y: 50 };
                 const isTemporalFocus = temporalFocus && temporalFocus.activeIds.has(node.id);
                 const isMutedTemporally = temporalFocus && !temporalFocus.activeIds.has(node.id);
+                const isFilterFocus = nodeMatchesShellFilter(node, snapshot);
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
-                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "");
+                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (runtimeState.shellFilter && runtimeState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
                 nodeEl.setAttribute("aria-label", (node.etiquette || node.id) + " (" + node.type + ")");
@@ -2316,6 +2758,31 @@
             });
         });
 
+        compassPoleButtons.forEach((button) => {
+            button.addEventListener("click", async () => {
+                const lens = button.dataset.lens || "movement";
+                await applyShellLens(lens, "");
+            });
+        });
+
+        lensPresetButtons.forEach((button) => {
+            button.addEventListener("click", async () => {
+                const preset = button.dataset.preset || "";
+                if (runtimeState.activeLensPreset === preset) {
+                    await applyShellLens(runtimeState.activeCompassLens || "movement", "");
+                    return;
+                }
+                await applyShellLens(runtimeState.activeCompassLens || "movement", preset);
+            });
+        });
+
+        if (clearSessionButtonEl) {
+            clearSessionButtonEl.addEventListener("click", async () => {
+                await clearSessionHistory();
+            });
+        }
+
+        buildShellFilter();
         loadQueryInventory();
         updateLanguageSurface("fr");
 

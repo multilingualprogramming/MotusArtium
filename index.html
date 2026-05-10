@@ -90,25 +90,32 @@
                         <h3 class="section-title">Semantic Compass</h3>
                         <div class="compass">
                             <div class="compass-ring" aria-hidden="true">
-                                <div class="compass-pole is-primary" data-position="top">Movement</div>
-                                <div class="compass-pole" data-position="top-right">Artist</div>
-                                <div class="compass-pole" data-position="bottom-right">Work</div>
-                                <div class="compass-pole" data-position="bottom">Place</div>
-                                <div class="compass-pole" data-position="bottom-left">Time</div>
-                                <div class="compass-pole" data-position="top-left">Influence</div>
+                                <div class="compass-axis compass-axis--vertical"></div>
+                                <div class="compass-axis compass-axis--horizontal"></div>
+                                <div class="compass-axis compass-axis--diagonal-left"></div>
+                                <div class="compass-axis compass-axis--diagonal-right"></div>
+                                <div class="compass-core">
+                                    <span class="compass-core-label">Lens</span>
+                                </div>
+                                <button type="button" class="compass-pole is-primary" data-position="top" data-lens="movement">Movement</button>
+                                <button type="button" class="compass-pole" data-position="top-right" data-lens="artist">Artist</button>
+                                <button type="button" class="compass-pole" data-position="bottom-right" data-lens="work">Work</button>
+                                <button type="button" class="compass-pole" data-position="bottom" data-lens="place">Place</button>
+                                <button type="button" class="compass-pole" data-position="bottom-left" data-lens="time">Time</button>
+                                <button type="button" class="compass-pole" data-position="top-left" data-lens="influence">Influence</button>
                             </div>
                         </div>
-                        <p>The compass replaces flat filters with a semantic lens: emphasize movement, artist, work,
+                        <p id="compass-copy">The compass replaces flat filters with a semantic lens: emphasize movement, artist, work,
                             place, time, or influence and let the atlas reorganize itself.</p>
                     </section>
 
                     <section class="subpanel">
                         <h3 class="section-title">Lens Presets</h3>
-                        <div class="preset-list">
-                            <div class="preset"><span>Lineage</span><small>movement to successor</small></div>
-                            <div class="preset"><span>Geography</span><small>country and diffusion</small></div>
-                            <div class="preset"><span>Materials</span><small>mediums and subjects</small></div>
-                            <div class="preset"><span>Cross-Language</span><small>multilingual labels</small></div>
+                        <div class="preset-list" id="lens-preset-list">
+                            <button type="button" class="preset preset-button" data-preset="lineage"><span>Lineage</span><small>movement to successor</small></button>
+                            <button type="button" class="preset preset-button" data-preset="geography"><span>Geography</span><small>country and diffusion</small></button>
+                            <button type="button" class="preset preset-button" data-preset="materials"><span>Materials</span><small>mediums and subjects</small></button>
+                            <button type="button" class="preset preset-button" data-preset="cross-language"><span>Cross-Language</span><small>multilingual labels</small></button>
                         </div>
                     </section>
 
@@ -185,15 +192,18 @@
 
             <main class="workspace">
                 <aside class="mirror panel">
-                    <section class="subpanel">
+                    <section class="subpanel mirror-primary">
                         <h3 class="section-title">Query Mirror</h3>
                         <div class="query-list" id="query-doc-list">
                             <span class="chip">movement_details.graphql</span>
                         </div>
                     </section>
 
-                    <section class="subpanel">
-                        <h3 class="section-title">Session Flow</h3>
+                    <section class="subpanel mirror-session">
+                        <div class="subpanel-head">
+                            <h3 class="section-title">Session Flow</h3>
+                            <button type="button" class="ghost-button subpanel-action" id="clear-session-button">Clear Session</button>
+                        </div>
                         <div class="query-session-list" id="query-session-list">
                             <div class="session-entry">
                                 <strong>Bootstrapping</strong>
@@ -202,7 +212,7 @@
                         </div>
                     </section>
 
-                    <section class="subpanel">
+                    <section class="subpanel mirror-variables">
                         <h3 class="section-title">Variables</h3>
                         <pre class="code-box" id="query-variables">{
   "id": "Q40415",
@@ -210,12 +220,12 @@
 }</pre>
                     </section>
 
-                    <section class="subpanel">
+                    <section class="subpanel mirror-document">
                         <h3 class="section-title">Document</h3>
                         <pre class="code-box" id="query-document">Loading document...</pre>
                     </section>
 
-                    <section class="subpanel">
+                    <section class="subpanel mirror-response">
                         <h3 class="section-title">Response Shape</h3>
                         <pre class="response-box" id="query-response-shape">{
   item: {
@@ -226,7 +236,7 @@
 }</pre>
                     </section>
 
-                    <section class="subpanel">
+                    <section class="subpanel mirror-interpretation">
                         <h3 class="section-title">Interpretation</h3>
                         <p id="query-explanation">This panel turns the data layer into part of the experience: the app
                             should always be able to show which GraphQL document is active, which variables are in play,

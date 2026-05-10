@@ -585,6 +585,7 @@
         const browserAdapterState = {
             entite_selectionnee_id: "",
             entite_selectionnee_type: "",
+            panneau_detail_visible: true,
             mode_visualisation: "observatory",
             affichage_chargement: false,
             message_erreur: "",
@@ -694,9 +695,11 @@
 
         function browserAdapterSnapshot() {
             const selectedId = browserAdapterState.entite_selectionnee_id;
+            const selectedType = normaliseDetailEntityType(browserAdapterState.entite_selectionnee_type);
             return {
                 entite_selectionnee_id: selectedId,
-                entite_selectionnee_type: browserAdapterState.entite_selectionnee_type,
+                entite_selectionnee_type: selectedType,
+                panneau_detail_visible: browserAdapterState.panneau_detail_visible,
                 mode_visualisation: browserAdapterState.mode_visualisation,
                 affichage_chargement: browserAdapterState.affichage_chargement,
                 message_erreur: browserAdapterState.message_erreur,
@@ -708,7 +711,7 @@
                 oeuvre_focus_id: browserAdapterState.focusedArtworkId,
                 entite_selectionnee: {
                     id: selectedId,
-                    type: browserAdapterState.entite_selectionnee_type,
+                    type: selectedType,
                     donnees: browserAdapterState.cache_entites[selectedId] || {},
                     labels_multilingues: runtimeState.multilingualEntityLabels || {}
                 },
@@ -731,6 +734,20 @@
                     }
                 }
             };
+        }
+
+        function normaliseDetailEntityType(type) {
+            const normalised = String(type || "").toLowerCase();
+            if (normalised.includes("movement") || normalised.includes("mouvement")) {
+                return "mouvement";
+            }
+            if (normalised.includes("artist") || normalised.includes("artiste")) {
+                return "artiste";
+            }
+            if (normalised.includes("work") || normalised.includes("oeuvre")) {
+                return "oeuvre";
+            }
+            return normalised;
         }
 
         function describeEntityMeta(type, entity) {
@@ -832,6 +849,9 @@
             renderConstellation();
             renderRuntimeState();
             await refreshMultilingualEntityLabels();
+            if (typeof window.renderDetailPanel === "function") {
+                window.renderDetailPanel();
+            }
         }
 
         function loadEntityByNode(node) {
@@ -998,6 +1018,9 @@
             renderConstellation();
             renderRuntimeState();
             refreshMultilingualEntityLabels();
+            if (typeof window.renderDetailPanel === "function") {
+                window.renderDetailPanel();
+            }
         }
 
         window.ui = window.ui || {};

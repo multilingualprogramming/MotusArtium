@@ -50,6 +50,161 @@
             };
         }
 
+        function normaliseDetailType(type) {
+            const normalised = String(type || "").toLowerCase();
+            if (normalised.includes("movement") || normalised.includes("mouvement")) {
+                return "mouvement";
+            }
+            if (normalised.includes("artist") || normalised.includes("artiste")) {
+                return "artiste";
+            }
+            if (normalised.includes("work") || normalised.includes("oeuvre")) {
+                return "oeuvre";
+            }
+            return normalised || "inconnu";
+        }
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        function readSelectedEntity() {
+            const snapshot = typeof readRuntimeSnapshot === "function" ? readRuntimeSnapshot() : null;
+            const entity = snapshot?.entite_selectionnee || {};
+            return {
+                id: entity.id || snapshot?.entite_selectionnee_id || "",
+                type: normaliseDetailType(entity.type || snapshot?.entite_selectionnee_type),
+                donnees: entity.donnees || {}
+            };
+        }
+
+        function readDetailValue(value) {
+            if (value == null) {
+                return "";
+            }
+            if (typeof value === "string") {
+                return value;
+            }
+            if (typeof value === "object") {
+                if (typeof value.value === "string") {
+                    return value.value;
+                }
+                if (typeof value.label === "string") {
+                    return value.label;
+                }
+                if (typeof value.content === "string") {
+                    return value.content;
+                }
+                if (typeof value.time === "string") {
+                    return value.time;
+                }
+            }
+            return "";
+        }
+
+        function buildDetailPanelFallback(entity) {
+            if (!entity.id) {
+                return "";
+            }
+
+            const type = normaliseDetailType(entity.type);
+            const donnees = entity.donnees || {};
+            const label = type === "mouvement"
+                ? (readDetailValue(donnees.movementLabel) || entity.id)
+                : type === "artiste"
+                    ? (readDetailValue(donnees.artistLabel) || entity.id)
+                    : type === "oeuvre"
+                        ? (readDetailValue(donnees.artworkLabel) || entity.id)
+                        : entity.id;
+            const metaRows = [];
+
+            if (type === "mouvement") {
+                const debut = readDetailValue(donnees.startTime);
+                const fin = readDetailValue(donnees.endTime);
+                const pays = readDetailValue(donnees.country);
+                if (debut || fin) {
+                    metaRows.push(`<p class="detail-row">${escapeHtml([debut && "Debut: " + debut, fin && "Fin: " + fin].filter(Boolean).join(" | "))}</p>`);
+                }
+                if (pays) {
+                    metaRows.push(`<p class="detail-row">Pays: ${escapeHtml(pays)}</p>`);
+                }
+            } else if (type === "artiste") {
+                const naissance = readDetailValue(donnees.birthTime || donnees.birthDate);
+                const deces = readDetailValue(donnees.deathTime || donnees.deathDate);
+                const lieuNaissance = readDetailValue(donnees.birthPlace);
+                if (naissance || deces) {
+                    metaRows.push(`<p class="detail-row">${escapeHtml([naissance && "Ne: " + naissance, deces && "Decede: " + deces].filter(Boolean).join(" | "))}</p>`);
+                }
+                if (lieuNaissance) {
+                    metaRows.push(`<p class="detail-row">Lieu de naissance: ${escapeHtml(lieuNaissance)}</p>`);
+                }
+            } else if (type === "oeuvre") {
+                const createur = readDetailValue(donnees.creator);
+                const date = readDetailValue(donnees.creationDate || donnees.inceptionDate);
+                const musee = readDetailValue(donnees.museum);
+                if (createur) {
+                    metaRows.push(`<p class="detail-row">Createur: ${escapeHtml(createur)}</p>`);
+                }
+                if (date) {
+                    metaRows.push(`<p class="detail-row">Date: ${escapeHtml(date)}</p>`);
+                }
+                if (musee) {
+                    metaRows.push(`<p class="detail-row">Musee: ${escapeHtml(musee)}</p>`);
+                }
+            }
+
+            return `<section class="detail-section detail-section--spotlight">
+                <p class="detail-kicker">${escapeHtml(type)}</p>
+                <h3>${escapeHtml(label)}</h3>
+                <p class="detail-row detail-row--id">${escapeHtml(entity.id)}</p>
+                ${metaRows.join("")}
+            </section>`;
+        }
+
+        const runtimeDetailRenderer = typeof window.rendre_panneau_detail === "function" &&
+            !String(window.rendre_panneau_detail).includes("<strong>ID:</strong>")
+            ? window.rendre_panneau_detail.bind(window)
+            : null;
+
+        if (!runtimeDetailRenderer) {
+            window.rendre_panneau_detail = function() {
+                return buildDetailPanelFallback(readSelectedEntity());
+            };
+        }
+
+        window.renderDetailPanel = function() {
+            const detailContainer = document.getElementById("detail-panel-container");
+            const detailRoot = document.getElementById("__ml_detail_root");
+
+            if (!detailContainer || !detailRoot) {
+                return;
+            }
+
+            let html = "";
+            if (runtimeDetailRenderer) {
+                try {
+                    html = runtimeDetailRenderer() || "";
+                } catch (error) {
+                    console.warn("Error in runtime detail renderer:", error);
+                }
+            }
+            if (!html) {
+                html = buildDetailPanelFallback(readSelectedEntity());
+            }
+            if (html) {
+                detailRoot.innerHTML = html;
+                detailContainer.classList.add("is-active");
+            } else {
+                detailRoot.innerHTML = "";
+                detailContainer.classList.remove("is-active");
+            }
+        };
+
         console.log("=== Page script started ===");
         console.log("bundle.js loaded, checking functions...");
         console.log("typeof initialiser_application:", typeof initialiser_application);
@@ -133,6 +288,7 @@
                     renderConstellation();
                     renderRuntimeState();
                     await refreshMultilingualEntityLabels();
+                    window.renderDetailPanel();
 
                     // Wire up search functionality
                     console.log("Calling wireupSearchBar");
@@ -284,7 +440,12 @@
             console.log("  detailRoot:", detailRoot);
             console.log("  rendre_panneau_detail:", typeof rendre_panneau_detail);
 
-            if (detailContainer && detailRoot && typeof rendre_panneau_detail === "function") {
+            if (detailContainer && detailRoot) {
+                window.renderDetailPanel();
+                return;
+            }
+
+            if (false && detailContainer && detailRoot && typeof rendre_panneau_detail === "function") {
                 console.log("Setting up detail panel rendering watcher");
 
                 let renderCount = 0;

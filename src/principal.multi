@@ -6,6 +6,7 @@ importer ui.interactions.recherche
 
 # Note: ui.etat is NOT imported to avoid duplicate function definitions in the bundle
 # ui.etat.* functions are provided by the HTML implementation instead
+# Note: ui.visualisations.polyglot_studio_vue is not bundled - it's loaded dynamically
 
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retour l'entité sélectionnée"""
@@ -37,6 +38,16 @@ asynchrone déf basculer_visualisation(mode):
     ui.etat.obtenir_instantane_etat()
 
 
+asynchrone déf basculer_langue(langue):
+    """Basculer entre les langues"""
+    attendre ui.etat.basculer_langue(langue)
+
+
+déf basculer_affichage_surfaces():
+    """Basculer l'affichage des surfaces polyglot (cote-a-cote vs onglets)"""
+    ui.etat.basculer_affichage_surfaces()
+
+
 asynchrone déf principal():
     """Point d'entrée principal de l'application"""
     attendre initialiser_application()
@@ -62,3 +73,9 @@ déf rendre_panneau_detail():
 déf rendre_barre_recherche():
     """Rendre la barre de recherche (stub - implementation in HTML)"""
     retour ""
+
+
+asynchrone déf creer_vue_polyglot_studio(conteneur, entite_id):
+    """Créer et initialiser la visualisation polyglot studio (stub - implementation in HTML)"""
+    # Cette fonction est appelée depuis app.js qui va directement rendre le composant
+    passe

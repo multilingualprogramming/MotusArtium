@@ -29,6 +29,11 @@ observer var artiste_etendu_id = ""
 observer var oeuvre_etendue_id = ""
 observer var oeuvre_focus_id = ""
 
+# Polyglot studio mode state
+observer var mode_langue_actif = "fr"  # "fr" ou "en"
+observer var afficher_surfaces_paralleles = vrai  # afficher cote a cote ou par onglets
+observer var entite_multilingue_focus = ""  # id de l'entite en focus pour polyglot-studio
+
 
 déf _extraire_id_entite(champ: dictionnaire) -> chaine:
     valeur = champ.obtenir("value", "")
@@ -379,6 +384,8 @@ asynchrone déf basculer_visualisation(mode: chaine):
             attendre charger_chronologie(plage_temporelle_debut, plage_temporelle_fin)
         sinon si mode == "riviere":
             attendre charger_chronologie(plage_temporelle_debut, plage_temporelle_fin)
+        sinon si mode == "polyglot-studio" et entite_selectionnee_id:
+            attendre _charger_multilingue_complet(entite_selectionnee_id)
         sinon si mode == "graphe":
             # Graphe fonctionne avec les données actuelles du graphe
             passe
@@ -413,6 +420,24 @@ asynchrone déf _initialiser_galaxie(entite_id: chaine):
         observer cache_relations[entite_id + "_galaxie"] = {
             "type": "voisinage",
             "donnees": voisinage
+        }
+
+
+asynchrone déf _charger_multilingue_complet(entite_id: chaine):
+    """Charger les données multilingues pour la visualisation polyglot-studio."""
+    si non entite_id:
+        retour
+
+    attendre _rafraichir_etiquettes_multilingues(entite_id)
+    observer entite_multilingue_focus = entite_id
+
+    entite = cache_entites.obtenir(entite_id, {})
+    si entite:
+        observer cache_relations[entite_id + "_polyglot"] = {
+            "type": "multilingue",
+            "entite_id": entite_id,
+            "donnees_entite": entite,
+            "labels_multilingues": etiquettes_multilingues.obtenir(entite_id, {})
         }
 
 
@@ -494,6 +519,25 @@ asynchrone déf executer_recherche(requete: chaine):
     retour resultats
 
 
+asynchrone déf basculer_langue(langue: chaine):
+    """Basculer entre les langues (fr/en) en mode polyglot-studio."""
+    si langue non dans ["fr", "en"]:
+        retour
+
+    observer mode_langue_actif = langue
+
+    si mode_visualisation == "polyglot-studio" et entite_multilingue_focus:
+        attendre _charger_multilingue_complet(entite_multilingue_focus)
+
+    retour obtenir_instantane_etat()
+
+
+déf basculer_affichage_surfaces():
+    """Basculer entre l'affichage cote a cote et par onglets."""
+    observer afficher_surfaces_paralleles = non afficher_surfaces_paralleles
+    retour obtenir_instantane_etat()
+
+
 déf obtenir_entite_selectionnee() -> dictionnaire:
     """Obtenir l'entite actuellement selectionnee."""
     si non entite_selectionnee_id:
@@ -531,6 +575,9 @@ déf obtenir_instantane_etat() -> dictionnaire:
         "artiste_etendu_id": artiste_etendu_id,
         "oeuvre_etendue_id": oeuvre_etendue_id,
         "oeuvre_focus_id": oeuvre_focus_id,
+        "mode_langue_actif": mode_langue_actif,
+        "afficher_surfaces_paralleles": afficher_surfaces_paralleles,
+        "entite_multilingue_focus": entite_multilingue_focus,
         "entite_selectionnee": obtenir_entite_selectionnee(),
         "graphe": graphe.exporter_json()
     }
@@ -550,6 +597,9 @@ asynchrone déf reinitialiser_etat():
     artiste_etendu_id = ""
     oeuvre_etendue_id = ""
     oeuvre_focus_id = ""
+    mode_langue_actif = "fr"
+    afficher_surfaces_paralleles = vrai
+    entite_multilingue_focus = ""
     cache_entites = {}
     cache_relations = {}
     etiquettes_multilingues = {}

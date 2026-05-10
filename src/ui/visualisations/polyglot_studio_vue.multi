@@ -1,0 +1,261 @@
+importer asyncio
+# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.visualisations.utilitaires_rendu
+
+
+classe VuePolyglotStudio:
+    """Visualisation polyglotte pour explorer les variations linguistiques"""
+
+    déf __init__(conteneur):
+        self.conteneur = conteneur
+        self.entite_id_courant = ""
+        self.mode_affichage = "cote-a-cote"
+        self.langue_active = "fr"
+        self.gestionnaire_touches_actif = faux
+
+    asynchrone déf charger_entite(entite_id):
+        """Charger une entite et afficher ses variations linguistiques"""
+        si non entite_id:
+            retour
+
+        self.entite_id_courant = entite_id
+
+        entite = etat.cache_entites.obtenir(entite_id, {})
+        labels = etat.etiquettes_multilingues.obtenir(entite_id, {})
+
+        si entite:
+            self.rendre_panneau_polyglotte(entite, labels, entite_id)
+            self.attacher_gestionnaire_clavier()
+
+    déf rendre_panneau_polyglotte(entite, labels, entite_id):
+        """Rendre le panneau principal de polyglot studio"""
+        si self.mode_affichage == "cote-a-cote":
+            self.rendre_cote_a_cote(entite, labels, entite_id)
+        sinon:
+            self.rendre_par_onglets(entite, labels, entite_id)
+
+    déf rendre_cote_a_cote(entite, labels, entite_id):
+        """Afficher FR et EN cote a cote"""
+        contenu_html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>"
+        contenu_html += "<div class='polyglot-header' role='banner'>"
+        contenu_html += "<div class='polyglot-title-section'>"
+        contenu_html += "<h2 id='polyglot-title'>Polyglot Studio</h2>"
+        contenu_html += "<span class='polyglot-hint' id='polyglot-hint'>Explore language variations • Ctrl+L to toggle • Ctrl+V for view</span>"
+        contenu_html += "</div>"
+        contenu_html += "<div class='polyglot-controls' role='toolbar' aria-label='Language and view controls'>"
+        contenu_html += "<button class='language-toggle is-active' data-lang='fr' title='French surface (Ctrl+L)' aria-pressed='true'>Francais</button>"
+        contenu_html += "<button class='language-toggle' data-lang='en' title='English surface (Ctrl+L)' aria-pressed='false'>English</button>"
+        contenu_html += "<button class='view-toggle' id='toggle-view' title='Toggle between side-by-side and tab view (Ctrl+V)' aria-label='View mode toggle'>Changer vue</button>"
+        contenu_html += "</div>"
+        contenu_html += "</div>"
+
+        contenu_html += "<div class='polyglot-surfaces'>"
+
+        contenu_html += self._rendre_surface_linguistique(entite, labels, "fr", entite_id)
+        contenu_html += self._rendre_surface_linguistique(entite, labels, "en", entite_id)
+
+        contenu_html += "</div>"
+        contenu_html += "</div>"
+
+        self.conteneur.innerHTML = contenu_html
+        self._attacher_gestionnaires(entite_id)
+
+    déf rendre_par_onglets(entite, labels, entite_id):
+        """Afficher FR et EN par onglets"""
+        contenu_html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>"
+        contenu_html += "<div class='polyglot-header' role='banner'>"
+        contenu_html += "<div class='polyglot-title-section'>"
+        contenu_html += "<h2 id='polyglot-title'>Polyglot Studio</h2>"
+        contenu_html += "<span class='polyglot-hint' id='polyglot-hint'>Explore language variations • Ctrl+L to toggle • Ctrl+V for view</span>"
+        contenu_html += "</div>"
+        contenu_html += "<div class='polyglot-controls' role='toolbar' aria-label='Language and view controls'>"
+
+        langue_active = etat.mode_langue_actif
+        contenu_html += "<button class='language-toggle" + (" is-active" si langue_active == "fr" sinon "") + "' data-lang='fr' title='French surface (Ctrl+L)' aria-pressed='" + ("true" si langue_active == "fr" sinon "false") + "'>Francais</button>"
+        contenu_html += "<button class='language-toggle" + (" is-active" si langue_active == "en" sinon "") + "' data-lang='en' title='English surface (Ctrl+L)' aria-pressed='" + ("true" si langue_active == "en" sinon "false") + "'>English</button>"
+        contenu_html += "<button class='view-toggle' id='toggle-view' title='Toggle between side-by-side and tab view (Ctrl+V)' aria-label='View mode toggle'>Changer vue</button>"
+        contenu_html += "</div>"
+        contenu_html += "</div>"
+
+        contenu_html += "<div class='polyglot-surface-active'>"
+        si langue_active == "fr":
+            contenu_html += self._rendre_surface_linguistique(entite, labels, "fr", entite_id)
+        sinon:
+            contenu_html += self._rendre_surface_linguistique(entite, labels, "en", entite_id)
+        contenu_html += "</div>"
+        contenu_html += "</div>"
+
+        self.conteneur.innerHTML = contenu_html
+        self._attacher_gestionnaires(entite_id)
+
+    déf _rendre_surface_linguistique(entite, labels, langue, entite_id):
+        """Rendre une surface linguistique pour FR ou EN"""
+        classe = "surface-" + langue
+        contenu = "<div class='polyglot-surface " + classe + "' lang='" + langue + "' role='region' aria-label='" + langue.upper() + " surface for " + entite_id + "'>"
+
+        label_dict = labels.obtenir(langue, {})
+        etiquette = label_dict.obtenir("label", "") ou entite.obtenir("label", "") ou "Entite"
+
+        contenu += "<div class='entity-header'>"
+        contenu += "<h3 class='entity-label'>" + etiquette + "</h3>"
+        contenu += "<span class='entity-id' title='Wikidata ID'>" + entite_id + "</span>"
+        contenu += "</div>"
+
+        contenu += self._rendre_proprietes_entite(entite, label_dict, langue)
+        contenu += "</div>"
+
+        retour contenu
+
+    déf _rendre_proprietes_entite(entite, label_dict, langue)
+        """Rendre les proprietes et descriptions de l'entite"""
+        contenu = "<div class='entity-properties'>"
+
+        si "description" dans label_dict:
+            description = label_dict.obtenir("description", "")
+            si description:
+                contenu += "<div class='property-group'>"
+                contenu += "<span class='property-label'>" + ("Description" si langue == "fr" sinon "Description") + "</span>"
+                contenu += "<p class='property-value'>" + description + "</p>"
+                contenu += "</div>"
+
+        type_entite = entite.obtenir("type", "").lower()
+        si type_entite == "mouvement" ou "movementLabel" dans entite:
+            contenu += self._rendre_proprietes_mouvement(entite, label_dict, langue)
+        sinon si type_entite == "artiste" ou "artistLabel" dans entite:
+            contenu += self._rendre_proprietes_artiste(entite, label_dict, langue)
+        sinon si type_entite == "oeuvre" ou "artworkLabel" dans entite:
+            contenu += self._rendre_proprietes_oeuvre(entite, label_dict, langue)
+
+        contenu += "</div>"
+        retour contenu
+
+    déf _rendre_proprietes_mouvement(entite, label_dict, langue)
+        """Rendre les proprietes specifiques aux mouvements"""
+        contenu = ""
+
+        debut = entite.obtenir("debut", "")
+        fin = entite.obtenir("fin", "")
+        si debut ou fin:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Periode" si langue == "fr" sinon "Period") + "</span>"
+            contenu += "<span class='property-value'>" + chaine(debut) + " - " + chaine(fin) + "</span>"
+            contenu += "</div>"
+
+        retour contenu
+
+    déf _rendre_proprietes_artiste(entite, label_dict, langue)
+        """Rendre les proprietes specifiques aux artistes"""
+        contenu = ""
+
+        naissance = entite.obtenir("naissance", "")
+        mort = entite.obtenir("mort", "")
+        si naissance ou mort:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Dates" si langue == "fr" sinon "Dates") + "</span>"
+            contenu += "<span class='property-value'>" + chaine(naissance) + " - " + chaine(mort) + "</span>"
+            contenu += "</div>"
+
+        lieu_naissance = entite.obtenir("lieu_naissance", "")
+        si lieu_naissance:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Lieu de naissance" si langue == "fr" sinon "Birthplace") + "</span>"
+            contenu += "<span class='property-value'>" + lieu_naissance + "</span>"
+            contenu += "</div>"
+
+        retour contenu
+
+    déf _rendre_proprietes_oeuvre(entite, label_dict, langue)
+        """Rendre les proprietes specifiques aux oeuvres"""
+        contenu = ""
+
+        date_creation = entite.obtenir("date_creation", "")
+        si date_creation:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Date de creation" si langue == "fr" sinon "Date Created") + "</span>"
+            contenu += "<span class='property-value'>" + chaine(date_creation) + "</span>"
+            contenu += "</div>"
+
+        createur = entite.obtenir("createur", "")
+        si createur:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Createur" si langue == "fr" sinon "Creator") + "</span>"
+            contenu += "<span class='property-value'>" + createur + "</span>"
+            contenu += "</div>"
+
+        retour contenu
+
+    déf _attacher_gestionnaires(entite_id):
+        """Attacher les gestionnaires d'evenements aux boutons"""
+        boutons_langue = self.conteneur.querySelectorAll(".language-toggle")
+        pour bouton dans boutons_langue:
+            bouton.onclick = fonc(e):
+                langue = e.target.getAttribute("data-lang")
+                attendre etat.basculer_langue(langue)
+                attendre self.charger_entite(entite_id)
+
+                # Mettre à jour aria-pressed
+                pour b dans boutons_langue:
+                    si b.getAttribute("data-lang") == langue:
+                        b.setAttribute("aria-pressed", "true")
+                        b.classList.add("is-active")
+                    sinon:
+                        b.setAttribute("aria-pressed", "false")
+                        b.classList.remove("is-active")
+
+        bouton_vue = self.conteneur.querySelector("#toggle-view")
+        si bouton_vue:
+            bouton_vue.onclick = fonc(e):
+                etat.basculer_affichage_surfaces()
+                attendre self.charger_entite(entite_id)
+
+    asynchrone déf basculer_langue(langue):
+        """Basculer la langue active et re-rendre"""
+        si non self.entite_id_courant:
+            retour
+
+        self.langue_active = langue
+        attendre self.charger_entite(self.entite_id_courant)
+
+    asynchrone déf basculer_affichage():
+        """Basculer entre cote-a-cote et onglets"""
+        si self.mode_affichage == "cote-a-cote":
+            self.mode_affichage = "onglets"
+        sinon:
+            self.mode_affichage = "cote-a-cote"
+
+        si self.entite_id_courant:
+            attendre self.charger_entite(self.entite_id_courant)
+
+    déf attacher_gestionnaire_clavier():
+        """Attacher les gestionnaires d'événements clavier"""
+        si self.gestionnaire_touches_actif:
+            retour
+
+        self.gestionnaire_touches_actif = vrai
+
+        document.addEventListener("keydown", fonc(e):
+            si e.key == "l" ou e.key == "L":
+                si e.ctrlKey ou e.metaKey:
+                    e.preventDefault()
+                    nouvelle_langue = "en" si etat.mode_langue_actif == "fr" sinon "fr"
+                    attendre self.basculer_langue(nouvelle_langue)
+            sinon si e.key == "v" ou e.key == "V":
+                si e.ctrlKey ou e.metaKey:
+                    e.preventDefault()
+                    attendre self.basculer_affichage()
+
+    déf detacher_gestionnaire_clavier():
+        """Détacher les gestionnaires d'événements clavier"""
+        self.gestionnaire_touches_actif = faux
+
+    déf nettoyer():
+        """Nettoyer et détacher tous les gestionnaires d'événements"""
+        self.detacher_gestionnaire_clavier()
+        self.conteneur.innerHTML = ""
+
+
+asynchrone déf creer_vue_polyglot_studio(conteneur, entite_id)VuePolyglotStudio:
+    """Creer et initialiser une vue polyglot studio"""
+    vue = VuePolyglotStudio(conteneur)
+    attendre vue.charger_entite(entite_id)
+    retour vue

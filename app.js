@@ -928,7 +928,218 @@
         }
 
         function updatePolyglotStudioVisibility() {
-            polyglotStudioPanelEl.classList.toggle("is-visible", runtimeState.currentMode === "polyglot-studio");
+            const isPolyglotMode = runtimeState.currentMode === "polyglot-studio";
+            polyglotStudioPanelEl.classList.toggle("is-visible", isPolyglotMode);
+
+            // Show/hide visualizations based on mode
+            const constellationEl = document.querySelector(".constellation");
+            const polyglotVizEl = document.getElementById("polyglot-studio-visualization");
+
+            if (constellationEl) {
+                constellationEl.style.display = isPolyglotMode ? "none" : "block";
+            }
+
+            if (polyglotVizEl) {
+                polyglotVizEl.classList.toggle("is-active", isPolyglotMode);
+
+                // Initialize polyglot studio visualization when entering mode
+                if (isPolyglotMode && runtimeState.selectedEntity && runtimeState.selectedEntity.id) {
+                    initializePolyglotStudioVisualization(runtimeState.selectedEntity.id);
+                }
+            }
+        }
+
+        async function initializePolyglotStudioVisualization(entityId) {
+            try {
+                const container = document.getElementById("polyglot-studio-visualization");
+                if (!container) return;
+
+                const snapshot = currentSnapshot();
+                const selectedEntity = snapshot.entite_selectionnee || {};
+                const labels = snapshot.entite_selectionnee?.labels_multilingues || {};
+                const currentLang = runtimeState.currentLanguage || "fr";
+                const displaySideBySide = snapshot.afficher_surfaces_paralleles !== false;
+
+                // Get detailed relations data if available
+                const entityDetailedData = runtimeState.stateSnapshot && runtimeState.stateSnapshot.cache_relations ? runtimeState.stateSnapshot.cache_relations[entityId] : {};
+
+                // Render polyglot studio HTML directly
+                let html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>";
+
+                // Header
+                html += "<div class='polyglot-header' role='banner'>";
+                html += "<div class='polyglot-title-section'>";
+                html += "<h2>Polyglot Studio</h2>";
+                html += "<span class='polyglot-hint'>Explore language variations • Ctrl+L to toggle • Ctrl+V for view</span>";
+                html += "</div>";
+                html += "<div class='polyglot-controls' role='toolbar' aria-label='Language and view controls'>";
+                html += "<button class='language-toggle " + (currentLang === "fr" ? "is-active" : "") + "' data-lang='fr' title='French surface (Ctrl+L)' aria-pressed='" + (currentLang === "fr" ? "true" : "false") + "'>Francais</button>";
+                html += "<button class='language-toggle " + (currentLang === "en" ? "is-active" : "") + "' data-lang='en' title='English surface (Ctrl+L)' aria-pressed='" + (currentLang === "en" ? "true" : "false") + "'>English</button>";
+                html += "<button class='view-toggle' id='polyglot-toggle-view' title='Toggle between side-by-side and tab view (Ctrl+V)' aria-label='View mode toggle'>Changer vue</button>";
+                html += "</div>";
+                html += "</div>";
+
+                if (displaySideBySide) {
+                    // Side-by-side view
+                    html += "<div class='polyglot-surfaces'>";
+                    html += renderPolyglotSurface(selectedEntity, labels, "fr", entityId, entityDetailedData);
+                    html += renderPolyglotSurface(selectedEntity, labels, "en", entityId, entityDetailedData);
+                    html += "</div>";
+                } else {
+                    // Tabbed view
+                    html += "<div class='polyglot-surface-active'>";
+                    html += renderPolyglotSurface(selectedEntity, labels, currentLang, entityId, entityDetailedData);
+                    html += "</div>";
+                }
+
+                html += "</div>";
+                container.innerHTML = html;
+
+                // Attach event listeners
+                attachPolyglotEventListeners(entityId, container);
+            } catch (error) {
+                console.error("Error initializing polyglot studio visualization:", error);
+            }
+        }
+
+        function renderPolyglotSurface(selectedEntity, labels, lang, entityId, detailedData) {
+            // Extract the actual entity data
+            const entity = selectedEntity.donnees || selectedEntity || {};
+            const entityType = selectedEntity.type || "Entity";
+            const detailed = detailedData || {};
+
+            // Get label in requested language
+            const langLabels = labels[lang] || {};
+            let label = langLabels.label;
+
+            // Fallback to extracting label from entity data
+            if (!label) {
+                if (entityType.toLowerCase().includes("mouvement")) {
+                    label = (entity.movementLabel && entity.movementLabel.value) || entity.label || "Movement";
+                } else if (entityType.toLowerCase().includes("artist") || entityType.toLowerCase().includes("artiste")) {
+                    label = (entity.artistLabel && entity.artistLabel.value) || entity.label || "Artist";
+                } else if (entityType.toLowerCase().includes("work") || entityType.toLowerCase().includes("oeuvre")) {
+                    label = (entity.artworkLabel && entity.artworkLabel.value) || entity.label || "Work";
+                } else {
+                    label = entity.label || "Entity";
+                }
+            }
+
+            let html = "<div class='polyglot-surface surface-" + lang + "' lang='" + lang + "' role='region' aria-label='" + lang.toUpperCase() + " surface'>";
+
+            html += "<div class='entity-header'>";
+            html += "<h3 class='entity-label'>" + String(label).substring(0, 100) + "</h3>";
+            html += "<span class='entity-id' title='Wikidata ID'>" + entityId + "</span>";
+            html += "</div>";
+
+            html += "<div class='entity-properties'>";
+
+            // Add entity type info
+            html += "<div class='property-group'>";
+            html += "<span class='property-label'>" + (lang === "fr" ? "Type" : "Type") + "</span>";
+            html += "<span class='property-value'>" + String(entityType) + "</span>";
+            html += "</div>";
+
+            // Render properties based on entity type
+            const typeStr = String(entityType).toLowerCase();
+            if (typeStr.includes("mouvement") || typeStr.includes("movement")) {
+                // Extract dates from entity data
+                const debut = entity.debut || (entity.begin && entity.begin.value);
+                const fin = entity.fin || (entity.end && entity.end.value);
+                if (debut || fin) {
+                    const period = (debut || "?") + " - " + (fin || "?");
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Periode" : "Period") + "</span>";
+                    html += "<span class='property-value'>" + period + "</span>";
+                    html += "</div>";
+                }
+
+                // Show countries if available
+                if (entity.pays && entity.pays.length > 0) {
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Pays" : "Countries") + "</span>";
+                    html += "<span class='property-value'>" + entity.pays.join(", ") + "</span>";
+                    html += "</div>";
+                }
+            } else if (typeStr.includes("artiste") || typeStr.includes("artist")) {
+                const naissance = entity.naissance || (entity.birthDate && entity.birthDate.value);
+                const mort = entity.mort || (entity.deathDate && entity.deathDate.value);
+                if (naissance || mort) {
+                    const lifespan = (naissance || "?") + " - " + (mort || "?");
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Dates" : "Dates") + "</span>";
+                    html += "<span class='property-value'>" + lifespan + "</span>";
+                    html += "</div>";
+                }
+
+                // Show birthplace if available
+                if (entity.lieu_naissance) {
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Lieu de naissance" : "Birthplace") + "</span>";
+                    html += "<span class='property-value'>" + entity.lieu_naissance + "</span>";
+                    html += "</div>";
+                }
+            } else if (typeStr.includes("work") || typeStr.includes("oeuvre")) {
+                // Show materials from detailed data
+                const materiaux = detailed.materiaux || [];
+                if (materiaux.length > 0) {
+                    const materialLabels = materiaux.map((m) => m.label || m).join(", ");
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Materiaux" : "Materials") + "</span>";
+                    html += "<span class='property-value'>" + materialLabels + "</span>";
+                    html += "</div>";
+                }
+
+                // Show subjects from detailed data
+                const sujets = detailed.sujets || [];
+                if (sujets.length > 0) {
+                    const subjectLabels = sujets.map((s) => s.label || s).join(", ");
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Sujets" : "Subjects") + "</span>";
+                    html += "<span class='property-value'>" + subjectLabels + "</span>";
+                    html += "</div>";
+                }
+
+                // Show museums from detailed data
+                const musees = detailed.musees || [];
+                if (musees.length > 0) {
+                    const museumLabels = musees.map((m) => m.label || m).join(", ");
+                    html += "<div class='property-group'>";
+                    html += "<span class='property-label'>" + (lang === "fr" ? "Musees" : "Museums") + "</span>";
+                    html += "<span class='property-value'>" + museumLabels + "</span>";
+                    html += "</div>";
+                }
+            }
+
+            html += "</div>";
+            html += "</div>";
+
+            return html;
+        }
+
+        function attachPolyglotEventListeners(entityId, container) {
+            const langButtons = container.querySelectorAll(".language-toggle");
+            const viewToggle = container.querySelector("#polyglot-toggle-view");
+
+            langButtons.forEach((btn) => {
+                btn.addEventListener("click", async () => {
+                    const lang = btn.dataset.lang;
+                    if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_langue === "function") {
+                        await window.ui.etat.basculer_langue(lang);
+                    }
+                    runtimeState.currentLanguage = lang;
+                    initializePolyglotStudioVisualization(entityId);
+                });
+            });
+
+            if (viewToggle) {
+                viewToggle.addEventListener("click", async () => {
+                    if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_affichage_surfaces === "function") {
+                        window.ui.etat.basculer_affichage_surfaces();
+                    }
+                    initializePolyglotStudioVisualization(entityId);
+                });
+            }
         }
 
         function setShellMode(mode) {
@@ -1180,12 +1391,19 @@
         }
 
         function renderTrail() {
+            const snapshot = currentSnapshot();
             const trailItems = [
                 { label: "Document", value: runtimeState.currentDocument },
                 { label: runtimeState.selectedEntity.type || "Entity", value: runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || "Awaiting response" },
-                { label: "Language", value: runtimeState.currentLanguage },
+                { label: "Language", value: runtimeState.currentMode === "polyglot-studio" ? (snapshot.mode_langue_actif || "fr").toUpperCase() : runtimeState.currentLanguage },
                 { label: "Result", value: runtimeState.selectedEntity.meta || "Live GraphQL" }
             ];
+
+            // Add polyglot studio view mode indicator
+            if (runtimeState.currentMode === "polyglot-studio" && snapshot.afficher_surfaces_paralleles !== undefined) {
+                const viewMode = snapshot.afficher_surfaces_paralleles ? "Side-by-side" : "Tabs";
+                trailItems.push({ label: "View", value: viewMode });
+            }
 
             explorationTrailEl.innerHTML = "";
             trailItems.forEach((item) => {
@@ -2688,21 +2906,23 @@
             };
 
             const lines = languageSurfaces[languageCode] || languageSurfaces.fr;
-            polyglotPreviewEl.innerHTML = "";
-            lines.forEach((line) => {
-                const wrapper = document.createElement("div");
-                wrapper.className = "polyglot-line";
+            if (polyglotPreviewEl) {
+                polyglotPreviewEl.innerHTML = "";
+                lines.forEach((line) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "polyglot-line";
 
-                const left = document.createElement("span");
-                left.textContent = line.code;
+                    const left = document.createElement("span");
+                    left.textContent = line.code;
 
-                const right = document.createElement("code");
-                right.textContent = line.text;
+                    const right = document.createElement("code");
+                    right.textContent = line.text;
 
-                wrapper.appendChild(left);
-                wrapper.appendChild(right);
-                polyglotPreviewEl.appendChild(wrapper);
-            });
+                    wrapper.appendChild(left);
+                    wrapper.appendChild(right);
+                    polyglotPreviewEl.appendChild(wrapper);
+                });
+            }
 
             renderRuntimeState();
         }
@@ -2711,7 +2931,7 @@
         const modeMapping = {
             "observatory": "graphe",
             "query-theater": "graphe",
-            "polyglot-studio": "galaxie",
+            "polyglot-studio": "polyglot-studio",
             "temporal-river": "riviere"
         };
 
@@ -2742,11 +2962,15 @@
         });
 
         langButtons.forEach((button) => {
-            button.addEventListener("click", () => {
+            button.addEventListener("click", async () => {
                 const language = button.dataset.language;
                 try {
                     setActiveButton(langButtons, button);
-                    updateLanguageSurface(language);
+                    if (runtimeState.currentMode === "polyglot-studio" && typeof window.basculer_langue === "function") {
+                        await window.basculer_langue(language);
+                    } else {
+                        updateLanguageSurface(language);
+                    }
                 } catch (error) {
                     runtimeState.lastError = `Language switch failed: ${error.message}`;
                     renderRuntimeState();

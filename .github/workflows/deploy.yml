@@ -44,9 +44,15 @@ jobs:
           mkdir -p _build
           python -m multilingualprogramming build-ui-bundle src/principal.multi --lang fr --out-dir _build
 
-      - name: Copy bundle.js to root
+      - name: Stage GitHub Pages artifact
         run: |
-          cp _build/bundle.js bundle.js
+          mkdir -p _site
+          cp index.html _site/index.html
+          cp styles.css _site/styles.css
+          cp app.js _site/app.js
+          cp bootstrap.js _site/bootstrap.js
+          cp _build/bundle.js _site/bundle.js
+          cp -r graphql _site/graphql
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -54,7 +60,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
   deploy:
     environment:

@@ -1292,7 +1292,8 @@
             lastStatus: "Bootstrapping",
             lastError: "",
             lastRequestedEntityId: "",
-            multilingualEntityLabels: {}
+            multilingualEntityLabels: {},
+            stateSnapshot: null
         };
 
         const modeSummaries = {
@@ -1542,10 +1543,30 @@
             polyglotStudioPanelEl.classList.toggle("is-visible", runtimeState.currentMode === "polyglot-studio");
         }
 
+        function currentSnapshot() {
+            return runtimeState.stateSnapshot || browserAdapterSnapshot();
+        }
+
         async function refreshMultilingualEntityLabels() {
-            const entityId = runtimeState.selectedEntity.id || browserAdapterState.entite_selectionnee_id;
+            const snapshot = currentSnapshot();
+            const selectedEntity = snapshot.entite_selectionnee || {};
+            const entityId = selectedEntity.id || runtimeState.selectedEntity.id || "";
             if (!entityId) {
                 runtimeState.multilingualEntityLabels = {};
+                return;
+            }
+
+            const existingLabels = selectedEntity.labels_multilingues || {};
+            if (existingLabels.fr || existingLabels.en) {
+                runtimeState.multilingualEntityLabels = existingLabels;
+                const summary = Object.entries(existingLabels)
+                    .filter(([, label]) => label)
+                    .map(([languageCode, label]) => languageCode.toUpperCase() + ": " + label)
+                    .join(" | ");
+
+                if (summary) {
+                    polyglotEntitySurfaceEl.textContent = summary;
+                }
                 return;
             }
 
@@ -1573,7 +1594,8 @@
         }
 
         function renderSelectedEntity() {
-            const activeEntity = browserAdapterState.cache_entites[browserAdapterState.entite_selectionnee_id] || {};
+            const snapshot = currentSnapshot();
+            const activeEntity = ((snapshot.entite_selectionnee || {}).donnees) || {};
             let metaText = runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
             const selectedType = String(runtimeState.selectedEntity.type || "").toLowerCase();
             if (selectedType.includes("work")) {
@@ -1627,12 +1649,13 @@
         }
 
         function renderRuntimeState() {
+            const snapshot = currentSnapshot();
             queryVariablesEl.textContent = JSON.stringify(runtimeState.currentVariables, null, 2);
             queryResponseShapeEl.textContent = runtimeState.responseShape;
             activeLanguageChipEl.textContent = runtimeState.currentLanguage;
             if (runtimeState.lastError) {
                 queryExplanationEl.textContent = runtimeState.lastError;
-            } else if (browserAdapterState.affichage_chargement) {
+            } else if (snapshot.affichage_chargement) {
                 queryExplanationEl.textContent = "Loading live GraphQL data for " + (runtimeState.lastRequestedEntityId || runtimeState.selectedEntity.id || "selection") + ".";
             }
             applyInterfaceLanguage(runtimeState.currentLanguage);
@@ -1975,12 +1998,13 @@
         }
 
         function getRenderableNodes() {
-            const allNodes = Array.from(browserAdapterState.graphe.noeuds.values());
-            if (browserAdapterState.focusedArtworkId) {
+            const snapshot = currentSnapshot();
+            const allNodes = (((snapshot.graphe || {}).noeuds) || []).slice();
+            if (snapshot.oeuvre_focus_id) {
                 return allNodes.filter((node) => {
                     const type = String(node.type || "").toLowerCase();
                     if (type.includes("work") || type.includes("oeuvre")) {
-                        return node.id === browserAdapterState.focusedArtworkId;
+                        return node.id === snapshot.oeuvre_focus_id;
                     }
                     return true;
                 });
@@ -1996,7 +2020,7 @@
                 return positions;
             }
 
-            const selectedId = browserAdapterState.entite_selectionnee_id;
+            const selectedId = currentSnapshot().entite_selectionnee_id;
             const selectedNode = nodes.find((node) => node.id === selectedId) || nodes[0];
             positions.set(selectedNode.id, { x: 50, y: 50 });
 
@@ -2027,6 +2051,7 @@
         }
 
         function renderConstellation() {
+            const snapshot = currentSnapshot();
             const nodes = getRenderableNodes();
             constellationNodesEl.innerHTML = "";
             constellationLinksEl.innerHTML = "";
@@ -2040,11 +2065,11 @@
             }
 
             const positions = computeConstellationLayout();
-            const selectedId = browserAdapterState.entite_selectionnee_id;
+            const selectedId = snapshot.entite_selectionnee_id;
             const seenRelations = new Set();
             const visibleNodeIds = new Set(nodes.map((node) => node.id));
 
-            browserAdapterState.graphe.relations.forEach((relation) => {
+            ((((snapshot.graphe || {}).relations) || [])).forEach((relation) => {
                 const key = [relation.source, relation.target, relation.type].join("|");
                 if (seenRelations.has(key)) {
                     return;
@@ -2079,7 +2104,7 @@
                 const position = positions.get(node.id) || { x: 50, y: 50 };
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
-                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (browserAdapterState.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "");
+                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
                 nodeEl.setAttribute("aria-label", (node.etiquette || node.id) + " (" + node.type + ")");
@@ -2102,7 +2127,30 @@
             });
         }
 
+        function syncShellFromSnapshot(snapshot) {
+            runtimeState.stateSnapshot = snapshot || browserAdapterSnapshot();
+            const selectedEntity = runtimeState.stateSnapshot.entite_selectionnee || {};
+            const selectedRecord = selectedEntity.donnees || {};
+            const graphStats = ((runtimeState.stateSnapshot.graphe || {}).stats) || {};
+            const derivedType = selectedEntity.type || inferEntityTypeFromDocument(runtimeState.currentDocument);
+            const derivedName = inferDisplayLabel(selectedRecord, selectedEntity.id || runtimeState.stateSnapshot.entite_selectionnee_id);
+            const fallbackMeta = (graphStats.total_noeuds || 0) + " nodes · " + (graphStats.total_relations || 0) + " relations";
+
+            runtimeState.multilingualEntityLabels = selectedEntity.labels_multilingues || runtimeState.multilingualEntityLabels || {};
+            runtimeState.selectedEntity = {
+                id: selectedEntity.id || runtimeState.stateSnapshot.entite_selectionnee_id || "",
+                type: derivedType || "Entity",
+                name: derivedName || selectedEntity.id || "Awaiting response",
+                meta: describeEntityMeta(derivedType, selectedRecord) || fallbackMeta
+            };
+        }
+
         function applyAdapterStateToShell() {
+            syncShellFromSnapshot(browserAdapterSnapshot());
+            renderConstellation();
+            renderRuntimeState();
+            refreshMultilingualEntityLabels();
+            return;
             const summary = adapterEntitySummary();
             if (summary.id || summary.label) {
                 runtimeState.selectedEntity = {

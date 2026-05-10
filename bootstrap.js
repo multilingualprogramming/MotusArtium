@@ -61,6 +61,9 @@
             if (normalised.includes("work") || normalised.includes("oeuvre")) {
                 return "oeuvre";
             }
+            if (normalised.includes("museum") || normalised.includes("musee") || normalised.includes("gallery") || normalised.includes("galerie")) {
+                return "musee";
+            }
             return normalised || "inconnu";
         }
 
@@ -120,6 +123,8 @@
                     ? (readDetailValue(donnees.artistLabel) || entity.id)
                     : type === "oeuvre"
                         ? (readDetailValue(donnees.artworkLabel) || entity.id)
+                        : type === "musee"
+                            ? (readDetailValue(donnees.museumLabel || donnees.label) || entity.id)
                         : entity.id;
             const metaRows = [];
 
@@ -155,6 +160,11 @@
                 }
                 if (musee) {
                     metaRows.push(`<p class="detail-row">Musee: ${escapeHtml(musee)}</p>`);
+                }
+            } else if (type === "musee") {
+                const count = readDetailValue(donnees.artworkCount);
+                if (count) {
+                    metaRows.push(`<p class="detail-row">Oeuvres chargees: ${escapeHtml(count)}</p>`);
                 }
             }
 
@@ -214,6 +224,58 @@
             console.log("Starting async initialization");
             if (typeof initialiser_application === "function") {
                 try {
+                    async function loadInitialEntity(entityId, frenchType) {
+                        if (window.ui && window.ui.etat) {
+                            window.ui.etat.entite_selectionnee_id = entityId;
+                            window.ui.etat.entite_selectionnee_type = frenchType;
+                            console.log("Set selected entity:", entityId, frenchType);
+                        }
+
+                        if (frenchType === "mouvement") {
+                            console.log("Loading movement:", entityId);
+                            if (typeof charger_mouvement === "function") {
+                                await charger_mouvement(entityId);
+                                return true;
+                            }
+                            if (window.ui && window.ui.etat && typeof window.ui.etat.charger_mouvement === "function") {
+                                await window.ui.etat.charger_mouvement(entityId);
+                                return true;
+                            }
+                        } else if (frenchType === "artiste") {
+                            console.log("Loading artist:", entityId);
+                            if (typeof charger_artiste === "function") {
+                                await charger_artiste(entityId);
+                                return true;
+                            }
+                            if (window.ui && window.ui.etat && typeof window.ui.etat.charger_artiste === "function") {
+                                await window.ui.etat.charger_artiste(entityId);
+                                return true;
+                            }
+                        } else if (frenchType === "oeuvre") {
+                            console.log("Loading artwork:", entityId);
+                            if (typeof charger_oeuvre === "function") {
+                                await charger_oeuvre(entityId);
+                                return true;
+                            }
+                            if (window.ui && window.ui.etat && typeof window.ui.etat.charger_oeuvre === "function") {
+                                await window.ui.etat.charger_oeuvre(entityId);
+                                return true;
+                            }
+                        } else if (frenchType === "musee") {
+                            console.log("Loading museum:", entityId);
+                            if (typeof charger_musee === "function") {
+                                await charger_musee(entityId);
+                                return true;
+                            }
+                            if (window.ui && window.ui.etat && typeof window.ui.etat.charger_musee === "function") {
+                                await window.ui.etat.charger_musee(entityId);
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    }
+
                     // Check for entity in URL parameters
                     const urlParams = new URLSearchParams(window.location.search);
                     const entityId = urlParams.get("entity");
@@ -230,25 +292,14 @@
                         // Handle both English and French type names
                         const frenchType = (entityType === "mouvement" || entityType === "movement") ? "mouvement" :
                                           (entityType === "artiste" || entityType === "artist") ? "artiste" :
-                                          (entityType === "oeuvre" || entityType === "artwork") ? "oeuvre" : null;
+                                          (entityType === "oeuvre" || entityType === "artwork") ? "oeuvre" :
+                                          (entityType === "musee" || entityType === "museum" || entityType === "gallery") ? "musee" : null;
 
-                        if (frenchType && typeof charger_mouvement === "function") {
-                            // Set selected entity in state BEFORE loading
-                            if (window.ui && window.ui.etat) {
-                                window.ui.etat.entite_selectionnee_id = entityId;
-                                window.ui.etat.entite_selectionnee_type = frenchType;
-                                console.log("Set selected entity:", entityId, frenchType);
-                            }
-
-                            if (frenchType === "mouvement") {
-                                console.log("Loading movement:", entityId);
-                                await charger_mouvement(entityId);
-                            } else if (frenchType === "artiste" && typeof charger_artiste === "function") {
-                                console.log("Loading artist:", entityId);
-                                await charger_artiste(entityId);
-                            } else if (frenchType === "oeuvre" && typeof charger_oeuvre === "function") {
-                                console.log("Loading artwork:", entityId);
-                                await charger_oeuvre(entityId);
+                        if (frenchType) {
+                            const loaded = await loadInitialEntity(entityId, frenchType);
+                            if (!loaded) {
+                                console.log("No loader available for URL entity type:", frenchType, "using default initialization");
+                                await initialiser_application();
                             }
                         } else {
                             // Default to initialiser_application if type doesn't match
@@ -319,6 +370,170 @@
             // Debounce search requests
             let searchTimeout;
 
+            function inferSearchResultType(item) {
+                const description = String(item.description || "").toLowerCase();
+
+                if (description.includes("museum") || description.includes("gallery") || description.includes("art museum") || description.includes("art gallery")) {
+                    return "museum";
+                }
+
+                if (description.includes("painter") || description.includes("artist") || description.includes("sculptor")) {
+                    return "artist";
+                }
+
+                if (description.includes("art movement") || description.includes("movement") || description.includes("style")) {
+                    return "movement";
+                }
+
+                if (description.includes("painting") || description.includes("artwork") || description.includes("work of art") || description.includes("portrait")) {
+                    return "artwork";
+                }
+
+                return "movement";
+            }
+
+            function rankSearchResultType(type) {
+                if (type === "museum") {
+                    return 0;
+                }
+                if (type === "artist") {
+                    return 1;
+                }
+                if (type === "artwork") {
+                    return 2;
+                }
+                if (type === "movement") {
+                    return 3;
+                }
+                return 4;
+            }
+
+            function inferTypeFromClaims(claimIds, fallbackType) {
+                const ids = new Set(claimIds || []);
+                if (ids.has("Q33506") || ids.has("Q207694") || ids.has("Q11635")) {
+                    return "museum";
+                }
+                if (ids.has("Q5")) {
+                    return "artist";
+                }
+                if (ids.has("Q968159")) {
+                    return "movement";
+                }
+                if (ids.has("Q3305213") || ids.has("Q838948")) {
+                    return "artwork";
+                }
+                return fallbackType;
+            }
+
+            async function resolveSearchResultType(entityId, fallbackType) {
+                try {
+                    const response = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(entityId)}&props=claims&format=json&origin=*`);
+                    const body = await response.json();
+                    const entity = ((body.entities || {})[entityId]) || {};
+                    const claims = entity.claims || {};
+                    const claimIds = [];
+
+                    ["P31", "P279"].forEach((propertyId) => {
+                        (claims[propertyId] || []).forEach((claim) => {
+                            const id = (((claim || {}).mainsnak || {}).datavalue || {}).value?.id;
+                            if (id) {
+                                claimIds.push(id);
+                            }
+                        });
+                    });
+
+                    return inferTypeFromClaims(claimIds, fallbackType);
+                } catch (error) {
+                    console.warn("Could not resolve entity claims for", entityId, error);
+                    return fallbackType;
+                }
+            }
+
+            async function searchEntities(query) {
+                const response = await fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`);
+                const body = await response.json();
+                if (body.error) {
+                    throw new Error(body.error.info || "Search failed");
+                }
+                return (body.search || [])
+                    .map((item) => ({
+                        id: item.id,
+                        label: item.label,
+                        description: item.description || "",
+                        entityType: inferSearchResultType(item)
+                    }))
+                    .filter((item) => item.id)
+                    .sort((left, right) => {
+                        const rankDifference = rankSearchResultType(left.entityType) - rankSearchResultType(right.entityType);
+                        if (rankDifference !== 0) {
+                            return rankDifference;
+                        }
+                        return String(left.label || "").localeCompare(String(right.label || ""));
+                    });
+            }
+
+            async function loadSearchSelection(entityId, entityType) {
+                const canonicalType = entityType === "artwork"
+                    ? "oeuvre"
+                    : (entityType === "artist"
+                        ? "artiste"
+                        : (entityType === "museum" ? "musee" : "mouvement"));
+
+                if (window.history && typeof window.history.replaceState === "function") {
+                    window.history.replaceState({}, "", `?entity=${encodeURIComponent(entityId)}&type=${encodeURIComponent(entityType)}`);
+                }
+
+                if (window.ui && window.ui.etat && typeof window.ui.etat.reinitialiser_graphe === "function") {
+                    window.ui.etat.reinitialiser_graphe();
+                }
+
+                if (window.ui && window.ui.etat) {
+                    window.ui.etat.entite_selectionnee_id = entityId;
+                    window.ui.etat.entite_selectionnee_type = canonicalType;
+                }
+
+                if (entityType === "artist") {
+                    if (typeof charger_artiste === "function") {
+                        await charger_artiste(entityId);
+                        return;
+                    }
+                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_artiste === "function") {
+                        await window.ui.etat.charger_artiste(entityId);
+                        return;
+                    }
+                }
+
+                if (entityType === "artwork") {
+                    if (typeof charger_oeuvre === "function") {
+                        await charger_oeuvre(entityId);
+                        return;
+                    }
+                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_oeuvre === "function") {
+                        await window.ui.etat.charger_oeuvre(entityId);
+                        return;
+                    }
+                }
+
+                if (entityType === "museum") {
+                    if (typeof charger_musee === "function") {
+                        await charger_musee(entityId);
+                        return;
+                    }
+                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_musee === "function") {
+                        await window.ui.etat.charger_musee(entityId);
+                        return;
+                    }
+                }
+
+                if (typeof charger_mouvement === "function") {
+                    await charger_mouvement(entityId);
+                    return;
+                }
+                if (window.ui && window.ui.etat && typeof window.ui.etat.charger_mouvement === "function") {
+                    await window.ui.etat.charger_mouvement(entityId);
+                }
+            }
+
             function positionDropdown() {
                 const rect = searchInput.getBoundingClientRect();
                 searchDropdown.style.top = (rect.bottom + 8) + "px";
@@ -345,26 +560,37 @@
 
                 // Debounce the actual search
                 searchTimeout = setTimeout(() => {
-                    fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`)
-                        .then(r => r.json())
-                        .then(data => {
-                            console.log("Search results:", data);
-                            if (data.search && data.search.length > 0) {
-                                const results = data.search.slice(0, 8).map(item =>
-                                    `<div class="search-result-item" data-entity-id="${item.id}">
-                                        <strong>${item.label}</strong>
-                                        <small>${item.description || ''}</small>
+                    searchEntities(query)
+                        .then(results => {
+                            console.log("Search results:", results);
+                            if (results.length > 0) {
+                                const markup = results.slice(0, 8).map(item => {
+                                    const entityType = item.entityType || "movement";
+                                    return `<div class="search-result-item" data-entity-id="${item.id}" data-entity-type="${entityType}">
+                                        <strong>${item.label || item.id}</strong>
+                                        <small>${item.description || entityType}</small>
                                     </div>`
-                                ).join('');
-                                searchDropdown.innerHTML = results;
+                                }).join('');
+                                searchDropdown.innerHTML = markup;
 
                                 // Add click handlers to results
                                 searchDropdown.querySelectorAll(".search-result-item").forEach((item) => {
-                                    item.addEventListener("click", function() {
+                                    item.addEventListener("click", async function() {
                                         const entityId = this.getAttribute("data-entity-id");
+                                        const hintedType = this.getAttribute("data-entity-type") || "movement";
                                         const label = this.querySelector("strong").textContent;
-                                        console.log("Clicked result:", entityId, label);
-                                        window.location.href = `?entity=${entityId}&type=movement`;
+                                        const entityType = await resolveSearchResultType(entityId, hintedType);
+                                        console.log("Clicked result:", entityId, label, entityType);
+                                        searchInput.value = label;
+                                        searchDropdown.classList.remove("is-active");
+                                        try {
+                                            searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted);">Loading selection...</div>';
+                                            await loadSearchSelection(entityId, entityType);
+                                        } catch (error) {
+                                            console.error("Selection loading error:", error);
+                                            searchDropdown.classList.add("is-active");
+                                            searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--accent-coral);">Selection error</div>';
+                                        }
                                     });
                                 });
                             } else {

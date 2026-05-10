@@ -198,7 +198,7 @@
             if (!record || typeof record !== "object") {
                 return "";
             }
-            return record.movementLabel || record.artistLabel || record.artworkLabel || record.countryLabel || record.label || "";
+            return record.museumLabel || record.movementLabel || record.artistLabel || record.artworkLabel || record.countryLabel || record.label || "";
         }
 
         function inferIdFromRecord(record) {
@@ -510,7 +510,7 @@
             if (!record || typeof record !== "object") {
                 return fallback || "Unknown";
             }
-            return record.movementLabel || record.artistLabel || record.artworkLabel || record.label || fallback || "Unknown";
+            return record.museumLabel || record.movementLabel || record.artistLabel || record.artworkLabel || record.label || fallback || "Unknown";
         }
 
         function fieldValue(record, key) {
@@ -769,6 +769,7 @@
             expandedMovementId: "",
             expandedArtistId: "",
             expandedArtworkId: "",
+            expandedMuseumId: "",
             focusedArtworkId: "",
             cache_entites: {},
             graphe: {
@@ -804,6 +805,19 @@
                 target,
                 type
             });
+        }
+
+        function resetGraphState() {
+            browserAdapterState.graphe.noeuds.clear();
+            browserAdapterState.graphe.relations = [];
+            browserAdapterState.cache_entites = {};
+            browserAdapterState.expandedMovementId = "";
+            browserAdapterState.expandedArtistId = "";
+            browserAdapterState.expandedArtworkId = "";
+            browserAdapterState.expandedMuseumId = "";
+            browserAdapterState.focusedArtworkId = "";
+            browserAdapterState.entite_selectionnee_id = "";
+            browserAdapterState.entite_selectionnee_type = "";
         }
 
         function removeGraphNodes(nodeIds) {
@@ -855,6 +869,20 @@
             }
         }
 
+        function collapseMuseumExpansion(museumId) {
+            const workIds = relatedTargets(museumId, "houses_work");
+            workIds.forEach((workId) => {
+                if (browserAdapterState.expandedArtworkId === workId) {
+                    collapseArtworkExpansion(workId);
+                }
+            });
+            removeGraphNodes(workIds);
+            if (browserAdapterState.expandedMuseumId === museumId) {
+                browserAdapterState.expandedMuseumId = "";
+            }
+            browserAdapterState.focusedArtworkId = "";
+        }
+
         function collapseMovementExpansion(movementId) {
             const artistIds = relatedTargets(movementId, "contains_artist");
             artistIds.forEach((artistId) => {
@@ -883,6 +911,7 @@
                 mouvement_etendu_id: browserAdapterState.expandedMovementId,
                 artiste_etendu_id: browserAdapterState.expandedArtistId,
                 oeuvre_etendue_id: browserAdapterState.expandedArtworkId,
+                musee_etendu_id: browserAdapterState.expandedMuseumId,
                 oeuvre_focus_id: browserAdapterState.focusedArtworkId,
                 entite_selectionnee: {
                     id: selectedId,
@@ -922,6 +951,9 @@
             if (normalised.includes("work") || normalised.includes("oeuvre")) {
                 return "oeuvre";
             }
+            if (normalised.includes("museum") || normalised.includes("musee") || normalised.includes("gallery") || normalised.includes("galerie")) {
+                return "musee";
+            }
             return normalised;
         }
 
@@ -934,6 +966,11 @@
             if (normalised.includes("work") || normalised.includes("oeuvre")) {
                 const inception = fieldDate(entity, ["inceptionDate", "creationDate"]);
                 return inception ? ("Inception: " + inception.slice(0, 10)) : "Artwork detail loaded";
+            }
+
+            if (normalised.includes("museum") || normalised.includes("musee") || normalised.includes("gallery") || normalised.includes("galerie")) {
+                const count = Number(entity.artworkCount || entity.collectionCount || 0);
+                return count ? (count + " collection works loaded") : "Museum collection loaded";
             }
 
             if (normalised.includes("artist") || normalised.includes("artiste")) {
@@ -986,6 +1023,9 @@
             if (normalised.includes("artist") || normalised.includes("artiste")) {
                 return "node--artist";
             }
+            if (normalised.includes("museum") || normalised.includes("musee") || normalised.includes("gallery") || normalised.includes("galerie")) {
+                return "node--artist";
+            }
             return "node--work";
         }
 
@@ -1036,6 +1076,9 @@
             }
             if (normalised.includes("artist") || normalised.includes("artiste")) {
                 return invokeRuntimeAction("charger_artiste", window.ui.etat.charger_artiste.bind(window.ui.etat), [node.id]);
+            }
+            if (normalised.includes("museum") || normalised.includes("musee") || normalised.includes("gallery") || normalised.includes("galerie")) {
+                return invokeRuntimeAction("charger_musee", window.ui.etat.charger_musee.bind(window.ui.etat), [node.id]);
             }
             return invokeRuntimeAction("charger_oeuvre", window.ui.etat.charger_oeuvre.bind(window.ui.etat), [node.id]);
         }
@@ -1217,12 +1260,7 @@
 
                 // Clear the graph and cache for fresh start
                 console.log("Clearing old graph data");
-                browserAdapterState.graphe_noeuds = {};
-                browserAdapterState.graphe_relations = [];
-                browserAdapterState.cache_entites = {};
-                browserAdapterState.expandedMovementId = "";
-                browserAdapterState.expandedArtistId = "";
-                browserAdapterState.focusedArtworkId = "";
+                resetGraphState();
 
                 // Clear the graph visualization
                 const graphContainer = document.querySelector("svg");
@@ -1374,6 +1412,58 @@
                 return artwork;
             },
 
+            async charger_musee(museeId) {
+                runtimeState.lastRequestedEntityId = museeId;
+                if (browserAdapterState.expandedMuseumId === museeId && browserAdapterState.entite_selectionnee_id === museeId) {
+                    collapseMuseumExpansion(museeId);
+                    browserAdapterState.entite_selectionnee_id = museeId;
+                    browserAdapterState.entite_selectionnee_type = "Museum";
+                    applyAdapterStateToShell();
+                    return browserAdapterState.cache_entites[museeId] || {};
+                }
+
+                if (browserAdapterState.expandedMuseumId && browserAdapterState.expandedMuseumId !== museeId) {
+                    collapseMuseumExpansion(browserAdapterState.expandedMuseumId);
+                }
+
+                browserAdapterState.affichage_chargement = true;
+                browserAdapterState.message_erreur = "";
+                browserAdapterState.entite_selectionnee_id = museeId;
+                browserAdapterState.entite_selectionnee_type = "Museum";
+
+                const museumRecord = browserAdapterState.cache_entites[museeId] || {};
+                const museumLabel = fieldValue(museumRecord, "museumLabel") || fieldValue(museumRecord, "label") || runtimeState.selectedEntity.name || museeId;
+                browserAdapterState.cache_entites[museeId] = {
+                    ...museumRecord,
+                    id: museeId,
+                    museumLabel: museumLabel
+                };
+                addGraphNode(museeId, "museum", museumLabel, browserAdapterState.cache_entites[museeId]);
+
+                const artworks = await executeGraphQLDocument("artworks_by_museum.graphql", {
+                    museumId: museeId,
+                    languageCode: runtimeState.currentLanguage
+                });
+
+                const edges = ((artworks.searchItems || {}).edges) || [];
+                edges.slice(0, 24).forEach((edge) => {
+                    const node = edge && edge.node ? edge.node : {};
+                    if (node.id) {
+                        browserAdapterState.cache_entites[node.id] = {
+                            ...node
+                        };
+                        addGraphNode(node.id, "work", node.artworkLabel || node.label || node.id, node);
+                        addGraphRelation(museeId, node.id, "houses_work");
+                    }
+                });
+
+                browserAdapterState.cache_entites[museeId].artworkCount = edges.length;
+                browserAdapterState.expandedMuseumId = museeId;
+                browserAdapterState.affichage_chargement = false;
+                applyAdapterStateToShell();
+                return browserAdapterState.cache_entites[museeId];
+            },
+
             async charger_chronologie(debut, fin) {
                 runtimeState.lastRequestedEntityId = "chronology";
                 browserAdapterState.affichage_chargement = true;
@@ -1409,6 +1499,11 @@
 
             obtenir_instantane_etat() {
                 return browserAdapterSnapshot();
+            },
+
+            reinitialiser_graphe() {
+                resetGraphState();
+                applyAdapterStateToShell();
             }
         };
 

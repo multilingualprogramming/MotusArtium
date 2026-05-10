@@ -81,6 +81,18 @@ test asynchrone déf test_basculer_visualisation_chronologie():
     afficher("✓ basculer_visualisation('chronologie') successful")
 
 
+test asynchrone déf test_basculer_visualisation_riviere():
+    """Test: Switch to river visualization"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    resultat = attendre ui.principal.basculer_visualisation("riviere")
+
+    assertion ui.etat.mode_visualisation == "riviere"
+    assertion ui.etat.affichage_chargement == faux
+
+    afficher("✓ basculer_visualisation('riviere') successful")
+
+
 test asynchrone déf test_appliquer_filtre_semantique():
     """Test: Apply semantic filter to graph"""
     attendre ui.principal.charger_mouvement("Q40415")

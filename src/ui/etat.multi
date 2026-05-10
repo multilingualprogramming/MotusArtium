@@ -377,6 +377,8 @@ asynchrone déf basculer_visualisation(mode: chaine):
             attendre _initialiser_galaxie(entite_selectionnee_id)
         sinon si mode == "chronologie":
             attendre charger_chronologie(plage_temporelle_debut, plage_temporelle_fin)
+        sinon si mode == "riviere":
+            attendre charger_chronologie(plage_temporelle_debut, plage_temporelle_fin)
         sinon si mode == "graphe":
             # Graphe fonctionne avec les données actuelles du graphe
             passe

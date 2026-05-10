@@ -11,7 +11,7 @@
     </head>
 
     <body>
-        <div class="shell">
+        <div class="shell" id="app-shell">
             <header class="topbar panel">
                 <div class="brand">
                     <span class="eyebrow" id="brand-eyebrow">Multilingual x Wikidata GraphQL</span>
@@ -193,6 +193,16 @@
                     </section>
 
                     <section class="subpanel">
+                        <h3 class="section-title">Session Flow</h3>
+                        <div class="query-session-list" id="query-session-list">
+                            <div class="session-entry">
+                                <strong>Bootstrapping</strong>
+                                <small>Awaiting first live GraphQL request.</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="subpanel">
                         <h3 class="section-title">Variables</h3>
                         <pre class="code-box" id="query-variables">{
   "id": "Q40415",
@@ -242,6 +252,9 @@
                         <span>1600</span>
                         <span>1800</span>
                         <span>2000</span>
+                    </div>
+                    <div class="timeline-insights" id="timeline-insights">
+                        <div class="preset"><span>Temporal Focus</span><small>Awaiting dated selection</small></div>
                     </div>
                 </section>
 

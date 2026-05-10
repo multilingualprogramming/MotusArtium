@@ -3,6 +3,7 @@
         const queryDocumentEl = document.getElementById("query-document");
         const heroQueryPreviewEl = document.getElementById("hero-query-preview");
         const queryDocListEl = document.getElementById("query-doc-list");
+        const querySessionListEl = document.getElementById("query-session-list");
         const statusChipEl = document.getElementById("status-chip");
         const activeDocChipEl = document.getElementById("active-doc-chip");
         const activeLanguageChipEl = document.getElementById("active-language-chip");
@@ -25,6 +26,8 @@
         const timelineWindowEl = document.querySelector(".timeline-window");
         const timelineLabelsEl = document.querySelector(".timeline-labels");
         const timelineCaptionEl = document.getElementById("timeline-caption");
+        const timelineInsightsEl = document.getElementById("timeline-insights");
+        const shellEl = document.getElementById("app-shell");
         const translatableElements = {
             "brand-eyebrow": {
                 fr: "Multilingual x Wikidata GraphQL",
@@ -120,7 +123,13 @@
             lastError: "",
             lastRequestedEntityId: "",
             multilingualEntityLabels: {},
-            stateSnapshot: null
+            stateSnapshot: null,
+            querySession: [],
+            requestPhase: "idle",
+            queryNarrative: "Awaiting first live GraphQL request.",
+            temporalInsights: [],
+            temporalFocus: null,
+            nextSessionId: 1
         };
 
         const modeSummaries = {
@@ -248,6 +257,82 @@
             return indent + String(value);
         }
 
+        function trimText(value, maxLength = 140) {
+            const text = String(value || "").replace(/\s+/g, " ").trim();
+            if (!text) {
+                return "";
+            }
+            return text.length > maxLength ? text.slice(0, maxLength - 1) + "…" : text;
+        }
+
+        function summariseVariables(variables) {
+            const entries = Object.entries(variables || {}).filter(([, value]) => value !== "" && value != null);
+            if (!entries.length) {
+                return "No variables";
+            }
+            return entries.slice(0, 3).map(([key, value]) => key + ": " + value).join(" · ");
+        }
+
+        function narrativeForDocument(documentName, variables) {
+            const selectedId = findSelectedEntityId(variables);
+            const target = selectedId || "current selection";
+            const narratives = {
+                "movement_details.graphql": "Movement details for " + target + " keep start/end dates and succession visible in the observatory.",
+                "movement_evolution.graphql": "Movement evolution for " + target + " traces follows, followed by, and broader lineage.",
+                "artists_by_movement.graphql": "Artists linked to " + target + " expand the constellation from movement into people and dated careers.",
+                "artist_details.graphql": "Artist details for " + target + " bring lifespan and movement membership into the visible field.",
+                "artist_influences.graphql": "Artist influence flow for " + target + " turns inspiration into readable graph and river edges.",
+                "artworks_by_artist.graphql": "Works by " + target + " translate an artist selection into a creation timeline.",
+                "artwork_details.graphql": "Artwork details for " + target + " keep creation date, museum, and subjects visible with the active query.",
+                "artworks_by_museum.graphql": "Museum expansion for " + target + " shows holdings as a live GraphQL collection.",
+                "artworks_by_subject.graphql": "Subject expansion for " + target + " reveals artworks that share a semantic theme.",
+                "movements_catalog.graphql": "Movement catalog retrieval provides the broad temporal field for timeline and river views.",
+                "entity_label.graphql": "Multilingual labels for " + target + " keep the same Wikidata entity readable across French and English surfaces."
+            };
+            return narratives[documentName] || ("Live GraphQL request through " + documentName + " for " + target + ".");
+        }
+
+        function beginQuerySession(documentName, variables) {
+            const entry = {
+                id: runtimeState.nextSessionId++,
+                documentName,
+                variables: { ...(variables || {}) },
+                status: "loading",
+                summary: summariseVariables(variables),
+                narrative: narrativeForDocument(documentName, variables)
+            };
+
+            runtimeState.requestPhase = "loading";
+            runtimeState.queryNarrative = entry.narrative;
+            runtimeState.querySession = [entry, ...runtimeState.querySession].slice(0, 8);
+            return entry.id;
+        }
+
+        function completeQuerySession(sessionId, options = {}) {
+            const { data, error, statusText } = options;
+            const primary = extractPrimaryEntity(data || {});
+            runtimeState.querySession = runtimeState.querySession.map((entry) => {
+                if (entry.id !== sessionId) {
+                    return entry;
+                }
+
+                const summary = error
+                    ? trimText(error, 160)
+                    : primary
+                        ? trimText(describeResponse(data) + " · " + (primary.label || primary.id || "Live entity"))
+                        : trimText(statusText || "Live GraphQL response");
+
+                return {
+                    ...entry,
+                    status: error ? "error" : "success",
+                    summary,
+                    narrative: error ? ("GraphQL request failed in " + entry.documentName + ": " + trimText(error, 120)) : entry.narrative
+                };
+            });
+
+            runtimeState.requestPhase = error ? "error" : "success";
+        }
+
         function extractPrimaryEntity(data) {
             if (!data || typeof data !== "object") {
                 return null;
@@ -325,6 +410,38 @@
             activeDocChipEl.textContent = runtimeState.currentDocument;
         }
 
+        function renderQuerySession() {
+            if (!querySessionListEl) {
+                return;
+            }
+
+            const entries = runtimeState.querySession || [];
+            if (!entries.length) {
+                querySessionListEl.innerHTML = '<div class="session-entry"><strong>Bootstrapping</strong><small>Awaiting first live GraphQL request.</small></div>';
+                return;
+            }
+
+            querySessionListEl.innerHTML = "";
+            entries.forEach((entry, index) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "session-entry" + (index === 0 ? " is-live" : "") + (entry.status === "error" ? " is-error" : "");
+
+                const title = document.createElement("strong");
+                title.textContent = entry.documentName;
+
+                const meta = document.createElement("small");
+                meta.textContent = entry.summary || summariseVariables(entry.variables);
+
+                const detail = document.createElement("small");
+                detail.textContent = entry.narrative;
+
+                wrapper.appendChild(title);
+                wrapper.appendChild(meta);
+                wrapper.appendChild(detail);
+                querySessionListEl.appendChild(wrapper);
+            });
+        }
+
         function applyInterfaceLanguage(languageCode) {
             Object.entries(translatableElements).forEach(([id, values]) => {
                 const element = document.getElementById(id);
@@ -371,6 +488,15 @@
 
         function updatePolyglotStudioVisibility() {
             polyglotStudioPanelEl.classList.toggle("is-visible", runtimeState.currentMode === "polyglot-studio");
+        }
+
+        function setShellMode(mode) {
+            if (document.body) {
+                document.body.dataset.mode = mode;
+            }
+            if (shellEl) {
+                shellEl.dataset.mode = mode;
+            }
         }
 
         function currentSnapshot() {
@@ -500,10 +626,14 @@
                 queryExplanationEl.textContent = runtimeState.lastError;
             } else if (snapshot.affichage_chargement) {
                 queryExplanationEl.textContent = "Loading live GraphQL data for " + (runtimeState.lastRequestedEntityId || runtimeState.selectedEntity.id || "selection") + ".";
+            } else {
+                queryExplanationEl.textContent = runtimeState.queryNarrative;
             }
             applyInterfaceLanguage(runtimeState.currentLanguage);
             updatePolyglotStudioVisibility();
+            setShellMode(runtimeState.currentMode);
             renderQueryDocList();
+            renderQuerySession();
             renderSelectedEntity();
             renderTrail();
             renderTimeline();
@@ -653,6 +783,132 @@
             };
         }
 
+        function temporalEventFromRecord(node) {
+            const record = (node && node.donnees) || {};
+            const type = String((node && node.type) || "").toLowerCase();
+            const label = (node && node.etiquette) || inferDisplayLabel(record, node && node.id);
+            let start = null;
+            let end = null;
+
+            if (type.includes("movement")) {
+                start = extractYear(fieldDate(record, ["startTime", "startDate", "inceptionDate"]));
+                end = extractYear(fieldDate(record, ["endTime", "endDate", "dissolvedDate"]));
+            } else if (type.includes("artist")) {
+                start = extractYear(fieldDate(record, ["birthDate", "birthTime"]));
+                end = extractYear(fieldDate(record, ["deathDate", "deathTime"]));
+            } else if (type.includes("work")) {
+                start = extractYear(fieldDate(record, ["inceptionDate", "creationDate"]));
+                end = start;
+            }
+
+            if (!Number.isFinite(start) && !Number.isFinite(end)) {
+                return null;
+            }
+
+            return {
+                id: node.id,
+                type: node.type,
+                label,
+                start: Number.isFinite(start) ? start : end,
+                end: Number.isFinite(end) ? end : start
+            };
+        }
+
+        function relationNarrative(relation, snapshot) {
+            const nodes = (((snapshot || {}).graphe || {}).noeuds) || [];
+            const source = nodes.find((node) => node.id === relation.source);
+            const target = nodes.find((node) => node.id === relation.target);
+            const sourceLabel = source ? source.etiquette : relation.source;
+            const targetLabel = target ? target.etiquette : relation.target;
+            const relationLabels = {
+                follows: "follows",
+                followed_by: "followed by",
+                influenced_by: "influenced by",
+                influenced: "influenced",
+                created: "created",
+                contains_artist: "contains artist"
+            };
+            return sourceLabel + " " + (relationLabels[relation.type] || relation.type.replace(/_/g, " ")) + " " + targetLabel;
+        }
+
+        function deriveTemporalInsights(snapshot) {
+            const nodes = (((snapshot || {}).graphe || {}).noeuds) || [];
+            const relations = (((snapshot || {}).graphe || {}).relations) || [];
+            const events = nodes.map(temporalEventFromRecord).filter(Boolean).sort((left, right) => (left.start || 0) - (right.start || 0));
+            const selectedId = (snapshot || {}).entite_selectionnee_id || runtimeState.selectedEntity.id;
+            const focusEvent = events.find((event) => event.id === selectedId) || events[0] || null;
+            const focus = focusEvent || {
+                start: 1400,
+                end: 2000,
+                label: "Temporal field",
+                type: "Entity"
+            };
+            const activeEvents = events.filter((event) => event.start <= focus.end && event.end >= focus.start);
+            const activeIds = new Set(activeEvents.map((event) => event.id));
+            const succession = relations
+                .filter((relation) => relation.type === "follows" || relation.type === "followed_by" || relation.type === "influenced_by" || relation.type === "influenced")
+                .slice(0, 4)
+                .map((relation) => relationNarrative(relation, snapshot));
+
+            const insights = [];
+            insights.push({
+                label: "Temporal Focus",
+                value: focus.label + " - " + formatTimelineYear(focus.start) + (focus.end !== focus.start ? " - " + formatTimelineYear(focus.end) : "")
+            });
+            insights.push({
+                label: "Active Entities",
+                value: activeEvents.length ? activeEvents.length + " entities overlap the active window" : "No dated entities overlap the active window"
+            });
+            if (succession.length) {
+                insights.push({
+                    label: "Flow",
+                    value: succession.join(" | ")
+                });
+            } else if (events.length > 1) {
+                const first = events[0];
+                const last = events[Math.min(events.length - 1, 2)];
+                insights.push({
+                    label: "Flow",
+                    value: first.label + " to " + last.label + " keeps chronology visible even before richer influence edges load."
+                });
+            }
+
+            runtimeState.temporalInsights = insights;
+            runtimeState.temporalFocus = {
+                start: focus.start,
+                end: focus.end,
+                activeIds
+            };
+        }
+
+        function renderTemporalInsights() {
+            if (!timelineInsightsEl) {
+                return;
+            }
+
+            const insights = runtimeState.temporalInsights || [];
+            if (!insights.length) {
+                timelineInsightsEl.innerHTML = '<div class="preset"><span>Temporal Focus</span><small>Awaiting dated selection</small></div>';
+                return;
+            }
+
+            timelineInsightsEl.innerHTML = "";
+            insights.forEach((item) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "preset";
+
+                const title = document.createElement("span");
+                title.textContent = item.label;
+
+                const detail = document.createElement("small");
+                detail.textContent = item.value;
+
+                wrapper.appendChild(title);
+                wrapper.appendChild(detail);
+                timelineInsightsEl.appendChild(wrapper);
+            });
+        }
+
         function renderTimeline() {
             if (!timelineTrackEl || !timelineWindowEl || !timelineLabelsEl) {
                 return;
@@ -682,6 +938,12 @@
                 formatTimelineYear(midTwo),
                 formatTimelineYear(model.rangeEnd)
             ].map((value) => "<span>" + value + "</span>").join("");
+
+            deriveTemporalInsights(currentSnapshot());
+            renderTemporalInsights();
+            if (runtimeState.currentMode === "temporal-river") {
+                renderConstellation();
+            }
         }
 
         function entityIdFromUri(uri) {
@@ -694,6 +956,7 @@
         }
 
         async function executeGraphQLDocument(documentName, variables) {
+            const sessionId = beginQuerySession(documentName, variables);
             const query = await fetch("graphql/" + documentName).then((response) => response.text());
             const response = await fetch("https://www.wikidata.org/w/api.php?action=wbgraphql&format=json&origin=*", {
                 method: "POST",
@@ -712,10 +975,18 @@
                 const message = body.errors[0].message || "GraphQL error";
                 runtimeState.lastError = "GraphQL error in " + documentName + ": " + message;
                 runtimeState.responseShape = JSON.stringify(body, null, 2);
+                completeQuerySession(sessionId, {
+                    error: message,
+                    statusText: runtimeState.lastStatus
+                });
                 renderRuntimeState();
                 throw new Error(message);
             }
             runtimeState.lastError = "";
+            completeQuerySession(sessionId, {
+                data: body.data || {},
+                statusText: runtimeState.lastStatus
+            });
             return body.data || {};
         }
 
@@ -732,11 +1003,17 @@
         }
 
         function normaliseMovementDetails(item) {
+            const follows = firstStatementItem(item.follows);
+            const followedBy = firstStatementItem(item.followedBy);
+            const country = firstStatementItem(item.country);
             return {
                 id: item.id || "",
                 movementLabel: item.movementLabel || "",
                 startTime: { value: (((item.startTime || [])[0] || {}).value || {}).time || "" },
-                endTime: { value: (((item.endTime || [])[0] || {}).value || {}).time || "" }
+                endTime: { value: (((item.endTime || [])[0] || {}).value || {}).time || "" },
+                countryLabel: country ? country.label : "",
+                follows: follows ? [{ value: follows }] : [],
+                followedBy: followedBy ? [{ value: followedBy }] : []
             };
         }
 
@@ -757,6 +1034,13 @@
                 id: item.id || "",
                 artworkLabel: item.artworkLabel || "",
                 inceptionDate: { value: (((item.inceptionDate || [])[0] || {}).value || {}).time || "" }
+            };
+        }
+
+        function normaliseArtistInfluenceDetails(item) {
+            return {
+                influencedBy: statementItems(item.influencedBy),
+                influenced: statementItems(item.influenced)
             };
         }
 
@@ -1173,6 +1457,7 @@
         function renderConstellation() {
             const snapshot = currentSnapshot();
             const nodes = getRenderableNodes();
+            const temporalFocus = runtimeState.currentMode === "temporal-river" ? runtimeState.temporalFocus : null;
             constellationNodesEl.innerHTML = "";
             constellationLinksEl.innerHTML = "";
 
@@ -1212,7 +1497,8 @@
                 const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
                 const link = document.createElement("div");
-                link.className = "link";
+                const isMutedTemporally = temporalFocus && (!temporalFocus.activeIds.has(relation.source) || !temporalFocus.activeIds.has(relation.target));
+                link.className = "link" + (isMutedTemporally ? " is-muted-temporal" : "");
                 link.style.left = source.x + "%";
                 link.style.top = source.y + "%";
                 link.style.width = length + "%";
@@ -1222,9 +1508,11 @@
 
             nodes.forEach((node) => {
                 const position = positions.get(node.id) || { x: 50, y: 50 };
+                const isTemporalFocus = temporalFocus && temporalFocus.activeIds.has(node.id);
+                const isMutedTemporally = temporalFocus && !temporalFocus.activeIds.has(node.id);
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
-                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "");
+                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
                 nodeEl.setAttribute("aria-label", (node.etiquette || node.id) + " (" + node.type + ")");
@@ -1345,6 +1633,10 @@
                     id: mouvementId,
                     languageCode: runtimeState.currentLanguage
                 });
+                const evolution = await executeGraphQLDocument("movement_evolution.graphql", {
+                    id: mouvementId,
+                    languageCode: runtimeState.currentLanguage
+                });
                 const artists = await executeGraphQLDocument("artists_by_movement.graphql", {
                     movementId: mouvementId,
                     languageCode: runtimeState.currentLanguage
@@ -1353,6 +1645,41 @@
                 const movement = normaliseMovementDetails(details.item || {});
                 browserAdapterState.cache_entites[mouvementId] = movement;
                 addGraphNode(mouvementId, "movement", movement.movementLabel, movement);
+
+                const evolutionItem = evolution.item || {};
+                const previousMovement = firstStatementItem(evolutionItem.follows);
+                const nextMovement = firstStatementItem(evolutionItem.followedBy);
+                const parentMovement = firstStatementItem(evolutionItem.partOf);
+
+                if (previousMovement) {
+                    browserAdapterState.cache_entites[previousMovement.id] = {
+                        ...(browserAdapterState.cache_entites[previousMovement.id] || {}),
+                        id: previousMovement.id,
+                        movementLabel: previousMovement.label
+                    };
+                    addGraphNode(previousMovement.id, "movement", previousMovement.label, browserAdapterState.cache_entites[previousMovement.id]);
+                    addGraphRelation(mouvementId, previousMovement.id, "follows");
+                }
+
+                if (nextMovement) {
+                    browserAdapterState.cache_entites[nextMovement.id] = {
+                        ...(browserAdapterState.cache_entites[nextMovement.id] || {}),
+                        id: nextMovement.id,
+                        movementLabel: nextMovement.label
+                    };
+                    addGraphNode(nextMovement.id, "movement", nextMovement.label, browserAdapterState.cache_entites[nextMovement.id]);
+                    addGraphRelation(mouvementId, nextMovement.id, "followed_by");
+                }
+
+                if (parentMovement) {
+                    browserAdapterState.cache_entites[parentMovement.id] = {
+                        ...(browserAdapterState.cache_entites[parentMovement.id] || {}),
+                        id: parentMovement.id,
+                        movementLabel: parentMovement.label
+                    };
+                    addGraphNode(parentMovement.id, "movement", parentMovement.label, browserAdapterState.cache_entites[parentMovement.id]);
+                    addGraphRelation(parentMovement.id, mouvementId, "contains_movement");
+                }
 
                 const artistRecords = normaliseArtistsByMovement((artists.searchItems || {}).edges || []);
                 artistRecords.forEach((artist) => {
@@ -1395,6 +1722,10 @@
                     id: artisteId,
                     languageCode: runtimeState.currentLanguage
                 });
+                const influences = await executeGraphQLDocument("artist_influences.graphql", {
+                    id: artisteId,
+                    languageCode: runtimeState.currentLanguage
+                });
                 const artworks = await executeGraphQLDocument("artworks_by_artist.graphql", {
                     artistId: artisteId,
                     languageCode: runtimeState.currentLanguage
@@ -1403,6 +1734,27 @@
                 const artist = details.item || {};
                 browserAdapterState.cache_entites[artisteId] = artist;
                 addGraphNode(artisteId, "artist", artist.artistLabel || artist.label || artisteId, artist);
+
+                const influenceGraph = normaliseArtistInfluenceDetails(influences.item || {});
+                influenceGraph.influencedBy.slice(0, 6).forEach((influencer) => {
+                    browserAdapterState.cache_entites[influencer.id] = {
+                        ...(browserAdapterState.cache_entites[influencer.id] || {}),
+                        id: influencer.id,
+                        artistLabel: influencer.label
+                    };
+                    addGraphNode(influencer.id, "artist", influencer.label, browserAdapterState.cache_entites[influencer.id]);
+                    addGraphRelation(artisteId, influencer.id, "influenced_by");
+                });
+
+                influenceGraph.influenced.slice(0, 6).forEach((influencedArtist) => {
+                    browserAdapterState.cache_entites[influencedArtist.id] = {
+                        ...(browserAdapterState.cache_entites[influencedArtist.id] || {}),
+                        id: influencedArtist.id,
+                        artistLabel: influencedArtist.label
+                    };
+                    addGraphNode(influencedArtist.id, "artist", influencedArtist.label, browserAdapterState.cache_entites[influencedArtist.id]);
+                    addGraphRelation(artisteId, influencedArtist.id, "influenced");
+                });
 
                 (((artworks.searchItems || {}).edges) || []).forEach((edge) => {
                     const node = edge && edge.node ? edge.node : {};
@@ -1585,7 +1937,7 @@
                 browserAdapterState.affichage_chargement = true;
                 browserAdapterState.plage_temporelle_debut = debut;
                 browserAdapterState.plage_temporelle_fin = fin;
-                browserAdapterState.mode_visualisation = "chronology";
+                browserAdapterState.mode_visualisation = "chronologie";
 
                 const data = await executeGraphQLDocument("movements_catalog.graphql", {
                     languageCode: runtimeState.currentLanguage
@@ -1604,6 +1956,9 @@
             },
 
             async basculer_visualisation(mode) {
+                if (mode === "chronologie" || mode === "riviere") {
+                    await this.charger_chronologie(browserAdapterState.plage_temporelle_debut, browserAdapterState.plage_temporelle_fin);
+                }
                 browserAdapterState.mode_visualisation = mode;
                 applyAdapterStateToShell();
                 return mode;
@@ -1638,6 +1993,7 @@
             runtimeState.currentVariables = payload.variables || {};
             runtimeState.currentLanguage = runtimeState.currentVariables.languageCode || runtimeState.currentLanguage;
             const selectedId = findSelectedEntityId(runtimeState.currentVariables);
+            runtimeState.queryNarrative = narrativeForDocument(runtimeState.currentDocument, runtimeState.currentVariables);
             runtimeState.selectedEntity = {
                 id: selectedId,
                 type: inferEntityTypeFromDocument(runtimeState.currentDocument),
@@ -1659,6 +2015,7 @@
                 }
                 runtimeState.selectedEntity.type = inferEntityTypeFromDocument(runtimeState.currentDocument);
                 runtimeState.selectedEntity.meta = describeResponse(data);
+                runtimeState.queryNarrative = narrativeForDocument(runtimeState.currentDocument, runtimeState.currentVariables) + " Response: " + describeResponse(data) + ".";
             } else if (runtimeState.selectedEntity.id) {
                 runtimeState.selectedEntity.meta = runtimeState.selectedEntity.id + " via " + runtimeState.currentDocument;
             }
@@ -1716,7 +2073,13 @@
             const docs = [
                 "movement_details.graphql",
                 "artists_by_movement.graphql",
-                "artwork_details.graphql"
+                "artist_details.graphql",
+                "artist_influences.graphql",
+                "artworks_by_artist.graphql",
+                "artwork_details.graphql",
+                "movement_evolution.graphql",
+                "movements_catalog.graphql",
+                "entity_label.graphql"
             ];
 
             runtimeState.knownDocs = docs.slice();
@@ -1755,7 +2118,7 @@
         // Map HTML button modes to multilingual visualization modes
         const modeMapping = {
             "observatory": "graphe",
-            "query-theater": "chronologie",
+            "query-theater": "graphe",
             "polyglot-studio": "galaxie",
             "temporal-river": "riviere"
         };

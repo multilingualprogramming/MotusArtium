@@ -373,9 +373,107 @@ asynchrone déf charger_chronologie(debut: nombre, fin: nombre):
 
 
 asynchrone déf basculer_visualisation(mode: chaine):
-    """Basculer le mode de visualisation."""
-    observer mode_visualisation = mode
-    retourner mode
+    """Basculer le mode de visualisation et charger les données nécessaires."""
+    observer affichage_chargement = vrai
+    observer message_erreur = ""
+
+    chercher:
+        si mode == "heatmap" et entite_selectionnee_id:
+            attendre _charger_donnees_heatmap(entite_selectionnee_id)
+        sinon si mode == "galaxie" et entite_selectionnee_id:
+            attendre _initialiser_galaxie(entite_selectionnee_id)
+        sinon si mode == "chronologie":
+            attendre charger_chronologie(plage_temporelle_debut, plage_temporelle_fin)
+        sinon si mode == "graphe":
+            # Graphe fonctionne avec les données actuelles du graphe
+            passe
+
+        observer mode_visualisation = mode
+        observer affichage_chargement = faux
+        retourner obtenir_instantane_etat()
+
+    exception erreur:
+        observer message_erreur = "Erreur lors du changement de visualisation: " + chaine(erreur)
+        observer affichage_chargement = faux
+        retourner {}
+
+
+asynchrone déf _charger_donnees_heatmap(entite_id: chaine):
+    """Charger les données géographiques pour la visualisation heatmap."""
+    si entite_selectionnee_type == "mouvement":
+        diffusion = attendre donnees.requetes.obtenir_diffusion_geographique(entite_id)
+
+        si diffusion:
+            observer cache_relations[entite_id + "_heatmap"] = {
+                "type": "geographique",
+                "donnees": diffusion
+            }
+
+
+asynchrone déf _initialiser_galaxie(entite_id: chaine):
+    """Initialiser la visualisation galaxie autour de l'entité sélectionnée."""
+    voisinage = graphe.obtenir_voisinage(entite_id, 2)
+
+    si voisinage:
+        observer cache_relations[entite_id + "_galaxie"] = {
+            "type": "voisinage",
+            "donnees": voisinage
+        }
+
+
+asynchrone déf appliquer_filtre(lentille_semantique: chaine, mode_conjonction: booleen = vrai):
+    """Appliquer un filtre sémantique au graphe courant."""
+    importer semantique.filtres
+
+    observer affichage_chargement = vrai
+    observer message_erreur = ""
+
+    chercher:
+        filtre = semantique.filtres.FiltreSlentique(lentille_semantique)
+        gestionnaire = semantique.filtres.GestionnaireFiltres(mode_conjonction)
+        gestionnaire.ajouter_filtre(filtre)
+
+        graphe_filtre = gestionnaire.filtrer_graphe(graphe)
+        noeuds_acceptes = liste(graphe_filtre.obtenir("noeuds", {}).keys())
+        relations_acceptees = graphe_filtre.obtenir("relations", [])
+
+        observer cache_relations["graphe_filtre"] = {
+            "lentille": lentille_semantique,
+            "mode_conjonction": mode_conjonction,
+            "noeuds_ids": noeuds_acceptes,
+            "stats": {
+                "total_noeuds_avant": graphe.compter_noeuds(),
+                "total_noeuds_apres": len(noeuds_acceptes),
+                "total_relations_avant": graphe.compter_relations(),
+                "total_relations_apres": len(relations_acceptees)
+            }
+        }
+
+        observer filtres_actifs.ajouter(lentille_semantique)
+        observer affichage_chargement = faux
+        retourner cache_relations["graphe_filtre"]
+
+    exception erreur:
+        observer message_erreur = "Erreur lors de l'application du filtre: " + chaine(erreur)
+        observer affichage_chargement = faux
+        retourner {}
+
+
+asynchrone déf reinitialiser_filtre():
+    """Réinitialiser tous les filtres appliqués."""
+    observer affichage_chargement = vrai
+
+    chercher:
+        si "graphe_filtre" dans cache_relations:
+            del cache_relations["graphe_filtre"]
+
+        observer affichage_chargement = faux
+        retourner obtenir_instantane_etat()
+
+    exception erreur:
+        observer message_erreur = "Erreur lors de la réinitialisation du filtre"
+        observer affichage_chargement = faux
+        retourner {}
 
 
 asynchrone déf executer_recherche(requete: chaine):

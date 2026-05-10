@@ -1,0 +1,274 @@
+# ============================================================================
+# Integration Test: Priority 1 - Core Data Loading & Visualization Switching
+# ============================================================================
+# Test the complete workflow:
+# 1. Load an entity (mouvement/artiste/oeuvre)
+# 2. Switch visualization modes
+# 3. Apply semantic filters
+# 4. Verify state consistency
+
+importer unittest
+importer ui.principal
+importer ui.etat
+
+
+test asynchrone déf test_charger_mouvement_workflow():
+    """Test: Load a movement and verify state updates"""
+    # Load Impressionism
+    mouvement = attendre ui.principal.charger_mouvement("Q40415")
+
+    assertion mouvement != {}
+    assertion ui.etat.entite_selectionnee_id == "Q40415"
+    assertion ui.etat.entite_selectionnee_type == "mouvement"
+    assertion ui.etat.mouvement_etendu_id == "Q40415"
+    assertion ui.etat.affichage_chargement == faux
+    assertion ui.etat.graphe.compter_noeuds() > 0
+    assertion ui.etat.graphe.compter_relations() > 0
+
+    afficher("✓ charger_mouvement() workflow successful")
+
+
+test asynchrone déf test_basculer_visualisation_graphe():
+    """Test: Switch to graph visualization (basic case)"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    etat_avant = ui.etat.mode_visualisation
+    resultat = attendre ui.principal.basculer_visualisation("graphe")
+
+    assertion ui.etat.mode_visualisation == "graphe"
+    assertion ui.etat.affichage_chargement == faux
+    assertion resultat != {}
+
+    afficher("✓ basculer_visualisation('graphe') successful")
+
+
+test asynchrone déf test_basculer_visualisation_heatmap():
+    """Test: Switch to heatmap visualization (requires data loading)"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    affichage_avant = ui.etat.affichage_chargement
+    resultat = attendre ui.principal.basculer_visualisation("heatmap")
+
+    assertion ui.etat.mode_visualisation == "heatmap"
+    assertion ui.etat.affichage_chargement == faux
+    assertion "Q40415_heatmap" dans ui.etat.cache_relations ou ui.etat.message_erreur == ""
+
+    afficher("✓ basculer_visualisation('heatmap') successful")
+
+
+test asynchrone déf test_basculer_visualisation_galaxie():
+    """Test: Switch to galaxy visualization"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    resultat = attendre ui.principal.basculer_visualisation("galaxie")
+
+    assertion ui.etat.mode_visualisation == "galaxie"
+    assertion ui.etat.affichage_chargement == faux
+    assertion "Q40415_galaxie" dans ui.etat.cache_relations ou ui.etat.message_erreur == ""
+
+    afficher("✓ basculer_visualisation('galaxie') successful")
+
+
+test asynchrone déf test_basculer_visualisation_chronologie():
+    """Test: Switch to timeline visualization"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    resultat = attendre ui.principal.basculer_visualisation("chronologie")
+
+    assertion ui.etat.mode_visualisation == "chronologie"
+    assertion ui.etat.affichage_chargement == faux
+
+    afficher("✓ basculer_visualisation('chronologie') successful")
+
+
+test asynchrone déf test_appliquer_filtre_semantique():
+    """Test: Apply semantic filter to graph"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    noeuds_avant = ui.etat.graphe.compter_noeuds()
+    relations_avant = ui.etat.graphe.compter_relations()
+
+    resultat = attendre ui.principal.appliquer_filtre("MYTHOLOGIE", vrai)
+
+    assertion resultat != {}
+    assertion "graphe_filtre" dans ui.etat.cache_relations
+    assertion "MYTHOLOGIE" dans ui.etat.filtres_actifs
+
+    stats = resultat.obtenir("stats", {})
+    assertion stats.obtenir("total_noeuds_avant", 0) > 0
+    assertion stats.obtenir("total_relations_avant", 0) >= 0
+
+    afficher("✓ appliquer_filtre() successful - Filtered " + \
+              chaine(stats.obtenir("total_noeuds_apres", 0)) + \
+              " nodes from " + chaine(stats.obtenir("total_noeuds_avant", 0)))
+
+
+test asynchrone déf test_reinitialiser_filtre():
+    """Test: Clear all applied filters"""
+    attendre ui.principal.charger_mouvement("Q40415")
+    attendre ui.principal.appliquer_filtre("MYTHOLOGIE", vrai)
+
+    assertion "MYTHOLOGIE" dans ui.etat.filtres_actifs
+    assertion "graphe_filtre" dans ui.etat.cache_relations
+
+    resultat = attendre ui.principal.reinitialiser_filtre()
+
+    assertion "MYTHOLOGIE" non dans ui.etat.filtres_actifs
+    assertion "graphe_filtre" non dans ui.etat.cache_relations ou \
+              len(ui.etat.filtres_actifs) == 0
+
+    afficher("✓ reinitialiser_filtre() successful")
+
+
+test asynchrone déf test_charger_artiste_workflow():
+    """Test: Load an artist and verify state updates"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    # Get first artist from the movement
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "artiste":
+            resultat = attendre ui.principal.charger_artiste(id_noeud)
+
+            assertion ui.etat.entite_selectionnee_id == id_noeud
+            assertion ui.etat.entite_selectionnee_type == "artiste"
+            assertion ui.etat.artiste_etendu_id == id_noeud
+            assertion ui.etat.affichage_chargement == faux
+
+            afficher("✓ charger_artiste() workflow successful")
+            pause
+
+
+test asynchrone déf test_charger_oeuvre_workflow():
+    """Test: Load an artwork and verify state updates"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    # Get first artwork from the movement
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "oeuvre":
+            resultat = attendre ui.principal.charger_oeuvre(id_noeud)
+
+            assertion ui.etat.entite_selectionnee_id == id_noeud
+            assertion ui.etat.entite_selectionnee_type == "oeuvre"
+            assertion ui.etat.affichage_chargement == faux
+
+            afficher("✓ charger_oeuvre() workflow successful")
+            pause
+
+
+test asynchrone déf test_charger_chronologie_workflow():
+    """Test: Load chronology and verify state updates"""
+    resultat = attendre ui.principal.charger_chronologie(1800, 1900)
+
+    assertion ui.etat.plage_temporelle_debut == 1800
+    assertion ui.etat.plage_temporelle_fin == 1900
+    assertion ui.etat.mode_visualisation == "chronologie"
+    assertion ui.etat.affichage_chargement == faux
+    assertion resultat != []
+
+    afficher("✓ charger_chronologie() workflow successful")
+
+
+test asynchrone déf test_obtenir_entite_selectionnee():
+    """Test: Get current selected entity"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    entite = ui.etat.obtenir_entite_selectionnee()
+
+    assertion entite != {}
+    assertion entite.obtenir("id", "") == "Q40415"
+    assertion entite.obtenir("type", "") == "mouvement"
+    assertion entite.obtenir("donnees", {}) != {}
+
+    afficher("✓ obtenir_entite_selectionnee() successful")
+
+
+test asynchrone déf test_obtenir_instantane_etat():
+    """Test: Get complete state snapshot"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    etat = ui.etat.obtenir_instantane_etat()
+
+    assertion etat.obtenir("entite_selectionnee_id", "") == "Q40415"
+    assertion etat.obtenir("mode_visualisation", "") == "graphe"
+    assertion etat.obtenir("affichage_chargement", vrai) == faux
+    assertion etat.obtenir("graphe", {}) != {}
+    assertion etat.obtenir("entite_selectionnee", {}) != {}
+
+    afficher("✓ obtenir_instantane_etat() successful")
+
+
+test asynchrone déf test_executer_recherche():
+    """Test: Search in loaded entities"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    resultats = attendre ui.principal.executer_recherche("Impression")
+
+    assertion len(resultats) >= 0
+    si len(resultats) > 0:
+        premier_resultat = resultats[0]
+        assertion "id" dans premier_resultat
+        assertion "etiquette" dans premier_resultat
+
+    afficher("✓ executer_recherche() successful - Found " + \
+              chaine(len(resultats)) + " results")
+
+
+test asynchrone déf test_end_to_end_workflow():
+    """Test: Complete user workflow"""
+    afficher("\n" + "=" * 60)
+    afficher("END-TO-END WORKFLOW TEST")
+    afficher("=" * 60)
+
+    # Step 1: Load movement
+    afficher("\n1. Loading movement (Impressionism)...")
+    mouvement = attendre ui.principal.charger_mouvement("Q40415")
+    assertion mouvement != {}
+    afficher("   ✓ Loaded movement with " + \
+              chaine(ui.etat.graphe.compter_noeuds()) + " nodes")
+
+    # Step 2: Switch to heatmap
+    afficher("\n2. Switching to heatmap visualization...")
+    attendre ui.principal.basculer_visualisation("heatmap")
+    assertion ui.etat.mode_visualisation == "heatmap"
+    afficher("   ✓ Switched to heatmap mode")
+
+    # Step 3: Apply semantic filter
+    afficher("\n3. Applying semantic filter (MYTHOLOGIE)...")
+    filtre_resultat = attendre ui.principal.appliquer_filtre("MYTHOLOGIE", vrai)
+    assertion "graphe_filtre" dans ui.etat.cache_relations
+    afficher("   ✓ Applied filter")
+
+    # Step 4: Switch back to graph
+    afficher("\n4. Switching back to graph visualization...")
+    attendre ui.principal.basculer_visualisation("graphe")
+    assertion ui.etat.mode_visualisation == "graphe"
+    afficher("   ✓ Switched to graph mode")
+
+    # Step 5: Clear filter
+    afficher("\n5. Clearing filter...")
+    attendre ui.principal.reinitialiser_filtre()
+    assertion len(ui.etat.filtres_actifs) == 0
+    afficher("   ✓ Filter cleared")
+
+    # Step 6: Load artist from graph
+    afficher("\n6. Loading first artist from movement...")
+    artiste_id = ""
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "artiste":
+            artiste_id = id_noeud
+            pause
+
+    si artiste_id:
+        attendre ui.principal.charger_artiste(artiste_id)
+        assertion ui.etat.entite_selectionnee_type == "artiste"
+        afficher("   ✓ Loaded artist")
+
+    # Step 7: Get final state
+    afficher("\n7. Getting final application state...")
+    etat_final = ui.etat.obtenir_instantane_etat()
+    assertion etat_final != {}
+    afficher("   ✓ State snapshot obtained")
+
+    afficher("\n" + "=" * 60)
+    afficher("✓ END-TO-END WORKFLOW COMPLETE")
+    afficher("=" * 60)

@@ -7,8 +7,13 @@ exporter charger_artiste
 exporter charger_oeuvre
 exporter charger_chronologie
 exporter basculer_visualisation
+exporter appliquer_filtre
+exporter reinitialiser_filtre
+exporter executer_recherche
 exporter obtenir_entite_selectionnee
 exporter obtenir_etat_courant
+exporter obtenir_instantane_etat
+exporter obtenir_noeud_selectionne
 exporter principal
 exporter initialiser_application
 

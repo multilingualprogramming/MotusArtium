@@ -50,6 +50,7 @@ jobs:
           cp index.html _site/index.html
           cp styles.css _site/styles.css
           cp app.js _site/app.js
+          cp theme.js _site/theme.js
           cp bootstrap.js _site/bootstrap.js
           cp _build/bundle.js _site/bundle.js
           cp -r graphql _site/graphql

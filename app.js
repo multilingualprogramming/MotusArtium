@@ -21,6 +21,10 @@
         const selectedEntityActionEl = document.getElementById("selected-entity-action");
         const constellationNodesEl = document.getElementById("constellation-nodes");
         const constellationLinksEl = document.getElementById("constellation-links");
+        const timelineTrackEl = document.querySelector(".timeline-track");
+        const timelineWindowEl = document.querySelector(".timeline-window");
+        const timelineLabelsEl = document.querySelector(".timeline-labels");
+        const timelineCaptionEl = document.getElementById("timeline-caption");
         const translatableElements = {
             "brand-eyebrow": {
                 fr: "Multilingual x Wikidata GraphQL",
@@ -370,6 +374,29 @@
             return runtimeState.stateSnapshot || browserAdapterSnapshot();
         }
 
+        function currentEntityRecord() {
+            const snapshot = currentSnapshot();
+            const selectedEntity = snapshot.entite_selectionnee || {};
+            const selectedId = selectedEntity.id || snapshot.entite_selectionnee_id || runtimeState.selectedEntity.id || "";
+            const records = [];
+
+            if (selectedEntity.donnees && typeof selectedEntity.donnees === "object") {
+                records.push(selectedEntity.donnees);
+            }
+
+            if (selectedId && browserAdapterState.cache_entites[selectedId]) {
+                records.push(browserAdapterState.cache_entites[selectedId]);
+            }
+
+            const graphNodes = (((snapshot.graphe || {}).noeuds) || []);
+            const graphNode = graphNodes.find((node) => node.id === selectedId);
+            if (graphNode && graphNode.donnees && typeof graphNode.donnees === "object") {
+                records.push(graphNode.donnees);
+            }
+
+            return records.find((record) => record && Object.keys(record).length) || {};
+        }
+
         async function refreshMultilingualEntityLabels() {
             const snapshot = currentSnapshot();
             const selectedEntity = snapshot.entite_selectionnee || {};
@@ -417,18 +444,8 @@
         }
 
         function renderSelectedEntity() {
-            const snapshot = currentSnapshot();
-            const activeEntity = ((snapshot.entite_selectionnee || {}).donnees) || {};
-            let metaText = runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
-            const selectedType = String(runtimeState.selectedEntity.type || "").toLowerCase();
-            if (selectedType.includes("work")) {
-                const inception = fieldValue(activeEntity, "inceptionDate");
-                if (inception) {
-                    metaText = "Inception: " + inception.slice(0, 10);
-                } else {
-                    metaText = "Artwork detail loaded";
-                }
-            }
+            const activeEntity = currentEntityRecord();
+            let metaText = describeEntityMeta(runtimeState.selectedEntity.type, activeEntity) || runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
             selectedEntityNameEl.textContent = runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || "Awaiting selection";
             selectedEntityTypeEl.textContent = runtimeState.selectedEntity.type || "Entity";
             selectedEntityMetaEl.textContent = metaText;
@@ -486,6 +503,7 @@
             renderQueryDocList();
             renderSelectedEntity();
             renderTrail();
+            renderTimeline();
         }
 
         function inferDisplayLabel(record, fallback) {
@@ -504,6 +522,163 @@
                 return candidate.value || "";
             }
             return candidate || "";
+        }
+
+        function unwrapDateValue(candidate) {
+            if (!candidate) {
+                return "";
+            }
+            if (typeof candidate === "string") {
+                return candidate;
+            }
+            if (Array.isArray(candidate)) {
+                for (const entry of candidate) {
+                    const value = unwrapDateValue(entry);
+                    if (value) {
+                        return value;
+                    }
+                }
+                return "";
+            }
+            if (typeof candidate === "object") {
+                if (typeof candidate.time === "string") {
+                    return candidate.time;
+                }
+                if ("value" in candidate) {
+                    return unwrapDateValue(candidate.value);
+                }
+                if (typeof candidate.content === "string") {
+                    return candidate.content;
+                }
+            }
+            return "";
+        }
+
+        function fieldDate(record, keys) {
+            if (!record || typeof record !== "object") {
+                return "";
+            }
+            for (const key of keys) {
+                const value = unwrapDateValue(record[key]);
+                if (value) {
+                    return value;
+                }
+            }
+            return "";
+        }
+
+        function extractYear(dateValue) {
+            if (!dateValue) {
+                return null;
+            }
+            const match = String(dateValue).match(/([+-]?\d{1,6})/);
+            if (!match) {
+                return null;
+            }
+            const year = Number.parseInt(match[1], 10);
+            return Number.isFinite(year) ? year : null;
+        }
+
+        function formatTimelineYear(year) {
+            if (!Number.isFinite(year)) {
+                return "";
+            }
+            return year < 0 ? (Math.abs(year) + " BCE") : String(year);
+        }
+
+        function clamp(number, min, max) {
+            return Math.min(Math.max(number, min), max);
+        }
+
+        function buildTimelineModel(entityType, entity) {
+            const type = String(entityType || "").toLowerCase();
+            let startDate = "";
+            let endDate = "";
+            let pointDate = "";
+            let label = "Timeline unavailable";
+
+            if (type.includes("movement") || type.includes("mouvement")) {
+                startDate = fieldDate(entity, ["startTime", "startDate", "inceptionDate"]);
+                endDate = fieldDate(entity, ["endTime", "endDate", "dissolvedDate"]);
+                label = startDate || endDate ? "Movement period" : "Movement dates unavailable";
+            } else if (type.includes("artist") || type.includes("artiste")) {
+                startDate = fieldDate(entity, ["birthDate", "birthTime"]);
+                endDate = fieldDate(entity, ["deathDate", "deathTime"]);
+                label = startDate || endDate ? "Artist lifespan" : "Artist dates unavailable";
+            } else if (type.includes("work") || type.includes("oeuvre")) {
+                pointDate = fieldDate(entity, ["inceptionDate", "creationDate"]);
+                label = pointDate ? "Work creation date" : "Work date unavailable";
+            }
+
+            const startYear = extractYear(startDate);
+            const endYear = extractYear(endDate);
+            const pointYear = extractYear(pointDate);
+
+            if (Number.isFinite(startYear) || Number.isFinite(endYear)) {
+                const resolvedStart = Number.isFinite(startYear) ? startYear : endYear;
+                const resolvedEnd = Number.isFinite(endYear) ? endYear : startYear;
+                const span = Math.max(20, Math.abs(resolvedEnd - resolvedStart));
+                const padding = Math.max(10, Math.round(span * 0.2));
+                return {
+                    rangeStart: resolvedStart - padding,
+                    rangeEnd: resolvedEnd + padding,
+                    windowStart: resolvedStart,
+                    windowEnd: resolvedEnd,
+                    label,
+                    caption: formatTimelineYear(resolvedStart) + " - " + formatTimelineYear(resolvedEnd)
+                };
+            }
+
+            if (Number.isFinite(pointYear)) {
+                return {
+                    rangeStart: pointYear - 20,
+                    rangeEnd: pointYear + 20,
+                    windowStart: pointYear,
+                    windowEnd: pointYear,
+                    label,
+                    caption: formatTimelineYear(pointYear)
+                };
+            }
+
+            return {
+                rangeStart: 1400,
+                rangeEnd: 2000,
+                windowStart: 1540,
+                windowEnd: 1760,
+                label,
+                caption: "No dated field found"
+            };
+        }
+
+        function renderTimeline() {
+            if (!timelineTrackEl || !timelineWindowEl || !timelineLabelsEl) {
+                return;
+            }
+
+            const activeEntity = currentEntityRecord();
+            const selectedType = runtimeState.selectedEntity.type || "Entity";
+            const model = buildTimelineModel(selectedType, activeEntity);
+            const totalRange = Math.max(1, model.rangeEnd - model.rangeStart);
+            const left = clamp(((model.windowStart - model.rangeStart) / totalRange) * 100, 0, 100);
+            const right = clamp(((model.windowEnd - model.rangeStart) / totalRange) * 100, 0, 100);
+            const width = Math.max(2, right - left);
+
+            timelineWindowEl.style.left = left + "%";
+            timelineWindowEl.style.width = width + "%";
+            timelineTrackEl.setAttribute("aria-label", model.label);
+            timelineTrackEl.title = model.label;
+            if (timelineCaptionEl) {
+                timelineCaptionEl.textContent = model.label + ": " + model.caption;
+            }
+
+            const midOne = Math.round(model.rangeStart + totalRange / 3);
+            const midTwo = Math.round(model.rangeStart + (totalRange * 2) / 3);
+            timelineLabelsEl.innerHTML = [
+                formatTimelineYear(model.rangeStart),
+                formatTimelineYear(midOne),
+                formatTimelineYear(midTwo),
+                formatTimelineYear(model.rangeEnd)
+            ].map((value) => "<span>" + value + "</span>").join("");
         }
 
         function entityIdFromUri(uri) {
@@ -757,13 +932,13 @@
             }
 
             if (normalised.includes("work") || normalised.includes("oeuvre")) {
-                const inception = fieldValue(entity, "inceptionDate");
+                const inception = fieldDate(entity, ["inceptionDate", "creationDate"]);
                 return inception ? ("Inception: " + inception.slice(0, 10)) : "Artwork detail loaded";
             }
 
             if (normalised.includes("artist") || normalised.includes("artiste")) {
-                const birth = fieldValue(entity, "birthDate");
-                const death = fieldValue(entity, "deathDate");
+                const birth = fieldDate(entity, ["birthDate", "birthTime"]);
+                const death = fieldDate(entity, ["deathDate", "deathTime"]);
                 if (birth || death) {
                     return (birth ? birth.slice(0, 10) : "?") + " - " + (death ? death.slice(0, 10) : "?");
                 }
@@ -771,8 +946,8 @@
             }
 
             if (normalised.includes("movement") || normalised.includes("mouvement")) {
-                const start = fieldValue(entity, "startTime");
-                const end = fieldValue(entity, "endTime");
+                const start = fieldDate(entity, ["startTime", "startDate", "inceptionDate"]);
+                const end = fieldDate(entity, ["endTime", "endDate", "dissolvedDate"]);
                 if (start || end) {
                     return (start ? start.slice(0, 10) : "?") + " - " + (end ? end.slice(0, 10) : "?");
                 }

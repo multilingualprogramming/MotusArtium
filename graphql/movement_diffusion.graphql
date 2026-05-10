@@ -1,4 +1,4 @@
-query MovementDiffusion($id: String!, $languageCode: String!) {
+query MovementDiffusion($id: ItemId!, $languageCode: LanguageCode!) {
   item(id: $id) {
     id
     movementLabel: label(languageCode: $languageCode)

@@ -1,4 +1,4 @@
-query ArtistDetails($id: String!, $languageCode: String!) {
+query ArtistDetails($id: ItemId!, $languageCode: LanguageCode!) {
   item(id: $id) {
     id
     artistLabel: label(languageCode: $languageCode)

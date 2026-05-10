@@ -1,4 +1,4 @@
-query ArtistsByMovement($movementId: String!, $languageCode: String!) {
+query ArtistsByMovement($movementId: String!, $languageCode: LanguageCode!) {
   searchItems(
     query: {
       and: [
@@ -11,24 +11,6 @@ query ArtistsByMovement($movementId: String!, $languageCode: String!) {
       node {
         id
         artistLabel: label(languageCode: $languageCode)
-        birthDate: statements(propertyId: "P569") {
-          value {
-            ... on TimeValue { time }
-          }
-        }
-        deathDate: statements(propertyId: "P570") {
-          value {
-            ... on TimeValue { time }
-          }
-        }
-        birthplace: statements(propertyId: "P19") {
-          value {
-            ... on ItemValue {
-              id
-              label(languageCode: $languageCode)
-            }
-          }
-        }
       }
     }
   }

@@ -1,4 +1,4 @@
-query MovementEvolution($id: String!, $languageCode: String!) {
+query MovementEvolution($id: ItemId!, $languageCode: LanguageCode!) {
   item(id: $id) {
     id
     movementLabel: label(languageCode: $languageCode)

@@ -1,7 +1,7 @@
 importer json
 
 # Endpoint Wikidata GraphQL
-POINT_TERMINAL_WIKIDATA_GRAPHQL = "https://www.wikidata.org/w/api.php?action=wbgraphql&format=json"
+POINT_TERMINAL_WIKIDATA_GRAPHQL = "https://www.wikidata.org/w/api.php?action=wbgraphql&format=json&origin=*"
 LANGUE_PAR_DEFAUT = "fr"
 TYPE_MOUVEMENT_ARTISTIQUE = "Q968159"
 TYPE_ETRE_HUMAIN = "Q5"

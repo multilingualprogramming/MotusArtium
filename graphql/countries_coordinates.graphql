@@ -1,4 +1,4 @@
-query CountriesCoordinates($ids: [String!]!, $languageCode: String!) {
+query CountriesCoordinates($ids: [ItemId!]!, $languageCode: LanguageCode!) {
   itemsById(ids: $ids) {
     id
     countryLabel: label(languageCode: $languageCode)

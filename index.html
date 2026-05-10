@@ -173,6 +173,12 @@
             color: var(--text-soft);
         }
 
+        .chip.is-live {
+            border-color: rgba(139, 233, 253, 0.34);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 18px rgba(139, 233, 253, 0.12);
+        }
+
         .mode-button,
         .lang-button {
             font-family: Arial, Helvetica, sans-serif;
@@ -357,7 +363,7 @@
             overflow: hidden;
             padding: 22px;
             display: grid;
-            grid-template-rows: auto 1fr;
+            grid-template-rows: auto 1fr auto;
             gap: 16px;
         }
 
@@ -414,8 +420,7 @@
         .constellation-grid,
         .constellation-links,
         .constellation-nodes,
-        .stage-overlay,
-        .app-root {
+        .stage-overlay {
             position: absolute;
             inset: 0;
         }
@@ -461,11 +466,12 @@
             -webkit-appearance: none;
             padding: 0;
             margin: 0;
+            animation: nodeAppear 260ms ease;
         }
 
         .node:hover,
         .node:focus-visible {
-            transform: scale(1.06);
+            transform: translate(-50%, -50%) scale(1.06);
             border-color: rgba(255, 255, 255, 0.36);
             box-shadow: 0 0 28px rgba(139, 233, 253, 0.22);
             outline: none;
@@ -474,6 +480,20 @@
         .node.is-selected {
             border-color: rgba(214, 164, 88, 0.58);
             box-shadow: 0 0 34px rgba(214, 164, 88, 0.24);
+        }
+
+        .node.is-selected.node--work {
+            width: 58px;
+            height: 58px;
+            z-index: 5;
+            background: radial-gradient(circle, rgba(238, 161, 200, 0.56), rgba(238, 161, 200, 0.12));
+            box-shadow: 0 0 42px rgba(238, 161, 200, 0.3), 0 0 20px rgba(214, 164, 88, 0.18);
+        }
+
+        .node.is-loading {
+            border-color: rgba(139, 233, 253, 0.62);
+            box-shadow: 0 0 30px rgba(139, 233, 253, 0.28);
+            animation: nodePulse 1.1s ease-in-out infinite;
         }
 
         .node--movement {
@@ -505,6 +525,33 @@
             letter-spacing: 0.04em;
             color: var(--text-soft);
             pointer-events: none;
+        }
+
+        .node.is-selected .node-label {
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.84rem;
+            text-shadow: 0 0 14px rgba(255, 255, 255, 0.12);
+        }
+
+        @keyframes nodeAppear {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.82);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes nodePulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.08);
+            }
         }
 
         .constellation-empty {
@@ -549,16 +596,28 @@
         }
 
         .app-root {
-            z-index: 4;
-            inset: auto 18px 18px auto;
-            width: min(380px, calc(100% - 36px));
-            min-height: 120px;
+            position: relative;
+            z-index: 0;
+            width: 100%;
+            min-height: 110px;
             padding: 16px;
             border-radius: var(--radius-md);
             background: rgba(7, 11, 18, 0.76);
             border: 1px dashed rgba(139, 233, 253, 0.22);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
             overflow: auto;
+        }
+
+        .app-root-hint {
+            margin: 0 0 10px;
+            color: var(--text-soft);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .app-root-hint strong {
+            color: var(--text-main);
         }
 
         .card-stack {
@@ -971,10 +1030,11 @@
                             <span id="stage-trail-text">Selection should always produce a visual focus, a GraphQL document shift, and a language-aware summary. This overlay is where we can narrate those transitions.</span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="app-root">
-                        <div id="__ml_root"></div>
-                    </div>
+                <div class="app-root">
+                    <p class="app-root-hint"><strong>Multilingual mount:</strong> this panel is reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect more of the original runtime into the Observatory shell.</p>
+                    <div id="__ml_root"></div>
                 </div>
             </section>
 
@@ -1089,7 +1149,10 @@
                 name: "Impressionism",
                 meta: "Awaiting live GraphQL response"
             },
-            responseShape: "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}"
+            responseShape: "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}",
+            lastStatus: "Bootstrapping",
+            lastError: "",
+            lastRequestedEntityId: ""
         };
 
         const modeSummaries = {
@@ -1283,18 +1346,29 @@
             queryDocListEl.innerHTML = "";
             runtimeState.knownDocs.forEach((doc) => {
                 const badge = document.createElement("span");
-                badge.className = "chip";
+                badge.className = "chip" + (doc === runtimeState.currentDocument ? " is-live" : "");
                 badge.textContent = doc;
                 queryDocListEl.appendChild(badge);
             });
-            statusChipEl.textContent = "GraphQL Live - " + runtimeState.knownDocs.length + " docs";
+            statusChipEl.textContent = "GraphQL Live - " + runtimeState.knownDocs.length + " docs - " + runtimeState.lastStatus;
             activeDocChipEl.textContent = runtimeState.currentDocument;
         }
 
         function renderSelectedEntity() {
+            const activeEntity = browserAdapterState.cache_entites[browserAdapterState.entite_selectionnee_id] || {};
+            let metaText = runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
+            const selectedType = String(runtimeState.selectedEntity.type || "").toLowerCase();
+            if (selectedType.includes("work")) {
+                const inception = fieldValue(activeEntity, "inceptionDate");
+                if (inception) {
+                    metaText = "Inception: " + inception.slice(0, 10);
+                } else {
+                    metaText = "Artwork detail loaded";
+                }
+            }
             selectedEntityNameEl.textContent = runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || "Awaiting selection";
             selectedEntityTypeEl.textContent = runtimeState.selectedEntity.type || "Entity";
-            selectedEntityMetaEl.textContent = runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
+            selectedEntityMetaEl.textContent = metaText;
             selectedEntityActionEl.textContent = runtimeState.currentDocument || "Show Query";
         }
 
@@ -1329,6 +1403,11 @@
             queryVariablesEl.textContent = JSON.stringify(runtimeState.currentVariables, null, 2);
             queryResponseShapeEl.textContent = runtimeState.responseShape;
             activeLanguageChipEl.textContent = runtimeState.currentLanguage;
+            if (runtimeState.lastError) {
+                queryExplanationEl.textContent = runtimeState.lastError;
+            } else if (browserAdapterState.affichage_chargement) {
+                queryExplanationEl.textContent = "Loading live GraphQL data for " + (runtimeState.lastRequestedEntityId || runtimeState.selectedEntity.id || "selection") + ".";
+            }
             renderQueryDocList();
             renderSelectedEntity();
             renderTrail();
@@ -1363,7 +1442,7 @@
 
         async function executeGraphQLDocument(documentName, variables) {
             const query = await fetch("graphql/" + documentName).then((response) => response.text());
-            const response = await fetch("https://www.wikidata.org/w/api.php?action=wbgraphql&format=json", {
+            const response = await fetch("https://www.wikidata.org/w/api.php?action=wbgraphql&format=json&origin=*", {
                 method: "POST",
                 headers: {
                     "Accept": "application/json",
@@ -1374,10 +1453,16 @@
                     variables
                 })
             });
+            runtimeState.lastStatus = "HTTP " + response.status + " for " + documentName;
             const body = await response.json();
             if (body.errors && body.errors.length) {
-                throw new Error(body.errors[0].message || "GraphQL error");
+                const message = body.errors[0].message || "GraphQL error";
+                runtimeState.lastError = "GraphQL error in " + documentName + ": " + message;
+                runtimeState.responseShape = JSON.stringify(body, null, 2);
+                renderRuntimeState();
+                throw new Error(message);
             }
+            runtimeState.lastError = "";
             return body.data || {};
         }
 
@@ -1418,6 +1503,10 @@
             message_erreur: "",
             plage_temporelle_debut: 1400,
             plage_temporelle_fin: 2000,
+            expandedMovementId: "",
+            expandedArtistId: "",
+            expandedArtworkId: "",
+            focusedArtworkId: "",
             cache_entites: {},
             graphe: {
                 noeuds: new Map(),
@@ -1454,15 +1543,131 @@
             });
         }
 
+        function removeGraphNodes(nodeIds) {
+            const ids = new Set((nodeIds || []).filter(Boolean));
+            if (!ids.size) {
+                return;
+            }
+
+            ids.forEach((id) => {
+                browserAdapterState.graphe.noeuds.delete(id);
+                delete browserAdapterState.cache_entites[id];
+            });
+
+            browserAdapterState.graphe.relations = browserAdapterState.graphe.relations.filter((relation) => {
+                return !ids.has(relation.source) && !ids.has(relation.target);
+            });
+        }
+
+        function relatedTargets(sourceId, relationType) {
+            return browserAdapterState.graphe.relations
+                .filter((relation) => relation.source === sourceId && relation.type === relationType)
+                .map((relation) => relation.target);
+        }
+
+        function collapseArtistExpansion(artistId) {
+            const workIds = relatedTargets(artistId, "created");
+            if (browserAdapterState.expandedArtworkId) {
+                collapseArtworkExpansion(browserAdapterState.expandedArtworkId);
+            }
+            removeGraphNodes(workIds);
+            if (browserAdapterState.expandedArtistId === artistId) {
+                browserAdapterState.expandedArtistId = "";
+            }
+            browserAdapterState.focusedArtworkId = "";
+        }
+
+        function focusArtworkWithinArtist(artistId, artworkId) {
+            const siblingWorkIds = relatedTargets(artistId, "created").filter((id) => id !== artworkId);
+            removeGraphNodes(siblingWorkIds);
+        }
+
+        function collapseArtworkExpansion(artworkId) {
+            const museumIds = relatedTargets(artworkId, "displayed_at");
+            const subjectIds = relatedTargets(artworkId, "depicts");
+            const materialIds = relatedTargets(artworkId, "made_of");
+            removeGraphNodes([...museumIds, ...subjectIds, ...materialIds]);
+            if (browserAdapterState.expandedArtworkId === artworkId) {
+                browserAdapterState.expandedArtworkId = "";
+            }
+        }
+
+        function collapseMovementExpansion(movementId) {
+            const artistIds = relatedTargets(movementId, "contains_artist");
+            artistIds.forEach((artistId) => {
+                if (browserAdapterState.expandedArtistId === artistId) {
+                    collapseArtistExpansion(artistId);
+                }
+            });
+            removeGraphNodes(artistIds);
+            if (browserAdapterState.expandedMovementId === movementId) {
+                browserAdapterState.expandedMovementId = "";
+            }
+        }
+
         function adapterEntitySummary() {
             const entity = browserAdapterState.cache_entites[browserAdapterState.entite_selectionnee_id] || {};
             return {
                 id: browserAdapterState.entite_selectionnee_id,
                 type: browserAdapterState.entite_selectionnee_type,
                 label: inferDisplayLabel(entity, browserAdapterState.entite_selectionnee_id),
+                meta: describeEntityMeta(browserAdapterState.entite_selectionnee_type, entity),
                 totalNoeuds: browserAdapterState.graphe.noeuds.size,
                 totalRelations: browserAdapterState.graphe.relations.length
             };
+        }
+
+        function describeEntityMeta(type, entity) {
+            const normalised = String(type || "").toLowerCase();
+            if (!entity || typeof entity !== "object") {
+                return "";
+            }
+
+            if (normalised.includes("work") || normalised.includes("oeuvre")) {
+                const inception = fieldValue(entity, "inceptionDate");
+                return inception ? ("Inception: " + inception.slice(0, 10)) : "Artwork detail loaded";
+            }
+
+            if (normalised.includes("artist") || normalised.includes("artiste")) {
+                const birth = fieldValue(entity, "birthDate");
+                const death = fieldValue(entity, "deathDate");
+                if (birth || death) {
+                    return (birth ? birth.slice(0, 10) : "?") + " - " + (death ? death.slice(0, 10) : "?");
+                }
+                return "Artist detail loaded";
+            }
+
+            if (normalised.includes("movement") || normalised.includes("mouvement")) {
+                const start = fieldValue(entity, "startTime");
+                const end = fieldValue(entity, "endTime");
+                if (start || end) {
+                    return (start ? start.slice(0, 10) : "?") + " - " + (end ? end.slice(0, 10) : "?");
+                }
+                return "Movement detail loaded";
+            }
+
+            return "";
+        }
+
+        function firstStatementItem(statements) {
+            const first = (statements || [])[0] || {};
+            const value = first.value || {};
+            if (!value.id) {
+                return null;
+            }
+            return {
+                id: value.id,
+                label: value.label || value.content || value.id
+            };
+        }
+
+        function statementItems(statements) {
+            return (statements || []).map((entry) => entry.value || {}).filter((value) => value.id).map((value) => {
+                return {
+                    id: value.id,
+                    label: value.label || value.content || value.id
+                };
+            });
         }
 
         function constellationClassForType(type) {
@@ -1487,8 +1692,22 @@
             return window.ui.etat.charger_oeuvre(node.id);
         }
 
+        function getRenderableNodes() {
+            const allNodes = Array.from(browserAdapterState.graphe.noeuds.values());
+            if (browserAdapterState.focusedArtworkId) {
+                return allNodes.filter((node) => {
+                    const type = String(node.type || "").toLowerCase();
+                    if (type.includes("work") || type.includes("oeuvre")) {
+                        return node.id === browserAdapterState.focusedArtworkId;
+                    }
+                    return true;
+                });
+            }
+            return allNodes;
+        }
+
         function computeConstellationLayout() {
-            const nodes = Array.from(browserAdapterState.graphe.noeuds.values());
+            const nodes = getRenderableNodes();
             const positions = new Map();
 
             if (!nodes.length) {
@@ -1526,7 +1745,7 @@
         }
 
         function renderConstellation() {
-            const nodes = Array.from(browserAdapterState.graphe.noeuds.values());
+            const nodes = getRenderableNodes();
             constellationNodesEl.innerHTML = "";
             constellationLinksEl.innerHTML = "";
 
@@ -1541,6 +1760,7 @@
             const positions = computeConstellationLayout();
             const selectedId = browserAdapterState.entite_selectionnee_id;
             const seenRelations = new Set();
+            const visibleNodeIds = new Set(nodes.map((node) => node.id));
 
             browserAdapterState.graphe.relations.forEach((relation) => {
                 const key = [relation.source, relation.target, relation.type].join("|");
@@ -1548,6 +1768,10 @@
                     return;
                 }
                 seenRelations.add(key);
+
+                if (!visibleNodeIds.has(relation.source) || !visibleNodeIds.has(relation.target)) {
+                    return;
+                }
 
                 const source = positions.get(relation.source);
                 const target = positions.get(relation.target);
@@ -1573,7 +1797,7 @@
                 const position = positions.get(node.id) || { x: 50, y: 50 };
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
-                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "");
+                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (browserAdapterState.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
                 nodeEl.setAttribute("aria-label", (node.etiquette || node.id) + " (" + node.type + ")");
@@ -1587,7 +1811,8 @@
                     try {
                         await loadEntityByNode(node);
                     } catch (error) {
-                        queryExplanationEl.textContent = "Constellation selection warning: " + error.message;
+                        runtimeState.lastError = "Constellation selection warning: " + error.message;
+                        renderRuntimeState();
                     }
                 });
 
@@ -1612,6 +1837,20 @@
         window.ui = window.ui || {};
         window.ui.etat = {
             async charger_mouvement(mouvementId) {
+                runtimeState.lastRequestedEntityId = mouvementId;
+                if (browserAdapterState.expandedMovementId === mouvementId && browserAdapterState.entite_selectionnee_id === mouvementId) {
+                    collapseMovementExpansion(mouvementId);
+                    browserAdapterState.focusedArtworkId = "";
+                    browserAdapterState.entite_selectionnee_id = mouvementId;
+                    browserAdapterState.entite_selectionnee_type = "Movement";
+                    applyAdapterStateToShell();
+                    return browserAdapterState.cache_entites[mouvementId] || {};
+                }
+
+                if (browserAdapterState.expandedArtistId) {
+                    collapseArtistExpansion(browserAdapterState.expandedArtistId);
+                }
+
                 browserAdapterState.affichage_chargement = true;
                 browserAdapterState.message_erreur = "";
                 browserAdapterState.entite_selectionnee_id = mouvementId;
@@ -1634,17 +1873,34 @@
                 artistRecords.forEach((artist) => {
                     const artistId = entityIdFromUri(fieldValue(artist, "artist"));
                     if (artistId) {
+                        browserAdapterState.cache_entites[artistId] = artist;
                         addGraphNode(artistId, "artist", fieldValue(artist, "artistLabel"), artist);
                         addGraphRelation(mouvementId, artistId, "contains_artist");
                     }
                 });
 
+                browserAdapterState.expandedMovementId = mouvementId;
+                browserAdapterState.focusedArtworkId = "";
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();
                 return movement;
             },
 
             async charger_artiste(artisteId) {
+                runtimeState.lastRequestedEntityId = artisteId;
+                if (browserAdapterState.expandedArtistId === artisteId && browserAdapterState.entite_selectionnee_id === artisteId) {
+                    collapseArtistExpansion(artisteId);
+                    browserAdapterState.focusedArtworkId = "";
+                    browserAdapterState.entite_selectionnee_id = artisteId;
+                    browserAdapterState.entite_selectionnee_type = "Artist";
+                    applyAdapterStateToShell();
+                    return browserAdapterState.cache_entites[artisteId] || {};
+                }
+
+                if (browserAdapterState.expandedArtistId && browserAdapterState.expandedArtistId !== artisteId) {
+                    collapseArtistExpansion(browserAdapterState.expandedArtistId);
+                }
+
                 browserAdapterState.affichage_chargement = true;
                 browserAdapterState.message_erreur = "";
                 browserAdapterState.entite_selectionnee_id = artisteId;
@@ -1666,21 +1922,32 @@
                 (((artworks.searchItems || {}).edges) || []).forEach((edge) => {
                     const node = edge && edge.node ? edge.node : {};
                     if (node.id) {
+                        browserAdapterState.cache_entites[node.id] = node;
                         addGraphNode(node.id, "work", node.artworkLabel || node.label || node.id, node);
                         addGraphRelation(artisteId, node.id, "created");
                     }
                 });
 
+                browserAdapterState.expandedArtistId = artisteId;
+                browserAdapterState.focusedArtworkId = "";
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();
                 return artist;
             },
 
             async charger_oeuvre(oeuvreId) {
+                runtimeState.lastRequestedEntityId = oeuvreId;
                 browserAdapterState.affichage_chargement = true;
                 browserAdapterState.message_erreur = "";
                 browserAdapterState.entite_selectionnee_id = oeuvreId;
                 browserAdapterState.entite_selectionnee_type = "Work";
+
+                if (browserAdapterState.expandedArtistId) {
+                    focusArtworkWithinArtist(browserAdapterState.expandedArtistId, oeuvreId);
+                }
+                if (browserAdapterState.expandedArtworkId && browserAdapterState.expandedArtworkId !== oeuvreId) {
+                    collapseArtworkExpansion(browserAdapterState.expandedArtworkId);
+                }
 
                 const details = await executeGraphQLDocument("artwork_details.graphql", {
                     id: oeuvreId,
@@ -1690,12 +1957,42 @@
                 browserAdapterState.cache_entites[oeuvreId] = artwork;
                 addGraphNode(oeuvreId, "work", artwork.artworkLabel, artwork);
 
+                const museum = firstStatementItem((details.item || {}).museum);
+                if (museum) {
+                    browserAdapterState.cache_entites[museum.id] = {
+                        label: museum.label
+                    };
+                    addGraphNode(museum.id, "museum", museum.label, { label: museum.label });
+                    addGraphRelation(oeuvreId, museum.id, "displayed_at");
+                }
+
+                const subjects = statementItems((details.item || {}).depicts);
+                subjects.slice(0, 6).forEach((subject) => {
+                    browserAdapterState.cache_entites[subject.id] = {
+                        label: subject.label
+                    };
+                    addGraphNode(subject.id, "subject", subject.label, { label: subject.label });
+                    addGraphRelation(oeuvreId, subject.id, "depicts");
+                });
+
+                const materials = statementItems((details.item || {}).material);
+                materials.slice(0, 4).forEach((material) => {
+                    browserAdapterState.cache_entites[material.id] = {
+                        label: material.label
+                    };
+                    addGraphNode(material.id, "material", material.label, { label: material.label });
+                    addGraphRelation(oeuvreId, material.id, "made_of");
+                });
+
+                browserAdapterState.expandedArtworkId = oeuvreId;
+                browserAdapterState.focusedArtworkId = oeuvreId;
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();
                 return artwork;
             },
 
             async charger_chronologie(debut, fin) {
+                runtimeState.lastRequestedEntityId = "chronology";
                 browserAdapterState.affichage_chargement = true;
                 browserAdapterState.plage_temporelle_debut = debut;
                 browserAdapterState.plage_temporelle_fin = fin;
@@ -1791,7 +2088,8 @@
                     recordGraphQLResponse(body.data || {});
                 }
             } catch (error) {
-                queryExplanationEl.textContent = "Runtime bridge warning: " + error.message;
+                runtimeState.lastError = "Runtime bridge warning: " + error.message;
+                renderRuntimeState();
             }
 
             return response;
@@ -1884,10 +2182,8 @@
                 try {
                     await initialiser_application();
                 } catch (error) {
-                    const explanation = document.getElementById("query-explanation");
-                    if (explanation) {
-                        explanation.textContent = "Bootstrap warning: " + error.message;
-                    }
+                    runtimeState.lastError = "Bootstrap warning: " + error.message;
+                    renderRuntimeState();
                 }
             }
         })();

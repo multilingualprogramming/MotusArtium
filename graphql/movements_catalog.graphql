@@ -1,4 +1,4 @@
-query MovementsCatalog($languageCode: String!) {
+query MovementsCatalog($languageCode: LanguageCode!) {
   searchItems(
     query: {
       and: [
@@ -10,16 +10,6 @@ query MovementsCatalog($languageCode: String!) {
       node {
         id
         movementLabel: label(languageCode: $languageCode)
-        startTime: statements(propertyId: "P580") {
-          value {
-            ... on TimeValue { time }
-          }
-        }
-        endTime: statements(propertyId: "P582") {
-          value {
-            ... on TimeValue { time }
-          }
-        }
       }
     }
   }

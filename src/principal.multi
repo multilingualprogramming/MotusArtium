@@ -1,6 +1,11 @@
 # MotusArtium - GraphQL-first bridge to reactive UI state
-# Note: ui.etat, ui.composants.*, and ui.interactions.* are provided by the HTML
-# These are not imported to avoid including their implementations in the bundle
+
+importer ui.composants.barre_recherche
+importer ui.composants.panneau_detail
+importer ui.interactions.recherche
+
+# Note: ui.etat is NOT imported to avoid duplicate function definitions in the bundle
+# ui.etat.* functions are provided by the HTML implementation instead
 
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retour l'entité sélectionnée"""
@@ -47,3 +52,13 @@ asynchrone déf initialiser_application():
 asynchrone déf lancer_recherche(requete):
     """Lancer une recherche textuelle"""
     attendre ui.interactions.recherche.lancer_recherche(requete)
+
+
+# Stub functions for UI rendering - implementations provided by HTML
+déf rendre_panneau_detail():
+    """Rendre le panneau de détails (stub - implementation in HTML)"""
+    retour ""
+
+déf rendre_barre_recherche():
+    """Rendre la barre de recherche (stub - implementation in HTML)"""
+    retour ""

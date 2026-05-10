@@ -1,5 +1,4 @@
-importer ui.etat
-
+# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
 
 asynchrone déf ouvrir_panneau_detail():
     """Ouvrir le panneau de détails"""

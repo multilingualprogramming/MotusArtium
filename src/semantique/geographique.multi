@@ -1,6 +1,6 @@
 importer math
 importer donnees.requetes
-importer ui.etat
+# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
 
 
 # ============================================================================

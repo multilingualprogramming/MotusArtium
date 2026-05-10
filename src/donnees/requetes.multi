@@ -1,0 +1,554 @@
+importer json
+
+# Endpoint Wikidata GraphQL
+POINT_TERMINAL_WIKIDATA_GRAPHQL = "https://www.wikidata.org/w/api.php?action=wbgraphql&format=json"
+LANGUE_PAR_DEFAUT = "fr"
+TYPE_MOUVEMENT_ARTISTIQUE = "Q968159"
+TYPE_ETRE_HUMAIN = "Q5"
+TYPE_OEUVRE_ART = "Q3305213"
+CACHE_DOCUMENTS_GRAPHQL = {}
+
+
+asynchrone déf charger_document_graphql(nom_document: chaine) -> chaine:
+    """Charger un document GraphQL dédié depuis le dépôt statique"""
+    si nom_document dans CACHE_DOCUMENTS_GRAPHQL:
+        retourner CACHE_DOCUMENTS_GRAPHQL[nom_document]
+
+    chemin = "graphql/" + nom_document
+    reponse = attendre fetch(chemin)
+
+    si non reponse.ok:
+        lever Exception("Impossible de charger le document GraphQL: " + nom_document)
+
+    document = attendre reponse.text()
+    CACHE_DOCUMENTS_GRAPHQL[nom_document] = document
+    retourner document
+
+
+asynchrone déf executer_requete_graphql(nom_document: chaine, variables: dictionnaire = {}) -> dictionnaire:
+    """Exécuter une requête GraphQL Wikidata à partir d'un document dédié"""
+    document = attendre charger_document_graphql(nom_document)
+    corps = json.dumps({
+        "query": document,
+        "variables": variables
+    })
+
+    entetes = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
+    reponse = attendre fetch(
+        POINT_TERMINAL_WIKIDATA_GRAPHQL,
+        {
+            "method": "POST",
+            "headers": entetes,
+            "body": corps
+        }
+    )
+
+    si non reponse.ok:
+        lever Exception("Erreur GraphQL Wikidata: " + chaine(reponse.status))
+
+    donnees = attendre reponse.json()
+    erreurs = donnees.obtenir("errors", [])
+    si erreurs:
+        message = erreurs[0].obtenir("message", "Erreur GraphQL inconnue")
+        lever Exception(message)
+
+    retourner donnees.obtenir("data", {})
+
+
+déf _champ_valeur(valeur) -> dictionnaire:
+    si valeur est nul ou valeur == "":
+        retourner {}
+    retourner {"value": valeur}
+
+
+déf _uri_entite(entite_id: chaine) -> chaine:
+    si non entite_id:
+        retourner ""
+    retourner "http://www.wikidata.org/entity/" + entite_id
+
+
+déf _champ_entite(entite_id: chaine) -> dictionnaire:
+    uri = _uri_entite(entite_id)
+    si non uri:
+        retourner {}
+    retourner {"value": uri}
+
+
+déf _extraire_temps(entrees: liste) -> chaine:
+    pour entree dans entrees ou []:
+        valeur = entree.obtenir("value", {})
+        temps = valeur.obtenir("time", "")
+        si temps:
+            retourner temps
+    retourner ""
+
+
+déf _extraire_texte(entrees: liste) -> chaine:
+    pour entree dans entrees ou []:
+        valeur = entree.obtenir("value", {})
+        contenu = valeur.obtenir("content", "")
+        si contenu:
+            retourner contenu
+    retourner ""
+
+
+déf _extraire_item(entrees: liste) -> dictionnaire:
+    pour entree dans entrees ou []:
+        valeur = entree.obtenir("value", {})
+        entite_id = valeur.obtenir("id", "")
+        si entite_id:
+            retourner {
+                "id": entite_id,
+                "label": valeur.obtenir("label", "")
+            }
+    retourner {}
+
+
+déf _extraire_items(entrees: liste) -> liste:
+    resultats = []
+
+    pour entree dans entrees ou []:
+        valeur = entree.obtenir("value", {})
+        entite_id = valeur.obtenir("id", "")
+
+        si entite_id:
+            resultats.ajouter({
+                "id": entite_id,
+                "label": valeur.obtenir("label", "")
+            })
+
+    retourner resultats
+
+
+déf _extraire_coordonnees(entrees: liste) -> dictionnaire:
+    pour entree dans entrees ou []:
+        valeur = entree.obtenir("value", {})
+        latitude = valeur.obtenir("latitude", nul)
+        longitude = valeur.obtenir("longitude", nul)
+
+        si latitude n'est pas nul et longitude n'est pas nul:
+            retourner {
+                "latitude": latitude,
+                "longitude": longitude
+            }
+
+    retourner {}
+
+
+déf _normaliser_mouvement_detail(item: dictionnaire) -> dictionnaire:
+    pays = _extraire_item(item.obtenir("country", []))
+    precedent = _extraire_item(item.obtenir("follows", []))
+    suivant = _extraire_item(item.obtenir("followedBy", []))
+
+    retourner {
+        "movement": _champ_entite(item.obtenir("id", "")),
+        "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
+        "startTime": _champ_valeur(_extraire_temps(item.obtenir("startTime", []))),
+        "endTime": _champ_valeur(_extraire_temps(item.obtenir("endTime", []))),
+        "country": _champ_entite(pays.obtenir("id", "")),
+        "countryLabel": _champ_valeur(pays.obtenir("label", "")),
+        "follows": _champ_entite(precedent.obtenir("id", "")),
+        "followsLabel": _champ_valeur(precedent.obtenir("label", "")),
+        "followedBy": _champ_entite(suivant.obtenir("id", "")),
+        "followedByLabel": _champ_valeur(suivant.obtenir("label", ""))
+    }
+
+
+déf _normaliser_artiste_detail(item: dictionnaire) -> dictionnaire:
+    lieu_naissance = _extraire_item(item.obtenir("birthplace", []))
+    lieu_deces = _extraire_item(item.obtenir("deathplace", []))
+    mouvement = _extraire_item(item.obtenir("movement", []))
+
+    retourner {
+        "artist": _champ_entite(item.obtenir("id", "")),
+        "artistLabel": _champ_valeur(item.obtenir("artistLabel", "")),
+        "birthDate": _champ_valeur(_extraire_temps(item.obtenir("birthDate", []))),
+        "deathDate": _champ_valeur(_extraire_temps(item.obtenir("deathDate", []))),
+        "birthplace": _champ_entite(lieu_naissance.obtenir("id", "")),
+        "birthplaceLabel": _champ_valeur(lieu_naissance.obtenir("label", "")),
+        "deathplace": _champ_entite(lieu_deces.obtenir("id", "")),
+        "deathplaceLabel": _champ_valeur(lieu_deces.obtenir("label", "")),
+        "movement": _champ_entite(mouvement.obtenir("id", "")),
+        "movementLabel": _champ_valeur(mouvement.obtenir("label", ""))
+    }
+
+
+déf _normaliser_oeuvre_detail(item: dictionnaire) -> dictionnaire:
+    createur = _extraire_item(item.obtenir("creator", []))
+    musee = _extraire_item(item.obtenir("museum", []))
+    sujet = _extraire_item(item.obtenir("depicts", []))
+    materiau = _extraire_item(item.obtenir("material", []))
+
+    retourner {
+        "artwork": _champ_entite(item.obtenir("id", "")),
+        "artworkLabel": _champ_valeur(item.obtenir("artworkLabel", "")),
+        "creator": _champ_entite(createur.obtenir("id", "")),
+        "creatorLabel": _champ_valeur(createur.obtenir("label", "")),
+        "inceptionDate": _champ_valeur(_extraire_temps(item.obtenir("inceptionDate", []))),
+        "museum": _champ_entite(musee.obtenir("id", "")),
+        "museumLabel": _champ_valeur(musee.obtenir("label", "")),
+        "depicts": _champ_entite(sujet.obtenir("id", "")),
+        "depictsLabel": _champ_valeur(sujet.obtenir("label", "")),
+        "material": _champ_entite(materiau.obtenir("id", "")),
+        "materialLabel": _champ_valeur(materiau.obtenir("label", "")),
+        "image": _champ_valeur(_extraire_texte(item.obtenir("image", [])))
+    }
+
+
+déf _normaliser_artiste_resume(item: dictionnaire) -> dictionnaire:
+    lieu_naissance = _extraire_item(item.obtenir("birthplace", []))
+
+    retourner {
+        "artist": _champ_entite(item.obtenir("id", "")),
+        "artistLabel": _champ_valeur(item.obtenir("artistLabel", "")),
+        "birthDate": _champ_valeur(_extraire_temps(item.obtenir("birthDate", []))),
+        "deathDate": _champ_valeur(_extraire_temps(item.obtenir("deathDate", []))),
+        "birthplace": _champ_entite(lieu_naissance.obtenir("id", "")),
+        "birthplaceLabel": _champ_valeur(lieu_naissance.obtenir("label", ""))
+    }
+
+
+déf _normaliser_oeuvre_resume(item: dictionnaire) -> dictionnaire:
+    createur = _extraire_item(item.obtenir("creator", []))
+    musee = _extraire_item(item.obtenir("museum", []))
+    sujet = _extraire_item(item.obtenir("subject", []))
+
+    retourner {
+        "artwork": _champ_entite(item.obtenir("id", "")),
+        "artworkLabel": _champ_valeur(item.obtenir("artworkLabel", "")),
+        "creator": _champ_entite(createur.obtenir("id", "")),
+        "creatorLabel": _champ_valeur(createur.obtenir("label", "")),
+        "inceptionDate": _champ_valeur(_extraire_temps(item.obtenir("inceptionDate", []))),
+        "museum": _champ_entite(musee.obtenir("id", "")),
+        "museumLabel": _champ_valeur(musee.obtenir("label", "")),
+        "subject": _champ_entite(sujet.obtenir("id", "")),
+        "subjectLabel": _champ_valeur(sujet.obtenir("label", ""))
+    }
+
+
+déf _normaliser_chronologie(item: dictionnaire) -> dictionnaire:
+    retourner {
+        "movement": _champ_entite(item.obtenir("id", "")),
+        "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
+        "startTime": _champ_valeur(_extraire_temps(item.obtenir("startTime", []))),
+        "endTime": _champ_valeur(_extraire_temps(item.obtenir("endTime", [])))
+    }
+
+
+déf _annee_depuis_temps(temps: chaine) -> nombre:
+    si non temps ou len(temps) < 4:
+        retourner 0
+
+    texte = temps
+    si texte[0] == "+":
+        texte = texte[1:]
+
+    chercher:
+        retourner nombre(texte[0:4])
+    exception:
+        retourner 0
+
+
+asynchrone déf _recuperer_mouvements_catalogue() -> liste:
+    donnees = attendre executer_requete_graphql(
+        "movements_catalog.graphql",
+        {"languageCode": LANGUE_PAR_DEFAUT}
+    )
+
+    edges = donnees.obtenir("searchItems", {}).obtenir("edges", [])
+    resultats = []
+
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud:
+            resultats.ajouter(noeud)
+
+    retourner resultats
+
+
+# ============================================================================
+# Requêtes pour les mouvements artistiques
+# ============================================================================
+
+asynchrone déf obtenir_mouvement_details(mouvement_id: chaine) -> dictionnaire:
+    """Récupère les détails d'un mouvement artistique via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "movement_details.graphql",
+        {
+            "id": mouvement_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    si item:
+        retourner _normaliser_mouvement_detail(item)
+    retourner {}
+
+
+asynchrone déf obtenir_mouvements_par_periode(debut_annee: nombre, fin_annee: nombre) -> liste:
+    """Récupère les mouvements artistiques dans une période donnée via GraphQL"""
+    mouvements = attendre _recuperer_mouvements_catalogue()
+    resultats = []
+
+    pour mouvement dans mouvements:
+        entree = _normaliser_chronologie(mouvement)
+        debut = _annee_depuis_temps(entree.obtenir("startTime", {}).obtenir("value", ""))
+        fin = _annee_depuis_temps(entree.obtenir("endTime", {}).obtenir("value", ""))
+
+        si debut et fin et debut >= debut_annee et fin <= fin_annee:
+            resultats.ajouter(entree)
+
+    retourner resultats
+
+
+asynchrone déf obtenir_mouvements_evolution(mouvement_id: chaine) -> dictionnaire:
+    """Récupère l'évolution d'un mouvement via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "movement_evolution.graphql",
+        {
+            "id": mouvement_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    precedent = _extraire_item(item.obtenir("follows", []))
+    suivant = _extraire_item(item.obtenir("followedBy", []))
+    parent = _extraire_item(item.obtenir("partOf", []))
+
+    retourner {
+        "movement": _champ_entite(item.obtenir("id", "")),
+        "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
+        "follows": _champ_entite(precedent.obtenir("id", "")),
+        "followsLabel": _champ_valeur(precedent.obtenir("label", "")),
+        "followedBy": _champ_entite(suivant.obtenir("id", "")),
+        "followedByLabel": _champ_valeur(suivant.obtenir("label", "")),
+        "partOf": _champ_entite(parent.obtenir("id", "")),
+        "partOfLabel": _champ_valeur(parent.obtenir("label", ""))
+    }
+
+
+# ============================================================================
+# Requêtes pour les artistes
+# ============================================================================
+
+asynchrone déf obtenir_artiste_details(artiste_id: chaine) -> dictionnaire:
+    """Récupère les détails d'un artiste via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artist_details.graphql",
+        {
+            "id": artiste_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    si item:
+        retourner _normaliser_artiste_detail(item)
+    retourner {}
+
+
+asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre = 50) -> liste:
+    """Récupère les artistes associés à un mouvement via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artists_by_movement.graphql",
+        {
+            "movementId": mouvement_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    edges = donnees.obtenir("searchItems", {}).obtenir("edges", [])
+    resultats = []
+
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud and len(resultats) < limite:
+            resultats.ajouter(_normaliser_artiste_resume(noeud))
+
+    retourner resultats
+
+
+asynchrone déf obtenir_influences_artiste(artiste_id: chaine) -> dictionnaire:
+    """Récupère le réseau d'influences d'un artiste via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artist_influences.graphql",
+        {
+            "id": artiste_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    influence_recue = _extraire_item(item.obtenir("influencedBy", []))
+    influence_donnee = _extraire_item(item.obtenir("influenced", []))
+
+    retourner {
+        "artist": _champ_entite(item.obtenir("id", "")),
+        "artistLabel": _champ_valeur(item.obtenir("artistLabel", "")),
+        "influencedBy": _champ_entite(influence_recue.obtenir("id", "")),
+        "influencedByLabel": _champ_valeur(influence_recue.obtenir("label", "")),
+        "influenced": _champ_entite(influence_donnee.obtenir("id", "")),
+        "influencedLabel": _champ_valeur(influence_donnee.obtenir("label", ""))
+    }
+
+
+# ============================================================================
+# Requêtes pour les œuvres d'art
+# ============================================================================
+
+asynchrone déf obtenir_oeuvre_details(oeuvre_id: chaine) -> dictionnaire:
+    """Récupère les détails d'une œuvre via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artwork_details.graphql",
+        {
+            "id": oeuvre_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+    si item:
+        retourner _normaliser_oeuvre_detail(item)
+    retourner {}
+
+
+asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50) -> liste:
+    """Récupère les œuvres notables d'un artiste via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artworks_by_artist.graphql",
+        {
+            "artistId": artiste_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    edges = donnees.obtenir("searchItems", {}).obtenir("edges", [])
+    resultats = []
+
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud and len(resultats) < limite:
+            resultats.ajouter(_normaliser_oeuvre_resume(noeud))
+
+    retourner resultats
+
+
+asynchrone déf obtenir_oeuvres_par_sujet(sujet_id: chaine, limite: nombre = 50) -> liste:
+    """Récupère les œuvres qui dépeignent un sujet via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artworks_by_subject.graphql",
+        {
+            "subjectId": sujet_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    edges = donnees.obtenir("searchItems", {}).obtenir("edges", [])
+    resultats = []
+
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud and len(resultats) < limite:
+            resultats.ajouter(_normaliser_oeuvre_resume(noeud))
+
+    retourner resultats
+
+
+# ============================================================================
+# Requêtes géographiques
+# ============================================================================
+
+asynchrone déf obtenir_diffusion_geographique(mouvement_id: chaine) -> liste:
+    """Récupère la diffusion géographique d'un mouvement via GraphQL"""
+    donnees_mouvement = attendre executer_requete_graphql(
+        "movement_diffusion.graphql",
+        {
+            "id": mouvement_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees_mouvement.obtenir("item", {})
+    pays = _extraire_items(item.obtenir("country", []))
+    ids_pays = [entree.obtenir("id", "") pour entree dans pays si entree.obtenir("id", "")]
+
+    si non ids_pays:
+        retourner []
+
+    donnees_pays = attendre executer_requete_graphql(
+        "countries_coordinates.graphql",
+        {
+            "ids": ids_pays,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    pays_par_id = {}
+    pour pays_item dans donnees_pays.obtenir("itemsById", []):
+        pays_id = pays_item.obtenir("id", "")
+        si pays_id:
+            pays_par_id[pays_id] = pays_item
+
+    resultats = []
+
+    pour pays_entree dans pays:
+        pays_id = pays_entree.obtenir("id", "")
+        pays_item = pays_par_id.obtenir(pays_id, {})
+        coordonnees = _extraire_coordonnees(pays_item.obtenir("coordinate", []))
+
+        resultats.ajouter({
+            "movement": _champ_entite(item.obtenir("id", "")),
+            "movementLabel": _champ_valeur(item.obtenir("movementLabel", "")),
+            "country": _champ_entite(pays_id),
+            "countryLabel": _champ_valeur(pays_entree.obtenir("label", "")),
+            "coordinate": _champ_valeur(coordonnees)
+        })
+
+    retourner resultats
+
+
+asynchrone déf obtenir_oeuvres_musee(musee_id: chaine, limite: nombre = 50) -> liste:
+    """Récupère les œuvres d'un musée via GraphQL"""
+    donnees = attendre executer_requete_graphql(
+        "artworks_by_museum.graphql",
+        {
+            "museumId": musee_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    edges = donnees.obtenir("searchItems", {}).obtenir("edges", [])
+    resultats = []
+
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud and len(resultats) < limite:
+            resultats.ajouter(_normaliser_oeuvre_resume(noeud))
+
+    retourner resultats
+
+
+# ============================================================================
+# Requêtes de chronologie
+# ============================================================================
+
+asynchrone déf obtenir_chronologie_mouvements(debut: nombre, fin: nombre) -> liste:
+    """Récupère une chronologie des mouvements artistiques via GraphQL"""
+    mouvements = attendre _recuperer_mouvements_catalogue()
+    resultats = []
+
+    pour mouvement dans mouvements:
+        entree = _normaliser_chronologie(mouvement)
+        debut_mouvement = _annee_depuis_temps(entree.obtenir("startTime", {}).obtenir("value", ""))
+        fin_mouvement = _annee_depuis_temps(entree.obtenir("endTime", {}).obtenir("value", ""))
+
+        si debut_mouvement et fin_mouvement and debut_mouvement >= debut and fin_mouvement <= fin:
+            resultats.ajouter(entree)
+
+    retourner resultats

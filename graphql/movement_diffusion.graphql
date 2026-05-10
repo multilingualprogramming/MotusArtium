@@ -1,0 +1,14 @@
+query MovementDiffusion($id: String!, $languageCode: String!) {
+  item(id: $id) {
+    id
+    movementLabel: label(languageCode: $languageCode)
+    country: statements(propertyId: "P17") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+  }
+}

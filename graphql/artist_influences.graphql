@@ -1,0 +1,22 @@
+query ArtistInfluences($id: String!, $languageCode: String!) {
+  item(id: $id) {
+    id
+    artistLabel: label(languageCode: $languageCode)
+    influencedBy: statements(propertyId: "P737") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    influenced: statements(propertyId: "P738") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+  }
+}

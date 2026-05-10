@@ -1,0 +1,30 @@
+query MovementEvolution($id: String!, $languageCode: String!) {
+  item(id: $id) {
+    id
+    movementLabel: label(languageCode: $languageCode)
+    follows: statements(propertyId: "P155") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    followedBy: statements(propertyId: "P156") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    partOf: statements(propertyId: "P361") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+  }
+}

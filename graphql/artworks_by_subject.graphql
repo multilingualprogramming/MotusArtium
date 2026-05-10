@@ -1,0 +1,38 @@
+query ArtworksBySubject($subjectId: String!, $languageCode: String!) {
+  searchItems(
+    query: {
+      and: [
+        { property: "P31", value: "Q3305213" }
+        { property: "P180", value: $subjectId }
+      ]
+    }
+  ) {
+    edges {
+      node {
+        id
+        artworkLabel: label(languageCode: $languageCode)
+        creator: statements(propertyId: "P170") {
+          value {
+            ... on ItemValue {
+              id
+              label(languageCode: $languageCode)
+            }
+          }
+        }
+        inceptionDate: statements(propertyId: "P571") {
+          value {
+            ... on TimeValue { time }
+          }
+        }
+        subject: statements(propertyId: "P180") {
+          value {
+            ... on ItemValue {
+              id
+              label(languageCode: $languageCode)
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+query CountriesCoordinates($ids: [String!]!, $languageCode: String!) {
+  itemsById(ids: $ids) {
+    id
+    countryLabel: label(languageCode: $languageCode)
+    coordinate: statements(propertyId: "P625") {
+      value {
+        ... on GlobeCoordinateValue {
+          latitude
+          longitude
+        }
+      }
+    }
+  }
+}

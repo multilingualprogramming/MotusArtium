@@ -1,0 +1,40 @@
+query MovementDetails($id: String!, $languageCode: String!) {
+  item(id: $id) {
+    id
+    movementLabel: label(languageCode: $languageCode)
+    startTime: statements(propertyId: "P580") {
+      value {
+        ... on TimeValue { time }
+      }
+    }
+    endTime: statements(propertyId: "P582") {
+      value {
+        ... on TimeValue { time }
+      }
+    }
+    country: statements(propertyId: "P17") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    follows: statements(propertyId: "P155") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    followedBy: statements(propertyId: "P156") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+  }
+}

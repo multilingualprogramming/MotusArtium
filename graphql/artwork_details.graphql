@@ -1,0 +1,48 @@
+query ArtworkDetails($id: String!, $languageCode: String!) {
+  item(id: $id) {
+    id
+    artworkLabel: label(languageCode: $languageCode)
+    creator: statements(propertyId: "P170") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    inceptionDate: statements(propertyId: "P571") {
+      value {
+        ... on TimeValue { time }
+      }
+    }
+    museum: statements(propertyId: "P195") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    depicts: statements(propertyId: "P180") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    material: statements(propertyId: "P186") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    image: statements(propertyId: "P18") {
+      value {
+        ... on StringValue { content }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+query MovementsCatalog($languageCode: String!) {
+  searchItems(
+    query: {
+      and: [
+        { property: "P31", value: "Q968159" }
+      ]
+    }
+  ) {
+    edges {
+      node {
+        id
+        movementLabel: label(languageCode: $languageCode)
+        startTime: statements(propertyId: "P580") {
+          value {
+            ... on TimeValue { time }
+          }
+        }
+        endTime: statements(propertyId: "P582") {
+          value {
+            ... on TimeValue { time }
+          }
+        }
+      }
+    }
+  }
+}

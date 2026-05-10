@@ -1,68 +1,1167 @@
 <!DOCTYPE html>
 <html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MotusArtium - Polyglot query observatory for art history using Wikidata GraphQL and Multilingual">
+    <title>MotusArtium</title>
+    <style>
+        :root {
+            --bg-deep: #081019;
+            --bg-mid: #0e1724;
+            --bg-panel: rgba(12, 19, 31, 0.78);
+            --bg-panel-strong: rgba(8, 13, 22, 0.94);
+            --bg-soft: rgba(255, 255, 255, 0.04);
+            --line-soft: rgba(255, 255, 255, 0.09);
+            --line-strong: rgba(139, 233, 253, 0.25);
+            --text-main: #f7f1e4;
+            --text-soft: #b5b8c5;
+            --text-muted: #7f879a;
+            --accent-teal: #4db6ac;
+            --accent-gold: #d6a458;
+            --accent-coral: #db7a61;
+            --accent-cyan: #8be9fd;
+            --accent-rose: #eea1c8;
+            --shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.35);
+            --shadow-glow: 0 0 40px rgba(77, 182, 172, 0.18);
+            --radius-xl: 28px;
+            --radius-lg: 22px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+            --header-height: 84px;
+        }
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="MotusArtium - Atlas semantique interactif de l'evolution de l'art">
-        <title>MotusArtium</title>
-        <style>
-            * {
-                box-sizing: border-box;
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--text-main);
+            background:
+                radial-gradient(circle at 18% 18%, rgba(214, 164, 88, 0.16), transparent 0 22%),
+                radial-gradient(circle at 80% 20%, rgba(77, 182, 172, 0.18), transparent 0 24%),
+                radial-gradient(circle at 52% 74%, rgba(238, 161, 200, 0.12), transparent 0 22%),
+                linear-gradient(180deg, #050a12 0%, #09121e 38%, #071018 100%);
+            overflow-x: hidden;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        body::before {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 80px 80px;
+            mask-image: radial-gradient(circle at center, black 35%, transparent 82%);
+            opacity: 0.5;
+        }
+
+        body::after {
+            background:
+                radial-gradient(circle at 50% 50%, rgba(139, 233, 253, 0.08), transparent 36%),
+                radial-gradient(circle at 20% 80%, rgba(214, 164, 88, 0.08), transparent 28%);
+            animation: atmosphericShift 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes atmosphericShift {
+            from {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 0.7;
+            }
+            to {
+                transform: translate3d(0, -2%, 0) scale(1.06);
+                opacity: 1;
+            }
+        }
+
+        .shell {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-rows: auto auto 1fr auto;
+            min-height: 100vh;
+            gap: 20px;
+            padding: 18px;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--line-soft);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-panel), var(--shadow-glow);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: center;
+            padding: 18px 22px;
+            min-height: var(--header-height);
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .eyebrow {
+            font-family: "Courier New", monospace;
+            font-size: 0.74rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3.8rem);
+            line-height: 0.95;
+            letter-spacing: 0.02em;
+            font-weight: 600;
+        }
+
+        .brand p {
+            margin: 0;
+            color: var(--text-soft);
+            max-width: 70ch;
+            font-size: 1rem;
+        }
+
+        .mode-switcher,
+        .lang-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .chip,
+        .ghost-button,
+        .mode-button,
+        .lang-button {
+            border: 1px solid var(--line-soft);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            padding: 9px 14px;
+            font: inherit;
+            cursor: pointer;
+            transition: 160ms ease;
+        }
+
+        .chip {
+            font-family: "Courier New", monospace;
+            font-size: 0.82rem;
+            color: var(--text-soft);
+        }
+
+        .mode-button,
+        .lang-button {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .mode-button.is-active,
+        .lang-button.is-active {
+            background: linear-gradient(135deg, rgba(77, 182, 172, 0.22), rgba(139, 233, 253, 0.16));
+            border-color: var(--line-strong);
+            box-shadow: 0 0 0 1px rgba(139, 233, 253, 0.08), 0 0 24px rgba(139, 233, 253, 0.08);
+        }
+
+        .ghost-button:hover,
+        .mode-button:hover,
+        .lang-button:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+            gap: 22px;
+            padding: 28px;
+            overflow: hidden;
+        }
+
+        .hero-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .hero-copy h2 {
+            margin: 0;
+            font-size: clamp(2rem, 3vw, 3rem);
+            line-height: 1.08;
+            max-width: 16ch;
+        }
+
+        .hero-copy p {
+            margin: 0;
+            color: var(--text-soft);
+            max-width: 68ch;
+            font-size: 1.03rem;
+        }
+
+        .hero-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .entry-card {
+            position: relative;
+            min-height: 138px;
+            padding: 18px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line-soft);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+                radial-gradient(circle at top right, rgba(77, 182, 172, 0.12), transparent 50%);
+            overflow: hidden;
+        }
+
+        .entry-card strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.06rem;
+        }
+
+        .entry-card span {
+            display: block;
+            color: var(--text-soft);
+            font-size: 0.94rem;
+            line-height: 1.45;
+        }
+
+        .entry-card::after {
+            content: "";
+            position: absolute;
+            right: -20px;
+            bottom: -24px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(214, 164, 88, 0.2), transparent 70%);
+        }
+
+        .hero-side {
+            display: grid;
+            gap: 14px;
+        }
+
+        .preview-card {
+            padding: 18px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line-soft);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .preview-card h3,
+        .section-title {
+            margin: 0 0 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.82rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+        }
+
+        .preview-card p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .trail {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            color: var(--text-soft);
+        }
+
+        .trail strong {
+            color: var(--text-main);
+        }
+
+        .graphql-preview {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: "Courier New", monospace;
+            color: var(--accent-cyan);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .polyglot-preview {
+            display: grid;
+            gap: 8px;
+        }
+
+        .polyglot-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .polyglot-line code {
+            color: var(--accent-gold);
+            font-family: "Courier New", monospace;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(240px, 0.92fr) minmax(0, 1.6fr) minmax(320px, 0.92fr);
+            gap: 20px;
+            min-height: 0;
+        }
+
+        .rail,
+        .stage,
+        .mirror {
+            min-height: 100%;
+        }
+
+        .rail,
+        .mirror {
+            padding: 18px;
+            display: grid;
+            align-content: start;
+            gap: 16px;
+        }
+
+        .stage {
+            position: relative;
+            overflow: hidden;
+            padding: 22px;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 16px;
+        }
+
+        .stage-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+            align-items: start;
+        }
+
+        .stage-head h3 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .stage-head p {
+            margin: 6px 0 0;
+            color: var(--text-soft);
+            max-width: 60ch;
+        }
+
+        .constellation {
+            position: relative;
+            border-radius: calc(var(--radius-lg) - 4px);
+            border: 1px solid var(--line-soft);
+            background:
+                radial-gradient(circle at center, rgba(139, 233, 253, 0.06), transparent 44%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01));
+            overflow: hidden;
+            min-height: 520px;
+        }
+
+        .constellation::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 24%, rgba(77, 182, 172, 0.2), transparent 0 20%),
+                radial-gradient(circle at 70% 30%, rgba(214, 164, 88, 0.16), transparent 0 16%),
+                radial-gradient(circle at 50% 76%, rgba(219, 122, 97, 0.12), transparent 0 18%);
+            animation: stageGlow 16s ease-in-out infinite alternate;
+        }
+
+        @keyframes stageGlow {
+            from {
+                transform: scale(1) translate3d(0, 0, 0);
+            }
+            to {
+                transform: scale(1.08) translate3d(1%, -1%, 0);
+            }
+        }
+
+        .constellation-grid,
+        .constellation-links,
+        .constellation-nodes,
+        .stage-overlay,
+        .app-root {
+            position: absolute;
+            inset: 0;
+        }
+
+        .constellation-grid {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 88px 88px;
+            mask-image: radial-gradient(circle at center, black 28%, transparent 85%);
+        }
+
+        .link {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(139, 233, 253, 0.5), transparent);
+            transform-origin: left center;
+            opacity: 0.7;
+        }
+
+        .node {
+            position: absolute;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            box-shadow: 0 0 24px rgba(139, 233, 253, 0.12);
+        }
+
+        .node--movement {
+            width: 72px;
+            height: 72px;
+            background: radial-gradient(circle, rgba(214, 164, 88, 0.34), rgba(214, 164, 88, 0.06));
+        }
+
+        .node--artist {
+            width: 42px;
+            height: 42px;
+            background: radial-gradient(circle, rgba(77, 182, 172, 0.34), rgba(77, 182, 172, 0.06));
+        }
+
+        .node--work {
+            width: 26px;
+            height: 26px;
+            background: radial-gradient(circle, rgba(238, 161, 200, 0.34), rgba(238, 161, 200, 0.06));
+        }
+
+        .node-label {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.77rem;
+            letter-spacing: 0.04em;
+            color: var(--text-soft);
+        }
+
+        .stage-overlay {
+            display: grid;
+            align-items: end;
+            padding: 18px;
+            pointer-events: none;
+        }
+
+        .stage-caption {
+            width: min(460px, 100%);
+            padding: 16px 18px;
+            border-radius: var(--radius-md);
+            background: rgba(6, 10, 16, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .stage-caption strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .stage-caption span {
+            color: var(--text-soft);
+            line-height: 1.45;
+            font-size: 0.94rem;
+        }
+
+        .app-root {
+            inset: auto 18px 18px auto;
+            width: min(380px, calc(100% - 36px));
+            min-height: 120px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: rgba(7, 11, 18, 0.76);
+            border: 1px dashed rgba(139, 233, 253, 0.22);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+            overflow: auto;
+        }
+
+        .card-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .subpanel {
+            padding: 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line-soft);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .subpanel h4 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+        }
+
+        .subpanel p,
+        .subpanel li,
+        .subpanel dd {
+            color: var(--text-soft);
+        }
+
+        .subpanel dl {
+            margin: 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .subpanel dt {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .subpanel dd {
+            margin: 0;
+        }
+
+        .compass {
+            display: grid;
+            place-items: center;
+            padding: 10px 0 2px;
+        }
+
+        .compass-ring {
+            position: relative;
+            width: 210px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background:
+                radial-gradient(circle, rgba(77, 182, 172, 0.12), transparent 36%),
+                radial-gradient(circle at center, rgba(255, 255, 255, 0.03), transparent 62%);
+        }
+
+        .compass-ring::before,
+        .compass-ring::after {
+            content: "";
+            position: absolute;
+            inset: 18px;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.08);
+        }
+
+        .compass-ring::after {
+            inset: 42px;
+        }
+
+        .compass-pole {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 78px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            transform: translate(-50%, -50%);
+        }
+
+        .compass-pole.is-primary {
+            background: linear-gradient(135deg, rgba(77, 182, 172, 0.26), rgba(139, 233, 253, 0.18));
+            border-color: rgba(139, 233, 253, 0.28);
+            box-shadow: 0 0 22px rgba(139, 233, 253, 0.12);
+        }
+
+        .compass-pole[data-position="top"] { transform: translate(-50%, -164%); }
+        .compass-pole[data-position="top-right"] { transform: translate(24%, -124%); }
+        .compass-pole[data-position="bottom-right"] { transform: translate(24%, 28%); }
+        .compass-pole[data-position="bottom"] { transform: translate(-50%, 68%); }
+        .compass-pole[data-position="bottom-left"] { transform: translate(-124%, 28%); }
+        .compass-pole[data-position="top-left"] { transform: translate(-124%, -124%); }
+
+        .preset-list,
+        .trail-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .preset {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: baseline;
+            padding: 11px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .preset small {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .query-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .code-box,
+        .response-box {
+            margin: 0;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid rgba(139, 233, 253, 0.12);
+            font-family: "Courier New", monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            overflow: auto;
+            white-space: pre-wrap;
+            color: var(--accent-cyan);
+            min-height: 138px;
+        }
+
+        .response-box {
+            color: var(--text-soft);
+        }
+
+        .footer-rail {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(260px, 0.8fr);
+            gap: 18px;
+            padding: 18px 20px;
+            align-items: center;
+        }
+
+        .timeline {
+            display: grid;
+            gap: 10px;
+        }
+
+        .timeline-track {
+            position: relative;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+
+        .timeline-window {
+            position: absolute;
+            left: 22%;
+            width: 36%;
+            top: 0;
+            bottom: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, rgba(214, 164, 88, 0.85), rgba(77, 182, 172, 0.85));
+            box-shadow: 0 0 18px rgba(77, 182, 172, 0.18);
+        }
+
+        .timeline-labels,
+        .entity-pill {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.84rem;
+            color: var(--text-soft);
+        }
+
+        .entity-pill {
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .entity-pill strong {
+            color: var(--text-main);
+        }
+
+        .entity-pill .chip {
+            padding-block: 6px;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        @media (max-width: 1200px) {
+            .hero,
+            .workspace,
+            .footer-rail,
+            .topbar {
+                grid-template-columns: 1fr;
             }
 
-            body {
-                margin: 0;
-                font-family: "Segoe UI", sans-serif;
-                color: #1f2933;
-                background:
-                    radial-gradient(circle at top left, rgba(244, 162, 97, 0.25), transparent 30%),
-                    radial-gradient(circle at top right, rgba(42, 157, 143, 0.2), transparent 28%),
-                    linear-gradient(180deg, #f8f4ec 0%, #eef4fb 100%);
-                min-height: 100vh;
+            .mode-switcher,
+            .lang-status {
+                justify-content: flex-start;
             }
 
+            .hero-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .constellation {
+                min-height: 460px;
+            }
+        }
+
+        @media (max-width: 760px) {
             .shell {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 24px;
+                padding: 12px;
             }
 
-            .hero {
-                background: rgba(255, 255, 255, 0.82);
-                -webkit-backdrop-filter: blur(6px);
-                backdrop-filter: blur(6px);
-                border: 1px solid rgba(31, 41, 51, 0.08);
-                border-radius: 24px;
-                padding: 24px;
-                box-shadow: 0 20px 60px rgba(31, 41, 51, 0.08);
+            .topbar,
+            .hero,
+            .rail,
+            .mirror,
+            .stage,
+            .footer-rail {
+                padding: 16px;
             }
 
-            h1 {
-                margin: 0 0 8px;
-                font-size: clamp(2rem, 4vw, 3.4rem);
+            .brand h1 {
+                font-size: 2.25rem;
             }
 
-            .subtitle {
-                margin: 0;
-                color: rgba(31, 41, 51, 0.72);
+            .hero-copy h2 {
+                max-width: none;
             }
 
-            #app {
-                margin-top: 24px;
+            .compass-ring {
+                width: min(88vw, 210px);
             }
-        </style>
-    </head>
 
-    <body>
-        <main class="shell">
-            <section class="hero">
+            .constellation {
+                min-height: 380px;
+            }
+
+            .mobile-only {
+                display: inline-flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar panel">
+            <div class="brand">
+                <span class="eyebrow">Multilingual x Wikidata GraphQL</span>
                 <h1>MotusArtium</h1>
-                <p class="subtitle">Atlas semantique interactif de l'evolution de l'art</p>
-                <div id="__ml_root"></div>
-            </section>
-        </main>
-        <script src="bundle.js"></script>
-    </body>
+                <p>Polyglot query observatory for tracing movements, artists, works, places, and influence across art history.</p>
+            </div>
 
+            <nav class="mode-switcher" aria-label="Application modes">
+                <button class="mode-button is-active" data-mode="observatory">Observatory</button>
+                <button class="mode-button" data-mode="query-theater">Query Theater</button>
+                <button class="mode-button" data-mode="polyglot-studio">Polyglot Studio</button>
+                <button class="mode-button" data-mode="temporal-river">Temporal River</button>
+            </nav>
+
+            <div class="lang-status">
+                <button class="lang-button is-active" data-language="fr">FR</button>
+                <button class="lang-button" data-language="en">EN</button>
+                <span class="chip" id="status-chip">GraphQL Live - 0 docs</span>
+            </div>
+        </header>
+
+        <section class="hero panel">
+            <div class="hero-copy">
+                <span class="eyebrow">Manifest</span>
+                <h2>Navigate art history through live query surfaces and multilingual semantics.</h2>
+                <p>MotusArtium is designed as a cultural instrument rather than a dashboard: a place where GraphQL documents, semantic relationships, and language-aware exploration are visible at the same time.</p>
+
+                <div class="hero-actions">
+                    <article class="entry-card">
+                        <strong>Start with Movements</strong>
+                        <span>Enter through schools, ruptures, and successions to watch art history reorganize itself as a living constellation.</span>
+                    </article>
+                    <article class="entry-card">
+                        <strong>Start with Artists</strong>
+                        <span>Trace creation through people, influence, birthplace, and oeuvre while the active GraphQL path remains visible.</span>
+                    </article>
+                    <article class="entry-card">
+                        <strong>Start with Themes</strong>
+                        <span>Approach the atlas by material, subject, museum, or place and let the interface reshape the narrative lens.</span>
+                    </article>
+                </div>
+            </div>
+
+            <aside class="hero-side">
+                <section class="preview-card">
+                    <h3>Featured Journey</h3>
+                    <p class="trail">
+                        <strong>Impressionism</strong>
+                        <span>&rarr;</span>
+                        <strong>Claude Monet</strong>
+                        <span>&rarr;</span>
+                        <strong>Water Lilies</strong>
+                        <span>&rarr;</span>
+                        <strong>Musee de l'Orangerie</strong>
+                    </p>
+                </section>
+
+                <section class="preview-card">
+                    <h3>Live Query Preview</h3>
+                    <pre class="graphql-preview" id="hero-query-preview">Loading dedicated GraphQL documents...</pre>
+                </section>
+
+                <section class="preview-card">
+                    <h3>Language Surface Preview</h3>
+                    <div class="polyglot-preview" id="polyglot-preview">
+                        <div class="polyglot-line"><span>FR</span><code>Rechercher un mouvement, un artiste, une oeuvre...</code></div>
+                        <div class="polyglot-line"><span>EN</span><code>Trace a movement, artist, work, or place...</code></div>
+                    </div>
+                </section>
+            </aside>
+        </section>
+
+        <main class="workspace">
+            <aside class="rail panel">
+                <section class="subpanel">
+                    <h3 class="section-title">Semantic Compass</h3>
+                    <div class="compass">
+                        <div class="compass-ring" aria-hidden="true">
+                            <div class="compass-pole is-primary" data-position="top">Movement</div>
+                            <div class="compass-pole" data-position="top-right">Artist</div>
+                            <div class="compass-pole" data-position="bottom-right">Work</div>
+                            <div class="compass-pole" data-position="bottom">Place</div>
+                            <div class="compass-pole" data-position="bottom-left">Time</div>
+                            <div class="compass-pole" data-position="top-left">Influence</div>
+                        </div>
+                    </div>
+                    <p>The compass replaces flat filters with a semantic lens: emphasize movement, artist, work, place, time, or influence and let the atlas reorganize itself.</p>
+                </section>
+
+                <section class="subpanel">
+                    <h3 class="section-title">Lens Presets</h3>
+                    <div class="preset-list">
+                        <div class="preset"><span>Lineage</span><small>movement to successor</small></div>
+                        <div class="preset"><span>Geography</span><small>country and diffusion</small></div>
+                        <div class="preset"><span>Materials</span><small>mediums and subjects</small></div>
+                        <div class="preset"><span>Cross-Language</span><small>multilingual labels</small></div>
+                    </div>
+                </section>
+
+                <section class="subpanel">
+                    <h3 class="section-title">Current Lens</h3>
+                    <dl>
+                        <div>
+                            <dt>Emphasis</dt>
+                            <dd id="lens-summary">Influence-aware, movement-centered, French surface</dd>
+                        </div>
+                        <div>
+                            <dt>Goal</dt>
+                            <dd>Make GraphQL and Multilingual visible at the same time, not hidden under a generic graph interface.</dd>
+                        </div>
+                    </dl>
+                </section>
+            </aside>
+
+            <section class="stage panel">
+                <div class="stage-head">
+                    <div>
+                        <h3>Observatory Constellation</h3>
+                        <p>The central stage is reserved for the Multilingual runtime, but the shell already frames it as a semantic instrument with visible query and language context.</p>
+                    </div>
+                    <div class="query-list">
+                        <span class="chip" id="active-doc-chip">movement_details.graphql</span>
+                        <span class="chip">languageCode: <span id="active-language-chip">fr</span></span>
+                        <span class="chip mobile-only">Mode: Observatory</span>
+                    </div>
+                </div>
+
+                <div class="constellation">
+                    <div class="constellation-grid" aria-hidden="true"></div>
+                    <div class="constellation-links" aria-hidden="true">
+                        <div class="link" style="left: 18%; top: 28%; width: 18%; transform: rotate(18deg);"></div>
+                        <div class="link" style="left: 42%; top: 34%; width: 20%; transform: rotate(-12deg);"></div>
+                        <div class="link" style="left: 50%; top: 58%; width: 15%; transform: rotate(42deg);"></div>
+                        <div class="link" style="left: 24%; top: 58%; width: 23%; transform: rotate(-26deg);"></div>
+                    </div>
+                    <div class="constellation-nodes" aria-hidden="true">
+                        <div class="node node--movement" style="left: 18%; top: 24%;">
+                            <span class="node-label">Impressionism</span>
+                        </div>
+                        <div class="node node--artist" style="left: 39%; top: 34%;">
+                            <span class="node-label">Monet</span>
+                        </div>
+                        <div class="node node--artist" style="left: 58%; top: 28%;">
+                            <span class="node-label">Renoir</span>
+                        </div>
+                        <div class="node node--work" style="left: 64%; top: 56%;">
+                            <span class="node-label">Water Lilies</span>
+                        </div>
+                        <div class="node node--movement" style="left: 28%; top: 58%;">
+                            <span class="node-label">Post-Impressionism</span>
+                        </div>
+                    </div>
+
+                    <div class="stage-overlay">
+                        <div class="stage-caption">
+                            <strong>Current Trail</strong>
+                            <span>Selection should always produce a visual focus, a GraphQL document shift, and a language-aware summary. This overlay is where we can narrate those transitions.</span>
+                        </div>
+                    </div>
+
+                    <div class="app-root">
+                        <div id="__ml_root"></div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="mirror panel">
+                <section class="subpanel">
+                    <h3 class="section-title">Query Mirror</h3>
+                    <div class="query-list" id="query-doc-list">
+                        <span class="chip">movement_details.graphql</span>
+                    </div>
+                </section>
+
+                <section class="subpanel">
+                    <h3 class="section-title">Variables</h3>
+                    <pre class="code-box" id="query-variables">{
+  "id": "Q40415",
+  "languageCode": "fr"
+}</pre>
+                </section>
+
+                <section class="subpanel">
+                    <h3 class="section-title">Document</h3>
+                    <pre class="code-box" id="query-document">Loading document...</pre>
+                </section>
+
+                <section class="subpanel">
+                    <h3 class="section-title">Response Shape</h3>
+                    <pre class="response-box">{
+  item: {
+    id,
+    label,
+    statements(...)
+  }
+}</pre>
+                </section>
+
+                <section class="subpanel">
+                    <h3 class="section-title">Interpretation</h3>
+                    <p id="query-explanation">This panel turns the data layer into part of the experience: the app should always be able to show which GraphQL document is active, which variables are in play, and what semantic shape is being retrieved.</p>
+                </section>
+            </aside>
+        </main>
+
+        <footer class="footer-rail panel">
+            <section class="timeline">
+                <h3 class="section-title">Temporal Rail</h3>
+                <div class="timeline-track" aria-hidden="true">
+                    <div class="timeline-window"></div>
+                </div>
+                <div class="timeline-labels">
+                    <span>1400</span>
+                    <span>1600</span>
+                    <span>1800</span>
+                    <span>2000</span>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="section-title">Exploration Trail</h3>
+                <div class="trail-list">
+                    <div class="preset"><span>Movement</span><small>Impressionism</small></div>
+                    <div class="preset"><span>Artist</span><small>Claude Monet</small></div>
+                    <div class="preset"><span>Work</span><small>Water Lilies</small></div>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="section-title">Selected Entity</h3>
+                <div class="entity-pill">
+                    <strong>Impressionism</strong>
+                    <span class="chip">Movement</span>
+                    <span class="chip">1860s-1880s</span>
+                    <span class="chip">Show Query</span>
+                </div>
+            </section>
+        </footer>
+    </div>
+
+    <script>
+        const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
+        const langButtons = Array.from(document.querySelectorAll(".lang-button"));
+        const queryDocumentEl = document.getElementById("query-document");
+        const heroQueryPreviewEl = document.getElementById("hero-query-preview");
+        const queryDocListEl = document.getElementById("query-doc-list");
+        const statusChipEl = document.getElementById("status-chip");
+        const activeDocChipEl = document.getElementById("active-doc-chip");
+        const activeLanguageChipEl = document.getElementById("active-language-chip");
+        const queryVariablesEl = document.getElementById("query-variables");
+        const queryExplanationEl = document.getElementById("query-explanation");
+        const lensSummaryEl = document.getElementById("lens-summary");
+        const polyglotPreviewEl = document.getElementById("polyglot-preview");
+
+        const modeSummaries = {
+            observatory: {
+                explanation: "Observatory mode keeps the semantic field central while the Query Mirror remains continuously visible.",
+                lens: "Influence-aware, movement-centered, French surface"
+            },
+            "query-theater": {
+                explanation: "Query Theater makes the GraphQL document itself a primary storytelling surface for demos and teaching.",
+                lens: "Query-visible, document-forward, demonstrative surface"
+            },
+            "polyglot-studio": {
+                explanation: "Polyglot Studio foregrounds language variation, multilingual labels, and source-aware semantic surfaces.",
+                lens: "Language-contrasting, label-sensitive, multilingual surface"
+            },
+            "temporal-river": {
+                explanation: "Temporal River will privilege chronology, succession, and influence flow while reusing the same GraphQL backbone.",
+                lens: "Time-weighted, succession-focused, river narrative surface"
+            }
+        };
+
+        const languageSurfaces = {
+            fr: [
+                { code: "FR", text: "Rechercher un mouvement, un artiste, une oeuvre..." },
+                { code: "EN", text: "Trace a movement, artist, work, or place..." }
+            ],
+            en: [
+                { code: "EN", text: "Trace a movement, artist, work, or place..." },
+                { code: "FR", text: "Explorer un courant, un createur, une oeuvre..." }
+            ]
+        };
+
+        function setActiveButton(buttons, selected) {
+            buttons.forEach((button) => {
+                button.classList.toggle("is-active", button === selected);
+            });
+        }
+
+        async function loadQueryPreview(documentName) {
+            try {
+                const response = await fetch("graphql/" + documentName);
+                if (!response.ok) {
+                    throw new Error("Could not load " + documentName);
+                }
+
+                const text = await response.text();
+                const trimmed = text.trim();
+                queryDocumentEl.textContent = trimmed;
+                heroQueryPreviewEl.textContent = trimmed.split("\n").slice(0, 8).join("\n");
+                activeDocChipEl.textContent = documentName;
+            } catch (error) {
+                const fallback = "Unable to load GraphQL preview. The deployed app must ship the graphql/ directory alongside bundle.js.";
+                queryDocumentEl.textContent = fallback;
+                heroQueryPreviewEl.textContent = fallback;
+            }
+        }
+
+        async function loadQueryInventory() {
+            const docs = [
+                "movement_details.graphql",
+                "artists_by_movement.graphql",
+                "artwork_details.graphql"
+            ];
+
+            queryDocListEl.innerHTML = "";
+            docs.forEach((doc) => {
+                const badge = document.createElement("span");
+                badge.className = "chip";
+                badge.textContent = doc;
+                queryDocListEl.appendChild(badge);
+            });
+            statusChipEl.textContent = "GraphQL Live - " + docs.length + " docs";
+            await loadQueryPreview(docs[0]);
+        }
+
+        function updateLanguageSurface(languageCode) {
+            activeLanguageChipEl.textContent = languageCode;
+            queryVariablesEl.textContent = JSON.stringify({
+                id: "Q40415",
+                languageCode: languageCode
+            }, null, 2);
+
+            const lines = languageSurfaces[languageCode] || languageSurfaces.fr;
+            polyglotPreviewEl.innerHTML = "";
+            lines.forEach((line) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "polyglot-line";
+
+                const left = document.createElement("span");
+                left.textContent = line.code;
+
+                const right = document.createElement("code");
+                right.textContent = line.text;
+
+                wrapper.appendChild(left);
+                wrapper.appendChild(right);
+                polyglotPreviewEl.appendChild(wrapper);
+            });
+        }
+
+        modeButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setActiveButton(modeButtons, button);
+                const config = modeSummaries[button.dataset.mode];
+                if (config) {
+                    queryExplanationEl.textContent = config.explanation;
+                    lensSummaryEl.textContent = config.lens;
+                }
+            });
+        });
+
+        langButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setActiveButton(langButtons, button);
+                updateLanguageSurface(button.dataset.language);
+            });
+        });
+
+        loadQueryInventory();
+        updateLanguageSurface("fr");
+    </script>
+    <script src="bundle.js"></script>
+</body>
 </html>

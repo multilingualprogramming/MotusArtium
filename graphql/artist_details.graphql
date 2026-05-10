@@ -1,0 +1,40 @@
+query ArtistDetails($id: String!, $languageCode: String!) {
+  item(id: $id) {
+    id
+    artistLabel: label(languageCode: $languageCode)
+    birthDate: statements(propertyId: "P569") {
+      value {
+        ... on TimeValue { time }
+      }
+    }
+    deathDate: statements(propertyId: "P570") {
+      value {
+        ... on TimeValue { time }
+      }
+    }
+    birthplace: statements(propertyId: "P19") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    deathplace: statements(propertyId: "P20") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    movement: statements(propertyId: "P135") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+query ArtworksByMuseum($museumId: String!, $languageCode: String!) {
+  searchItems(
+    query: {
+      and: [
+        { property: "P31", value: "Q3305213" }
+        { property: "P195", value: $museumId }
+      ]
+    }
+  ) {
+    edges {
+      node {
+        id
+        artworkLabel: label(languageCode: $languageCode)
+        creator: statements(propertyId: "P170") {
+          value {
+            ... on ItemValue {
+              id
+              label(languageCode: $languageCode)
+            }
+          }
+        }
+        inceptionDate: statements(propertyId: "P571") {
+          value {
+            ... on TimeValue { time }
+          }
+        }
+        museum: statements(propertyId: "P195") {
+          value {
+            ... on ItemValue {
+              id
+              label(languageCode: $languageCode)
+            }
+          }
+        }
+      }
+    }
+  }
+}

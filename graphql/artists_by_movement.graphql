@@ -1,0 +1,35 @@
+query ArtistsByMovement($movementId: String!, $languageCode: String!) {
+  searchItems(
+    query: {
+      and: [
+        { property: "P135", value: $movementId }
+        { property: "P31", value: "Q5" }
+      ]
+    }
+  ) {
+    edges {
+      node {
+        id
+        artistLabel: label(languageCode: $languageCode)
+        birthDate: statements(propertyId: "P569") {
+          value {
+            ... on TimeValue { time }
+          }
+        }
+        deathDate: statements(propertyId: "P570") {
+          value {
+            ... on TimeValue { time }
+          }
+        }
+        birthplace: statements(propertyId: "P19") {
+          value {
+            ... on ItemValue {
+              id
+              label(languageCode: $languageCode)
+            }
+          }
+        }
+      }
+    }
+  }
+}

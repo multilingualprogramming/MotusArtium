@@ -24,7 +24,7 @@
             --theme-toggle-bg: rgba(240, 235, 224, 0.14);
             --theme-toggle-bg-hover: rgba(240, 235, 224, 0.22);
             --theme-toggle-border: rgba(240, 235, 224, 0.42);
-            --theme-toggle-icon: #f0ebe0;
+            --theme-toggle-icon: #ffffff;
             --theme-toggle-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
             --radius-xl: 28px;
             --radius-lg: 22px;
@@ -82,7 +82,7 @@
             --theme-toggle-bg: rgba(255, 255, 255, 0.92);
             --theme-toggle-bg-hover: rgba(255, 255, 255, 0.98);
             --theme-toggle-border: rgba(0, 136, 187, 0.45);
-            --theme-toggle-icon: #005f83;
+            --theme-toggle-icon: #111111;
             --theme-toggle-shadow: 0 12px 28px rgba(0, 67, 92, 0.14);
         }
 
@@ -620,10 +620,16 @@
             stroke-width: 2;
             fill: none;
             color: currentColor;
+            overflow: visible;
         }
 
+        .theme-toggle .sun-icon,
         .theme-toggle .moon-icon {
             display: none;
+        }
+
+        .theme-toggle .sun-icon {
+            display: block;
         }
 
         @media (prefers-color-scheme: light) {

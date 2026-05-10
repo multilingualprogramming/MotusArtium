@@ -194,11 +194,40 @@
             };
         }
 
+        if (typeof window.ouvrir_panneau_detail !== "function") {
+            window.ouvrir_panneau_detail = async function() {
+                if (window.ui && window.ui.etat) {
+                    window.ui.etat.panneau_detail_visible = true;
+                }
+                if (typeof window.renderDetailPanel === "function") {
+                    window.renderDetailPanel();
+                }
+            };
+        }
+
+        if (typeof window.fermer_panneau_detail !== "function") {
+            window.fermer_panneau_detail = async function() {
+                if (window.ui && window.ui.etat) {
+                    window.ui.etat.panneau_detail_visible = false;
+                }
+                if (typeof window.renderDetailPanel === "function") {
+                    window.renderDetailPanel();
+                }
+            };
+        }
+
         window.renderDetailPanel = function() {
             const detailContainer = document.getElementById("detail-panel-container");
             const detailRoot = document.getElementById("__ml_detail_root");
+            const detailVisible = !window.ui || !window.ui.etat || window.ui.etat.panneau_detail_visible !== false;
 
             if (!detailContainer || !detailRoot) {
+                return;
+            }
+
+            if (!detailVisible) {
+                detailRoot.innerHTML = "";
+                detailContainer.classList.remove("is-active");
                 return;
             }
 

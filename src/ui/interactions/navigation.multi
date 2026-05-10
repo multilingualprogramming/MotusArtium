@@ -1,0 +1,130 @@
+importer asyncio
+importer ui.etat
+
+
+# ============================================================================
+# Navigation et exploration du graphe
+# ============================================================================
+
+asynchrone déf naviguer_vers_entite(entite_id: chaine, entite_type: chaine):
+    """Naviguer vers une entité spécifique"""
+    si entite_type == "mouvement":
+        attendre interface.etat.charger_mouvement(entite_id)
+
+    sinon si entite_type == "artiste":
+        attendre interface.etat.charger_artiste(entite_id)
+
+    sinon si entite_type == "oeuvre":
+        attendre interface.etat.charger_oeuvre(entite_id)
+
+
+asynchrone déf explorer_voisinage(entite_id: chaine, profondeur: nombre = 2):
+    """Explorer le voisinage d'une entité"""
+    noeud = interface.etat.graphe.obtenir_noeud(entite_id)
+
+    si non noeud:
+        retour
+
+    voisinage = interface.etat.graphe.obtenir_voisinage(entite_id, profondeur)
+
+    # Charger les entités du voisinage
+    pour couche in voisinage.obtenir("couches", []):
+        pour element in couche:
+            element_id = element.obtenir("id", "")
+            # Les nœuds sont déjà dans le graphe, pas besoin de les recharger
+
+
+asynchrone déf explorer_influences(artiste_id: chaine):
+    """Explorer le réseau d'influences d'un artiste"""
+    artiste = interface.etat.graphe.obtenir_noeud(artiste_id)
+
+    si non artiste ou artiste.type != "artiste":
+        retour
+
+    # Obtenir les influences
+    voisins = interface.etat.graphe.obtenir_voisins(artiste_id, "influence")
+
+    # Charger les détails pour chaque artiste influencé
+    pour voisin_id in voisins:
+        voisin = interface.etat.graphe.obtenir_noeud(voisin_id)
+        si voisin et voisin.type == "artiste":
+            # Le nœud est déjà dans le graphe
+            passe
+
+
+asynchrone déf explorer_mouvements_evolution(mouvement_id: chaine):
+    """Explorar l'évolution d'un mouvement"""
+    mouvement = interface.etat.graphe.obtenir_noeud(mouvement_id)
+
+    si non mouvement ou mouvement.type != "mouvement":
+        retour
+
+    # Créer une chronologie du mouvement actuel et de ses prédécesseurs
+    mouvements_successifs = []
+    mouvement_courant = mouvement_id
+
+    # Ajouter le mouvement courant
+    mouvements_successifs.ajouter(mouvement_courant)
+
+    # Trouver les mouvements qui l'ont précédé
+    precedents = interface.etat.graphe.obtenir_voisins(mouvement_courant, "precede")
+    mouvements_successifs.etendre(precedents)
+
+    # Trouver les mouvements qui l'ont suivi
+    successeurs = interface.etat.graphe.obtenir_voisins(mouvement_courant, "suivi_par")
+    mouvements_successifs.etendre(successeurs)
+
+    retourner mouvements_successifs
+
+
+asynchrone déf obtenir_chemin_influence(artiste1_id: chaine, artiste2_id: chaine) -> liste:
+    """Obtenir le chemin d'influence entre deux artistes"""
+    chemin = interface.etat.graphe.chemin_plus_court(artiste1_id, artiste2_id)
+
+    retourner chemin
+
+
+asynchrone déf obtenir_entites_liees(entite_id: chaine) -> dictionnaire:
+    """Obtenir toutes les entités liées à une entité"""
+    entite = interface.etat.graphe.obtenir_noeud(entite_id)
+
+    si non entite:
+        retourner {}
+
+    voisins = interface.etat.graphe.obtenir_voisins(entite_id)
+
+    entites_liees = {
+        "directes": [],
+        "par_type": {}
+    }
+
+    pour voisin_id in voisins:
+        voisin = interface.etat.graphe.obtenir_noeud(voisin_id)
+
+        si voisin:
+            entites_liees["directes"].ajouter({
+                "id": voisin_id,
+                "etiquette": voisin.etiquette,
+                "type": voisin.type
+            })
+
+            si voisin.type non in entites_liees["par_type"]:
+                entites_liees["par_type"][voisin.type] = []
+
+            entites_liees["par_type"][voisin.type].ajouter({
+                "id": voisin_id,
+                "etiquette": voisin.etiquette
+            })
+
+    retourner entites_liees
+
+
+asynchrone déf obtenir_composante_connexe(entite_id: chaine) -> liste:
+    """Obtenir tous les nœuds connectés à une entité"""
+    composantes = interface.etat.graphe.obtenir_composantes_connexes()
+
+    pour composante in composantes:
+        si entite_id in composante:
+            retourner composante
+
+    retourner [entite_id]

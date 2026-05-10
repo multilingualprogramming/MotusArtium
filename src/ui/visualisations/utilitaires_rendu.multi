@@ -1,0 +1,295 @@
+# ============================================================================
+# Utilitaires de rendu pour les visualisations
+# ============================================================================
+
+# Palettes de couleurs
+COULEURS_TYPE = {
+    "mouvement": "#FF6B6B",    # Rouge
+    "artiste": "#4ECDC4",       # Turquoise
+    "oeuvre": "#FFE66D",        # Jaune
+    "theme": "#95E1D3"          # Menthe
+}
+
+COULEURS_RELATION = {
+    "precede": "#888888",
+    "suivi_par": "#888888",
+    "influence": "#FF6B6B",
+    "a_influence": "#FF6B6B",
+    "contient_artiste": "#4ECDC4",
+    "a_cree": "#FFE66D"
+}
+
+# Tailles de nœuds
+TAILLES_NOEUD = {
+    "mouvement": 20,
+    "artiste": 15,
+    "oeuvre": 10,
+    "theme": 12
+}
+
+
+déf obtenir_couleur_type(type: chaine) -> chaine:
+    """Obtenir la couleur pour un type d'entité"""
+    retourner COULEURS_TYPE.obtenir(type, "#888888")
+
+
+déf obtenir_couleur_relation(type: chaine) -> chaine:
+    """Obtenir la couleur pour un type de relation"""
+    retourner COULEURS_RELATION.obtenir(type, "#CCCCCC")
+
+
+déf obtenir_taille_noeud(type: chaine) -> nombre:
+    """Obtenir la taille de rendu pour un type"""
+    retourner TAILLES_NOEUD.obtenir(type, 12)
+
+
+déf obtenir_epaisseur_trait_relation(poids: nombre) -> nombre:
+    """Obtenir l'épaisseur du trait basée sur le poids"""
+    retourner clamp(poids * 2, 1, 5)
+
+
+déf clamp(valeur: nombre, min_val: nombre, max_val: nombre) -> nombre:
+    """Clamp une valeur"""
+    si valeur < min_val:
+        retourner min_val
+    sinon si valeur > max_val:
+        retourner max_val
+    sinon:
+        retourner valeur
+
+
+# ============================================================================
+# Rendu Canvas
+# ============================================================================
+
+classe RenduGrapheCanvas:
+    """Rendeur pour visualiser un graphe sur canvas"""
+
+    canvas: element
+    contexte: element
+    positions: dictionnaire  # id -> {x, y}
+    noeud_survole: chaine    # ID du nœud actuellement survolé
+    noeud_selectionne: chaine # ID du nœud sélectionné
+    echelle_zoom: nombre
+    deplacement_x: nombre
+    deplacement_y: nombre
+
+    déf __init__(canvas: element):
+        observer self.canvas = canvas
+        observer self.contexte = canvas.obtenir_contexte("2d")
+        observer self.positions = {}
+        observer self.noeud_survole = ""
+        observer self.noeud_selectionne = ""
+        observer self.echelle_zoom = 1.0
+        observer self.deplacement_x = 0
+        observer self.deplacement_y = 0
+
+    déf mettre_a_jour_positions(positions: dictionnaire):
+        """Mettre à jour les positions des nœuds"""
+        observer self.positions = positions
+
+    déf rendre_aretes(graphe: element, relations: liste):
+        """Rendre les arêtes du graphe"""
+        ctx = self.contexte
+        ctx.couleur_trait = "#CCCCCC"
+        ctx.epaisseur_trait = 1
+
+        pour relation dans relations:
+            source_pos = self.positions.obtenir(relation.obtenir("source", ""), nul)
+            target_pos = self.positions.obtenir(relation.obtenir("target", ""), nul)
+
+            si source_pos et target_pos:
+                x1 = source_pos.obtenir("x", 0) * self.echelle_zoom + self.deplacement_x
+                y1 = source_pos.obtenir("y", 0) * self.echelle_zoom + self.deplacement_y
+                x2 = target_pos.obtenir("x", 0) * self.echelle_zoom + self.deplacement_x
+                y2 = target_pos.obtenir("y", 0) * self.echelle_zoom + self.deplacement_y
+
+                couleur = obtenir_couleur_relation(relation.obtenir("type", ""))
+                epaisseur = obtenir_epaisseur_trait_relation(relation.obtenir("poids", 1.0))
+
+                ctx.couleur_trait = couleur
+                ctx.epaisseur_trait = epaisseur
+                ctx.debut_chemin()
+                ctx.deplacer_vers(x1, y1)
+                ctx.ligner_vers(x2, y2)
+                ctx.tracer()
+
+    déf rendre_noeuds(graphe: element, noeuds: dictionnaire):
+        """Rendre les nœuds du graphe"""
+        ctx = self.contexte
+
+        pour id, noeud dans noeuds.items():
+            position = self.positions.obtenir(id, nul)
+
+            si position:
+                x = position.obtenir("x", 0) * self.echelle_zoom + self.deplacement_x
+                y = position.obtenir("y", 0) * self.echelle_zoom + self.deplacement_y
+                type_noeud = noeud.obtenir("type", "")
+                taille = obtenir_taille_noeud(type_noeud)
+                couleur = obtenir_couleur_type(type_noeud)
+
+                # Dessiner le cercle
+                ctx.couleur_remplissage = couleur
+                si id == self.noeud_selectionne:
+                    ctx.epaisseur_trait = 3
+                    ctx.couleur_trait = "#000000"
+                sinon si id == self.noeud_survole:
+                    ctx.epaisseur_trait = 2
+                    ctx.couleur_trait = "#333333"
+                sinon:
+                    ctx.epaisseur_trait = 1
+                    ctx.couleur_trait = "#999999"
+
+                ctx.debut_chemin()
+                ctx.arc(x, y, taille, 0, 2 * math.pi)
+                ctx.remplir()
+                ctx.tracer()
+
+                # Dessiner l'étiquette
+                ctx.couleur_texte = "#000000"
+                ctx.fonte = "12px Arial"
+                ctx.alignement_texte = "centre"
+                ctx.alignement_base = "middle"
+
+                etiquette = noeud.obtenir("etiquette", "?")
+                ctx.texte_rempli(etiquette, x, y + taille + 15)
+
+    déf rendre_frame(graphe: element):
+        """Rendre une image complète du graphe"""
+        ctx = self.contexte
+        largeur = self.canvas.largeur
+        hauteur = self.canvas.hauteur
+
+        # Effacer le canvas
+        ctx.couleur_remplissage = "#FFFFFF"
+        ctx.rect_rempli(0, 0, largeur, hauteur)
+
+        # Rendre les arêtes
+        relations = graphe.relations
+        self.rendre_aretes(graphe, relations)
+
+        # Rendre les nœuds
+        noeuds = graphe.noeuds
+        self.rendre_noeuds(graphe, noeuds)
+
+    déf obtenir_noeud_a_position(x: nombre, y: nombre) -> chaine:
+        """Trouver le nœud à une position donnée"""
+        pour id, position dans self.positions.items():
+            pos_x = position.obtenir("x", 0) * self.echelle_zoom + self.deplacement_x
+            pos_y = position.obtenir("y", 0) * self.echelle_zoom + self.deplacement_y
+
+            distance = math.sqrt((x - pos_x) ** 2 + (y - pos_y) ** 2)
+
+            si distance < 15:  # Rayon de sélection
+                retourner id
+
+        retourner ""
+
+    déf gerer_zoom(direction: nombre, x: nombre, y: nombre):
+        """Gérer le zoom (direction: 1 pour zoom in, -1 pour zoom out)"""
+        ancien_zoom = self.echelle_zoom
+        observer self.echelle_zoom = clamp(
+            self.echelle_zoom + direction * 0.1,
+            0.5,
+            3.0
+        )
+
+        # Ajuster le déplacement pour garder le point de zoom au même endroit
+        scale_diff = self.echelle_zoom - ancien_zoom
+        observer self.deplacement_x = self.deplacement_x - x * (scale_diff / ancien_zoom)
+        observer self.deplacement_y = self.deplacement_y - y * (scale_diff / ancien_zoom)
+
+    déf gerer_pan(dx: nombre, dy: nombre):
+        """Gérer le déplacement (pan)"""
+        observer self.deplacement_x = self.deplacement_x + dx
+        observer self.deplacement_y = self.deplacement_y + dy
+
+    déf reinitialiser_vue():
+        """Réinitialiser la vue (zoom et déplacement)"""
+        observer self.echelle_zoom = 1.0
+        observer self.deplacement_x = 0
+        observer self.deplacement_y = 0
+
+
+# ============================================================================
+# Rendu SVG pour timeline
+# ============================================================================
+
+classe RenduTimelineSVG:
+    """Rendeur SVG pour la visualisation de chronologie"""
+
+    conteneur: element
+    largeur: nombre
+    hauteur: nombre
+    marge_gauche: nombre
+    marge_droite: nombre
+    marge_haut: nombre
+    marge_bas: nombre
+
+    déf __init__(conteneur: element, largeur: nombre = 1200, hauteur: nombre = 400):
+        observer self.conteneur = conteneur
+        observer self.largeur = largeur
+        observer self.hauteur = hauteur
+        observer self.marge_gauche = 60
+        observer self.marge_droite = 40
+        observer self.marge_haut = 40
+        observer self.marge_bas = 60
+
+    déf rendre_timeline(mouvements: liste, debut_annee: nombre, fin_annee: nombre):
+        """Rendre une chronologie de mouvements"""
+        zone_utile_largeur = self.largeur - self.marge_gauche - self.marge_droite
+        zone_utile_hauteur = self.hauteur - self.marge_haut - self.marge_bas
+
+        # Créer le SVG
+        svg = creer_element_svg("svg")
+        svg.attribut("largeur", chaine(self.largeur))
+        svg.attribut("hauteur", chaine(self.hauteur))
+        svg.attribut("style", "border: 1px solid #ccc;")
+
+        # Axe horizontal (timeline)
+        ligne_axe = creer_element_svg("line")
+        ligne_axe.attribut("x1", chaine(self.marge_gauche))
+        ligne_axe.attribut("y1", chaine(self.hauteur - self.marge_bas))
+        ligne_axe.attribut("x2", chaine(self.largeur - self.marge_droite))
+        ligne_axe.attribut("y2", chaine(self.hauteur - self.marge_bas))
+        ligne_axe.attribut("style", "stroke: #333; stroke-width: 2;")
+        svg.ajouter_enfant(ligne_axe)
+
+        # Rendre chaque mouvement
+        pour mouvement dans mouvements:
+            debut = mouvement.obtenir("debut", debut_annee)
+            fin = mouvement.obtenir("fin", fin_annee)
+            etiquette = mouvement.obtenir("etiquette", "")
+            type_entite = mouvement.obtenir("type", "mouvement")
+
+            # Calculer la position
+            progression_debut = (debut - debut_annee) / (fin_annee - debut_annee)
+            progression_fin = (fin - debut_annee) / (fin_annee - debut_annee)
+
+            x1 = self.marge_gauche + progression_debut * zone_utile_largeur
+            x2 = self.marge_gauche + progression_fin * zone_utile_largeur
+            y = self.marge_haut + 30  # Ajuster la position verticale
+
+            # Dessiner le bloc
+            couleur = obtenir_couleur_type(type_entite)
+            bloc = creer_element_svg("rect")
+            bloc.attribut("x", chaine(x1))
+            bloc.attribut("y", chaine(y))
+            bloc.attribut("largeur", chaine(x2 - x1))
+            bloc.attribut("hauteur", "20")
+            bloc.attribut("style", "fill: " + couleur + "; stroke: #333; stroke-width: 1;")
+            svg.ajouter_enfant(bloc)
+
+            # Étiquette
+            texte = creer_element_svg("text")
+            texte.attribut("x", chaine((x1 + x2) / 2))
+            texte.attribut("y", chaine(y + 15))
+            texte.attribut("style", "text-anchor: middle; font-size: 10px;")
+            texte.contenu_texte = etiquette
+            svg.ajouter_enfant(texte)
+
+        observer self.conteneur.ajouter_enfant(svg)
+
+    déf creer_element_svg(tag: chaine) -> element:
+        """Créer un élément SVG"""
+        retourner creer_element("svg:" + tag)

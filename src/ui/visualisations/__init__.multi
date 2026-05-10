@@ -1,0 +1,6 @@
+# Module visualisations
+importer .graphe_vue
+importer .galaxie_vue
+importer .chronologie_vue
+importer .heatmap_vue
+importer .utilitaires_rendu

@@ -1,0 +1,309 @@
+importer ui.etat
+
+
+enum Lentille:
+    """Énumération des lentilles sémantiques"""
+    COULEUR = "couleur"
+    GEOMETRIE = "geometrie"
+    SYMBOLISME = "symbolisme"
+    EMOTION = "emotion"
+    ABSTRACTION = "abstraction"
+    URBANITE = "urbanite"
+    MYTHOLOGIE = "mythologie"
+    RELIGION = "religion"
+    NATURE = "nature"
+    POLITIQUE = "politique"
+    INDUSTRIALISATION = "industrialisation"
+
+
+# Mapping des lentilles aux sujets Wikidata
+MAPPING_LENTILLES_SUJETS = {
+    Lentille.COULEUR: [
+        "Q1075",     # couleur
+        "Q571",      # lumière
+        "Q1379522",  # blanc
+        "Q1076",     # noir
+    ],
+    Lentille.GEOMETRIE: [
+        "Q10307",    # géométrie
+        "Q127020",   # forme
+        "Q188913",   # ligne
+        "Q192762",   # cercle
+    ],
+    Lentille.SYMBOLISME: [
+        "Q34379",    # mythologie
+        "Q6881637",  # symbole
+        "Q45621",    # religion
+    ],
+    Lentille.EMOTION: [
+        "Q9415",     # amour
+        "Q26742",    # peur
+        "Q40241",    # joie
+    ],
+    Lentille.MYTHOLOGIE: [
+        "Q34379",    # mythologie
+        "Q178885",   # déesse
+        "Q11042",    # dieu
+    ],
+    Lentille.RELIGION: [
+        "Q45621",    # religion
+        "Q9176",     # christianisme
+        "Q645883",   # bouddhisme
+    ],
+    Lentille.NATURE: [
+        "Q441",      # nature
+        "Q15284",    # arbre
+        "Q25306",    # eau
+        "Q45",       # terre
+    ],
+    Lentille.POLITIQUE: [
+        "Q7163",     # politique
+        "Q6256",     # pays
+        "Q5",        # humain (contexte politique)
+    ],
+    Lentille.INDUSTRIALISATION: [
+        "Q2016",     # industrie
+        "Q28823",    # ingénierie
+        "Q11019",    # technologie
+    ]
+}
+
+
+classe FiltreSlentique:
+    """Filtre basé sur une lentille sémantique"""
+    lentille: chaine
+    sujets_actifs: liste  # Liste de sujets Wikidata à filtrer
+    booleen_inverse: booleen  # Si vrai, exclut au lieu d'inclure
+
+    déf __init__(lentille: chaine, booleen_inverse: booleen = faux):
+        observer self.lentille = lentille
+        observer self.sujets_actifs = MAPPING_LENTILLES_SUJETS.obtenir(lentille, [])
+        observer self.booleen_inverse = booleen_inverse
+
+    déf ajouter_sujet(sujet_id: chaine):
+        """Ajouter un sujet au filtre"""
+        si sujet_id non dans self.sujets_actifs:
+            observer self.sujets_actifs.ajouter(sujet_id)
+
+    déf retirer_sujet(sujet_id: chaine):
+        """Retirer un sujet du filtre"""
+        si sujet_id dans self.sujets_actifs:
+            self.sujets_actifs.retirer(sujet_id)
+
+    déf appliquer_a_noeuds(noeuds: dictionnaire) -> liste:
+        """Appliquer le filtre à une liste de nœuds"""
+        resultats = []
+
+        pour id, noeud dans noeuds.items():
+            si self.correspond_au_filtre(noeud):
+                resultats.ajouter(id)
+
+        retourner resultats
+
+    déf correspond_au_filtre(noeud) -> booleen:
+        """Vérifier si un nœud correspond au filtre"""
+        # Obtenir les sujets du nœud à partir de ses données
+        donnees = noeud.donnees
+        sujets_noeud = []
+
+        # Extraire les sujets dépictés (P180 en Wikidata)
+        si "depicts" dans donnees:
+            sujets_noeud.ajouter(donnees["depicts"])
+
+        si "depictsLabel" dans donnees:
+            sujets_noeud.ajouter(donnees["depictsLabel"])
+
+        # Vérifier la correspondance
+        pour sujet in sujets_noeud:
+            si sujet dans self.sujets_actifs:
+                retourner non self.booleen_inverse
+
+        retourner self.booleen_inverse
+
+
+classe GestionnaireFiltres:
+    """Gère un ensemble de filtres"""
+    filtres_actifs: liste  # [FiltreSlentique, ...]
+    mode_conjonction: booleen  # vrai = ET, faux = OU
+
+    déf __init__(mode_conjonction: booleen = vrai):
+        observer self.filtres_actifs = []
+        observer self.mode_conjonction = mode_conjonction
+
+    déf ajouter_filtre(filtre: FiltreSlentique):
+        """Ajouter un filtre"""
+        observer self.filtres_actifs.ajouter(filtre)
+
+    déf retirer_filtre(lentille: chaine):
+        """Retirer un filtre par lentille"""
+        pour i, filtre dans enumerate(self.filtres_actifs):
+            si filtre.lentille == lentille:
+                observer self.filtres_actifs.retirer(filtre)
+                pause
+
+    déf appliquer_tous(noeuds: dictionnaire) -> liste:
+        """Appliquer tous les filtres aux nœuds"""
+        si non self.filtres_actifs:
+            retourner liste(noeuds.keys())
+
+        resultats_filtres = []
+
+        pour filtre dans self.filtres_actifs:
+            resultats = filtre.appliquer_a_noeuds(noeuds)
+            resultats_filtres.ajouter(ensemble(resultats))
+
+        # Conjonction (AND) ou disjonction (OR)
+        si self.mode_conjonction:
+            # Intersection de tous les résultats
+            resultat_final = resultats_filtres[0]
+            pour resultats in resultats_filtres[1:]:
+                resultat_final = resultat_final.intersection(resultats)
+        sinon:
+            # Union de tous les résultats
+            resultat_final = ensemble()
+            pour resultats in resultats_filtres:
+                resultat_final = resultat_final.union(resultats)
+
+        retourner liste(resultat_final)
+
+    déf filtrer_graphe(graphe) -> dictionnaire:
+        """Filtrer un graphe complet"""
+        noeuds_acceptes_ids = self.appliquer_tous(graphe.noeuds)
+
+        # Créer un nouveau graphe filtré
+        graphe_filtre = {
+            "noeuds": {},
+            "relations": []
+        }
+
+        # Ajouter les nœuds acceptés
+        pour id in noeuds_acceptes_ids:
+            noeud = graphe.noeuds.obtenir(id)
+            si noeud:
+                graphe_filtre["noeuds"][id] = noeud
+
+        # Ajouter les relations entre nœuds acceptés
+        pour relation in graphe.relations:
+            si relation.source_id dans noeuds_acceptes_ids et relation.target_id dans noeuds_acceptes_ids:
+                graphe_filtre["relations"].ajouter(relation)
+
+        retourner graphe_filtre
+
+
+# ============================================================================
+# Analyseurs de contenu sémantique
+# ============================================================================
+
+asynchrone déf analyser_palette_couleur(oeuvre_id: chaine) -> dictionnaire:
+    """Analyser la palette de couleurs d'une œuvre (stub pour intégration IA future)"""
+    # Dans une implémentation réelle, cela utiliserait la vision par ordinateur
+    # sur les images de Wikimedia Commons
+
+    oeuvre = interface.etat.cache_entites.obtenir(oeuvre_id, {})
+
+    retourner {
+        "dominante": "#FF6B6B",
+        "secondaires": ["#4ECDC4", "#FFE66D"],
+        "confiance": 0.75  # Placeholder pour CV
+    }
+
+
+asynchrone déf analyser_contenu_symbolique(oeuvre_id: chaine) -> liste:
+    """Analyser le contenu symbolique/thématique d'une œuvre"""
+    oeuvre = interface.etat.cache_entites.obtenir(oeuvre_id, {})
+
+    sujets = []
+
+    # Extraire les sujets dépictés (P180)
+    si "depicts" dans oeuvre:
+        depicts = oeuvre.obtenir("depictsLabel", {}).obtenir("value", "")
+        si depicts:
+            sujets.ajouter(depicts)
+
+    retourner sujets
+
+
+asynchrone déf categoriser_emotion(oeuvre_id: chaine) -> dictionnaire:
+    """Catégoriser les émotions véhiculées par une œuvre"""
+    # Stub pour analyse future basée sur IA
+
+    retourner {
+        "emotions": [],
+        "valence": 0.5,  # -1 (négatif) à +1 (positif)
+        "arousal": 0.5   # 0 (calme) à 1 (excité)
+    }
+
+
+asynchrone déf analyser_geometrie(oeuvre_id: chaine) -> dictionnaire:
+    """Analyser les propriétés géométriques d'une œuvre"""
+    # Stub pour analyse visuelle future
+
+    retourner {
+        "formes_dominantes": [],
+        "symetrie": 0.5,
+        "complexite": 0.5
+    }
+
+
+# ============================================================================
+# Prédicats de filtrage personnalisés
+# ============================================================================
+
+déf filtrer_par_periode(noeuds: dictionnaire, debut: nombre, fin: nombre) -> liste:
+    """Filtrer les nœuds par période temporelle"""
+    resultats = []
+
+    pour id, noeud dans noeuds.items():
+        donnees = noeud.donnees
+
+        # Essayer d'extraire les dates
+        debut_noeud = donnees.obtenir("startTime", {}).obtenir("value", "")[0:4]
+        fin_noeud = donnees.obtenir("endTime", {}).obtenir("value", "")[0:4]
+
+        chercher:
+            debut_num = nombre(debut_noeud)
+            fin_num = nombre(fin_noeud)
+
+            si debut_num >= debut et fin_num <= fin:
+                resultats.ajouter(id)
+
+        exception:
+            passe
+
+    retourner resultats
+
+
+déf filtrer_par_type(noeuds: dictionnaire, type_entite: chaine) -> liste:
+    """Filtrer les nœuds par type"""
+    resultats = []
+
+    pour id, noeud dans noeuds.items():
+        si noeud.type == type_entite:
+            resultats.ajouter(id)
+
+    retourner resultats
+
+
+déf filtrer_par_importance(noeuds: dictionnaire, graphe, seuil: nombre = 2) -> liste:
+    """Filtrer les nœuds par importance (nombre de connexions)"""
+    resultats = []
+
+    pour id, noeud dans noeuds.items():
+        voisins = graphe.obtenir_voisins(id)
+
+        si len(voisins) >= seuil:
+            resultats.ajouter(id)
+
+    retourner resultats
+
+
+déf filtrer_par_etiquette(noeuds: dictionnaire, motif: chaine) -> liste:
+    """Filtrer les nœuds par motif de texte"""
+    resultats = []
+    motif_lower = motif.lower()
+
+    pour id, noeud dans noeuds.items():
+        si motif_lower dans noeud.etiquette.lower():
+            resultats.ajouter(id)
+
+    retourner resultats

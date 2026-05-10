@@ -1,0 +1,102 @@
+importer semantique.filtres
+importer ui.etat
+
+
+# État des filtres UI
+observer var filtres_ui = {}  # {lentille: booleen}
+observer var mode_fusion = "conjonction"  # "conjonction" ou "disjonction"
+observer var graphe_filtre_actif = nul
+
+
+asynchrone déf initialiser_panneau_filtres():
+    """Initialiser le panneau de filtres"""
+    pour lentille in [
+        semantique.filtres.Lentille.COULEUR,
+        semantique.filtres.Lentille.GEOMETRIE,
+        semantique.filtres.Lentille.SYMBOLISME,
+        semantique.filtres.Lentille.EMOTION,
+        semantique.filtres.Lentille.MYTHOLOGIE,
+        semantique.filtres.Lentille.RELIGION,
+        semantique.filtres.Lentille.NATURE,
+        semantique.filtres.Lentille.POLITIQUE,
+        semantique.filtres.Lentille.INDUSTRIALISATION
+    ]:
+        observer filtres_ui[lentille] = faux
+
+
+asynchrone déf basculer_filtre(lentille: chaine):
+    """Basculer un filtre on/off"""
+    observer filtres_ui[lentille] = non filtres_ui.obtenir(lentille, faux)
+
+    attendre appliquer_filtres()
+
+
+asynchrone déf appliquer_filtres():
+    """Appliquer tous les filtres actifs"""
+    observer interface.etat.affichage_chargement = vrai
+
+    gestionnaire = semantique.filtres.GestionnaireFiltres(
+        mode_conjonction=(mode_fusion == "conjonction")
+    )
+
+    # Ajouter les filtres actifs
+    pour lentille, actif in filtres_ui.items():
+        si actif:
+            filtre = semantique.filtres.FiltreSlentique(lentille)
+            gestionnaire.ajouter_filtre(filtre)
+
+    # Appliquer au graphe
+    si gestionnaire.filtres_actifs:
+        graphe_filtre = gestionnaire.filtrer_graphe(interface.etat.graphe)
+        observer graphe_filtre_actif = graphe_filtre
+    sinon:
+        observer graphe_filtre_actif = nul
+
+    observer interface.etat.affichage_chargement = faux
+
+
+asynchrone déf basculer_mode_fusion(mode: chaine):
+    """Basculer entre conjonction (ET) et disjonction (OU)"""
+    observer mode_fusion = mode
+    attendre appliquer_filtres()
+
+
+asynchrone déf reinitialiser_filtres():
+    """Réinitialiser tous les filtres"""
+    pour lentille in filtres_ui.keys():
+        observer filtres_ui[lentille] = faux
+
+    observer graphe_filtre_actif = nul
+
+    attendre appliquer_filtres()
+
+
+déf rendre_panneau_filtres():
+    """Rendre le panneau des filtres"""
+    render:
+        div class="filter-panel":
+            h3: "Lentilles Sémantiques"
+
+            div class="filter-toggles":
+                pour lentille, actif in filtres_ui.items():
+                    button class={"active": actif}
+                            onclick=lambda l=lentille: basculer_filtre(l):
+                        lentille
+
+            div class="filter-mode":
+                label: "Mode de fusion:"
+                button class={"active": mode_fusion == "conjonction"}
+                        onclick=lambda: basculer_mode_fusion("conjonction"):
+                    "ET (Intersection)"
+                button class={"active": mode_fusion == "disjonction"}
+                        onclick=lambda: basculer_mode_fusion("disjonction"):
+                    "OU (Union)"
+
+            div class="filter-actions":
+                button onclick=lambda: reinitialiser_filtres():
+                    "Réinitialiser"
+
+            si graphe_filtre_actif:
+                div class="filter-stats":
+                    p: "Nœuds filtrés: " + chaine(len(graphe_filtre_actif.obtenir("noeuds", {})))
+                    p: "Relations filtrées: " + chaine(len(graphe_filtre_actif.obtenir("relations", [])))

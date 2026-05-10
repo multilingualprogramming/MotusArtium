@@ -1,0 +1,158 @@
+importer asyncio
+importer math
+importer utilitaires.mathematiques
+importer ui.etat
+importer ui.visualisations.utilitaires_rendu
+
+# ============================================================================
+# Visualisation du graphe force-dirigée
+# ============================================================================
+
+classe VueGrapheForce:
+    """Visualisation du graphe avec algorithme force-dirigé"""
+
+    canvas: element
+    rendeur: element
+    disposition: element
+    animating: booleen
+    id_animation: nombre
+    souris_x: nombre
+    souris_y: nombre
+    souris_enfoncee: booleen
+    noeud_draggable_id: chaine
+    dernier_noeud_survole: chaine
+
+    déf __init__(canvas: element):
+        observer self.canvas = canvas
+        observer self.rendeur = utilitaires_rendu.RenduGrapheCanvas(canvas)
+        observer self.disposition = nul
+        observer self.animating = faux
+        observer self.id_animation = 0
+        observer self.souris_x = 0
+        observer self.souris_y = 0
+        observer self.souris_enfoncee = faux
+        observer self.noeud_draggable_id = ""
+        observer self.dernier_noeud_survole = ""
+
+        # Enregistrer les gestionnaires d'événements
+        canvas.gerer_clic = self.gerer_clic
+        canvas.gerer_deplacement_souris = self.gerer_deplacement_souris
+        canvas.gerer_souris_enfoncee = self.gerer_souris_enfoncee
+        canvas.gerer_souris_relachee = self.gerer_souris_relachee
+        canvas.gerer_roulette = self.gerer_roulette
+
+    asynchrone déf initialiser_graphe(graphe: element):
+        """Initialiser la visualisation avec un graphe"""
+        observer self.disposition = utilitaires_mathematiques.DispositionForceGraphe(
+            self.canvas.largeur,
+            self.canvas.hauteur
+        )
+
+        # Ajouter tous les nœuds
+        pour id, noeud dans graphe.noeuds.items():
+            observer self.disposition.ajouter_noeud(id)
+
+        # Ajouter toutes les relations
+        pour relation dans graphe.relations:
+            observer self.disposition.ajouter_relation(
+                relation.source_id,
+                relation.target_id,
+                relation.poids
+            )
+
+        # Exécuter la simulation initiale
+        attendre self.disposition.simuler(50)
+        positions = self.disposition.exporter_positions()
+        observer self.rendeur.mettre_a_jour_positions(positions)
+
+    asynchrone déf animer():
+        """Animer la simulation"""
+        observer self.animating = vrai
+
+        tandis que self.animating:
+            # Une itération de simulation
+            attendre self.disposition.simuler_iteration()
+
+            # Mettre à jour les positions
+            positions = self.disposition.exporter_positions()
+            observer self.rendeur.mettre_a_jour_positions(positions)
+
+            # Rendre
+            self.rendeur.rendre_frame(interface.etat.graphe)
+
+            # Attendre un peu avant la prochaine itération
+            attendre asyncio.sleep(0.03)  # ~30 FPS
+
+    déf arreter_animation():
+        """Arrêter l'animation"""
+        observer self.animating = faux
+
+    déf gerer_clic(x: nombre, y: nombre):
+        """Gestionnaire de clic"""
+        noeud_id = self.rendeur.obtenir_noeud_a_position(x, y)
+
+        si noeud_id:
+            observer self.rendeur.noeud_selectionne = noeud_id
+            observer interface.etat.entite_selectionnee_id = noeud_id
+
+            # Déterminer le type et charger les détails
+            noeud = interface.etat.graphe.obtenir_noeud(noeud_id)
+            si noeud:
+                observer interface.etat.entite_selectionnee_type = noeud.type
+        sinon:
+            observer self.rendeur.noeud_selectionne = ""
+
+    déf gerer_deplacement_souris(x: nombre, y: nombre):
+        """Gestionnaire de mouvement de souris"""
+        observer self.souris_x = x
+        observer self.souris_y = y
+
+        si self.souris_enfoncee et self.noeud_draggable_id:
+            # Dragging d'un nœud
+            noeud = self.disposition.obtenir_noeud_par_id(self.noeud_draggable_id)
+            si noeud:
+                observer noeud["x"] = x - self.rendeur.deplacement_x
+                observer noeud["y"] = y - self.rendeur.deplacement_y
+        sinon:
+            # Hover
+            noeud_survole_id = self.rendeur.obtenir_noeud_a_position(x, y)
+
+            si noeud_survole_id != self.dernier_noeud_survole:
+                observer self.dernier_noeud_survole = noeud_survole_id
+                observer self.rendeur.noeud_survole = noeud_survole_id
+                self.rendeur.rendre_frame(interface.etat.graphe)
+
+    déf gerer_souris_enfoncee(x: nombre, y: nombre):
+        """Gestionnaire de souris enfoncée"""
+        observer self.souris_enfoncee = vrai
+
+        noeud_id = self.rendeur.obtenir_noeud_a_position(x, y)
+        si noeud_id:
+            observer self.noeud_draggable_id = noeud_id
+
+    déf gerer_souris_relachee(x: nombre, y: nombre):
+        """Gestionnaire de souris relâchée"""
+        observer self.souris_enfoncee = faux
+        observer self.noeud_draggable_id = ""
+
+    déf gerer_roulette(x: nombre, y: nombre, direction: nombre):
+        """Gestionnaire de roulette de souris (zoom)"""
+        self.rendeur.gerer_zoom(direction, x, y)
+        self.rendeur.rendre_frame(interface.etat.graphe)
+
+    déf reinitialiser_vue():
+        """Réinitialiser la vue"""
+        self.rendeur.reinitialiser_vue()
+        self.rendeur.rendre_frame(interface.etat.graphe)
+
+
+# ============================================================================
+# Factory pour créer une vue de graphe
+# ============================================================================
+
+asynchrone déf creer_vue_graphe(canvas: element, graphe: element) -> VueGrapheForce:
+    """Créer et initialiser une vue de graphe"""
+    vue = VueGrapheForce(canvas)
+    attendre vue.initialiser_graphe(graphe)
+    attendre vue.animer()
+    retourner vue

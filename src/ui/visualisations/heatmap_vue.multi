@@ -1,0 +1,187 @@
+importer asyncio
+importer math
+importer semantique.geographique
+importer ui.etat
+
+
+classe VueHeatmapGeographique:
+    """Visualisation géographique sous forme de heatmap"""
+
+    canvas: element
+    contexte: element
+    visualisation: element
+    echelle_zoom: nombre
+    centre_lat: nombre
+    centre_lon: nombre
+    largeur_pixels: nombre
+    hauteur_pixels: nombre
+
+    déf __init__(canvas: element):
+        observer self.canvas = canvas
+        observer self.contexte = canvas.obtenir_contexte("2d")
+        observer self.visualisation = nul
+        observer self.echelle_zoom = 100  # pixels par degré
+        observer self.centre_lat = 48.8566  # Défaut: Paris
+        observer self.centre_lon = 2.3522
+        observer self.largeur_pixels = canvas.largeur
+        observer self.hauteur_pixels = canvas.hauteur
+
+        # Gestionnaires d'événements
+        canvas.gerer_roulette = self.gerer_roulette
+        canvas.gerer_clic = self.gerer_clic
+
+    asynchrone déf charger_mouvement(mouvement_id: chaine):
+        """Charger les données géographiques d'un mouvement"""
+        observer visualisation = semantique.geographique.VisualisationCartographique()
+        attendre visualisation.charger_mouvement(mouvement_id)
+
+        self.rendre()
+
+    déf convertir_coords_pixel(latitude: nombre, longitude: nombre) -> {x: nombre, y: nombre}:
+        """Convertir des coordonnées géographiques en pixels canvas"""
+        centre_x = self.largeur_pixels / 2
+        centre_y = self.hauteur_pixels / 2
+
+        x = centre_x + (longitude - self.centre_lon) * self.echelle_zoom
+        y = centre_y - (latitude - self.centre_lat) * self.echelle_zoom
+
+        retourner {x: x, y: y}
+
+    déf convertir_pixel_coords(x: nombre, y: nombre) -> {latitude: nombre, longitude: nombre}:
+        """Convertir des pixels en coordonnées géographiques"""
+        centre_x = self.largeur_pixels / 2
+        centre_y = self.hauteur_pixels / 2
+
+        longitude = self.centre_lon + (x - centre_x) / self.echelle_zoom
+        latitude = self.centre_lat - (y - centre_y) / self.echelle_zoom
+
+        retourner {latitude: latitude, longitude: longitude}
+
+    déf rendre():
+        """Rendre la heatmap"""
+        si non self.visualisation:
+            retour
+
+        ctx = self.contexte
+
+        # Effacer le canvas
+        ctx.couleur_remplissage = "#FFFFFF"
+        ctx.rect_rempli(0, 0, self.largeur_pixels, self.hauteur_pixels)
+
+        # Obtenir les données de heatmap
+        points_chaleur = self.visualisation.obtenir_heatmap()
+
+        # Rendre les points de chaleur
+        pour point in points_chaleur:
+            pixel = self.convertir_coords_pixel(point.obtenir("latitude", 0), point.obtenir("longitude", 0))
+
+            # Couleur basée sur l'intensité (rouge pour forte, bleu pour faible)
+            intensite = point.obtenir("intensite", 0)
+            r = int(255 * intensite)
+            b = int(255 * (1 - intensite))
+            g = 100
+
+            couleur_hex = "rgb(" + chaine(r) + "," + chaine(g) + "," + chaine(b) + ")"
+
+            # Taille basée sur le nombre d'entités
+            count = point.obtenir("count", 1)
+            rayon = max(5, min(20, math.sqrt(count) * 3))
+
+            # Dessiner le point
+            ctx.couleur_remplissage = couleur_hex
+            ctx.couleur_trait = "#000000"
+            ctx.epaisseur_trait = 1
+
+            ctx.debut_chemin()
+            ctx.arc(pixel.obtenir("x", 0), pixel.obtenir("y", 0), rayon, 0, 2 * math.pi)
+            ctx.remplir()
+            ctx.tracer()
+
+            # Étiquette
+            ctx.couleur_texte = "#000000"
+            ctx.fonte = "10px Arial"
+            ctx.alignement_texte = "centre"
+
+            nom = point.obtenir("nom", "")
+            ctx.texte_rempli(nom, pixel.obtenir("x", 0), pixel.obtenir("y", 0) + rayon + 15)
+
+        # Rendre la légende
+        self.rendre_legende(ctx)
+
+    déf rendre_legende(ctx):
+        """Rendre la légende de couleurs"""
+        legende_x = 20
+        legende_y = 20
+        legende_largeur = 200
+        legende_hauteur = 120
+
+        # Fond de légende
+        ctx.couleur_remplissage = "rgba(255, 255, 255, 0.9)"
+        ctx.rect_rempli(legende_x, legende_y, legende_largeur, legende_hauteur)
+
+        ctx.couleur_trait = "#000000"
+        ctx.epaisseur_trait = 1
+        ctx.rect_contour(legende_x, legende_y, legende_largeur, legende_hauteur)
+
+        # Titre
+        ctx.couleur_texte = "#000000"
+        ctx.fonte = "12px Arial"
+        ctx.alignement_texte = "gauche"
+        ctx.texte_rempli("Intensité", legende_x + 10, legende_y + 20)
+
+        # Gradient de couleurs
+        pour i dans intervalle(10):
+            intensite = i / 10.0
+            r = int(255 * intensite)
+            b = int(255 * (1 - intensite))
+            g = 100
+
+            couleur_hex = "rgb(" + chaine(r) + "," + chaine(g) + "," + chaine(b) + ")"
+
+            ctx.couleur_remplissage = couleur_hex
+            ctx.rect_rempli(legende_x + 10 + i * 18, legende_y + 35, 16, 16)
+
+        # Étiquettes
+        ctx.fonte = "9px Arial"
+        ctx.texte_rempli("Faible", legende_x + 10, legende_y + 60)
+        ctx.texte_rempli("Fort", legende_x + 150, legende_y + 60)
+
+    déf gerer_zoom(x: nombre, y: nombre, direction: nombre):
+        """Gérer le zoom"""
+        ancien_zoom = self.echelle_zoom
+        observer self.echelle_zoom = max(10, min(500, self.echelle_zoom + direction * 20))
+
+        # Ajuster le centre pour garder le point de zoom stable
+        coords = self.convertir_pixel_coords(x, y)
+        observer self.centre_lat = coords.obtenir("latitude", 0)
+        observer self.centre_lon = coords.obtenir("longitude", 0)
+
+        self.rendre()
+
+    déf gerer_clic(x: nombre, y: nombre):
+        """Gestionnaire de clic"""
+        coords = self.convertir_pixel_coords(x, y)
+
+        # Obtenir les clusters à cette position
+        clusters = self.visualisation.obtenir_points_cluster()
+
+        pour cluster in clusters:
+            pixel = self.convertir_coords_pixel(cluster.obtenir("latitude", 0), cluster.obtenir("longitude", 0))
+            distance = math.sqrt((x - pixel.obtenir("x", 0)) ** 2 + (y - pixel.obtenir("y", 0)) ** 2)
+
+            si distance < 20:
+                # Afficher les entités du cluster
+                afficher "Cluster: " + cluster.obtenir("titre", "")
+                afficher "Entités: " + chaine(len(cluster.obtenir("entites", [])))
+                pause
+
+    déf gerer_roulette(x: nombre, y: nombre, direction: nombre):
+        """Gestionnaire de roulette de souris"""
+        self.gerer_zoom(x, y, direction)
+
+
+asynchrone déf creer_vue_heatmap(canvas: element, mouvement_id: chaine) -> VueHeatmapGeographique:
+    """Créer et initialiser une vue heatmap"""
+    vue = VueHeatmapGeographique(canvas)
+    attendre vue.charger_mouvement(mouvement_id)
+    retourner vue

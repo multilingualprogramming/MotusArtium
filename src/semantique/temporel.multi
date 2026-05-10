@@ -1,0 +1,304 @@
+importer math
+importer ui.etat
+
+
+# ============================================================================
+# Analyse temporelle et chronologque
+# ============================================================================
+
+classe EvenementTemporel:
+    """Représente un événement artistique avec une date"""
+    entite_id: chaine
+    entite_type: chaine  # "mouvement", "artiste", "oeuvre"
+    entite_label: chaine
+    temps_debut: nombre  # timestamp ou année
+    temps_fin: nombre
+    description: chaine
+    importance: nombre  # 0.0 à 1.0
+
+    déf __init__(entite_id: chaine, entite_type: chaine, entite_label: chaine,
+                 temps_debut: nombre, temps_fin: nombre, importance: nombre = 0.5):
+        observer self.entite_id = entite_id
+        observer self.entite_type = entite_type
+        observer self.entite_label = entite_label
+        observer self.temps_debut = temps_debut
+        observer self.temps_fin = temps_fin
+        observer self.description = ""
+        observer self.importance = importance
+
+    déf duree() -> nombre:
+        """Calculer la durée de l'événement"""
+        retourner self.temps_fin - self.temps_debut
+
+
+classe Chronologie:
+    """Gère une collection d'événements temporels"""
+    evenements: liste  # [EvenementTemporel, ...]
+    temps_min: nombre
+    temps_max: nombre
+
+    déf __init__():
+        observer self.evenements = []
+        observer self.temps_min = 99999
+        observer self.temps_max = 0
+
+    déf ajouter_evenement(evt: EvenementTemporel):
+        """Ajouter un événement"""
+        observer self.evenements.ajouter(evt)
+
+        observer self.temps_min = min(self.temps_min, evt.temps_debut)
+        observer self.temps_max = max(self.temps_max, evt.temps_fin)
+
+    déf obtenir_evenements_periode(debut: nombre, fin: nombre) -> liste:
+        """Obtenir les événements dans une période"""
+        resultats = []
+
+        pour evt in self.evenements:
+            # Vérifier si l'événement chevauche la période
+            si evt.temps_debut <= fin et evt.temps_fin >= debut:
+                resultats.ajouter(evt)
+
+        retourner resultats
+
+    déf obtenir_evenements_tries() -> liste:
+        """Obtenir les événements triés par date de début"""
+        return sorted(self.evenements, key=lambda e: e.temps_debut)
+
+    déf obtenir_mouvements_contemporains(mouvement_id: chaine) -> liste:
+        """Trouver les mouvements qui se chevauchent temporellement"""
+        mouvement = obtenir_evenement_par_id(mouvement_id)
+
+        si non mouvement:
+            retourner []
+
+        contemporains = []
+
+        pour evt in self.evenements:
+            si evt.entite_id != mouvement_id and evt.entite_type == "mouvement":
+                # Vérifier le chevauchement
+                si evt.temps_debut <= mouvement.temps_fin et evt.temps_fin >= mouvement.temps_debut:
+                    contemporains.ajouter(evt)
+
+        retourner contemporains
+
+    déf obtenir_succession_mouvement(mouvement_id: chaine) -> liste:
+        """Obtenir la chaîne de mouvements qui se sont succédés"""
+        mouvement_initial = obtenir_evenement_par_id(mouvement_id)
+
+        si non mouvement_initial:
+            retourner []
+
+        succession = [mouvement_initial]
+
+        # Trouver les mouvements précédents
+        mouvement_actuel = mouvement_initial
+        tandis que vrai:
+            precedent = nul
+            for evt in self.evenements:
+                si evt.entite_type == "mouvement" and \
+                   evt.temps_fin <= mouvement_actuel.temps_debut:
+                    si precedent est nul ou evt.temps_fin > precedent.temps_fin:
+                        precedent = evt
+
+            si precedent:
+                succession.insert(0, precedent)
+                mouvement_actuel = precedent
+            sinon:
+                pause
+
+        # Trouver les mouvements suivants
+        mouvement_actuel = mouvement_initial
+        tandis que vrai:
+            suivant = nul
+            for evt in self.evenements:
+                si evt.entite_type == "mouvement" and \
+                   evt.temps_debut >= mouvement_actuel.temps_fin:
+                    si suivant est nul ou evt.temps_debut < suivant.temps_debut:
+                        suivant = evt
+
+            si suivant:
+                succession.ajouter(suivant)
+                mouvement_actuel = suivant
+            sinon:
+                pause
+
+        retourner succession
+
+    déf obtenir_evenement_par_id(entite_id: chaine) -> EvenementTemporel:
+        """Obtenir un événement par ID d'entité"""
+        pour evt in self.evenements:
+            si evt.entite_id == entite_id:
+                retourner evt
+
+        retourner nul
+
+    déf compter_evenements_par_type() -> dictionnaire:
+        """Compter les événements par type"""
+        comptes = {}
+
+        pour evt in self.evenements:
+            si evt.entite_type non dans comptes:
+                comptes[evt.entite_type] = 0
+
+            comptes[evt.entite_type] = comptes[evt.entite_type] + 1
+
+        retourner comptes
+
+    déf obtenir_pics_activite(unite_temps: nombre = 10) -> liste:
+        """Obtenir les périodes de forte activité artistique"""
+        si not self.evenements:
+            retourner []
+
+        # Diviser la chronologie en tranches
+        tranches = {}
+        pour evt in self.evenements:
+            tranche = int(evt.temps_debut / unite_temps)
+
+            si tranche non dans tranches:
+                tranches[tranche] = 0
+
+            tranches[tranche] = tranches[tranche] + 1
+
+        # Trouver les pics
+        pics = []
+        pour tranche, count in sorted(tranches.items()):
+            pics.ajouter({
+                "debut": tranche * unite_temps,
+                "fin": (tranche + 1) * unite_temps,
+                "activite": count
+            })
+
+        retourner pics
+
+
+# ============================================================================
+# Analyse de productivité et influence
+# ============================================================================
+
+classe AnalyseArtiste:
+    """Analyse temporelle de la productivité d'un artiste"""
+    artiste_id: chaine
+    artiste_nom: chaine
+    naissance: nombre
+    mort: nombre
+    oeuvres: liste  # [année, ...]
+    mouvements: liste  # IDs des mouvements
+
+    déf __init__(artiste_id: chaine, artiste_nom: chaine, naissance: nombre, mort: nombre):
+        observer self.artiste_id = artiste_id
+        observer self.artiste_nom = artiste_nom
+        observer self.naissance = naissance
+        observer self.mort = mort
+        observer self.oeuvres = []
+        observer self.mouvements = []
+
+    déf ajouter_oeuvre(annee: nombre):
+        """Enregistrer la création d'une œuvre"""
+        observer self.oeuvres.ajouter(annee)
+
+    déf ajouter_mouvement(mouvement_id: chaine):
+        """Associer un mouvement"""
+        si mouvement_id non dans self.mouvements:
+            observer self.mouvements.ajouter(mouvement_id)
+
+    déf obtenir_duree_vie() -> nombre:
+        """Obtenir la durée de vie"""
+        retourner self.mort - self.naissance
+
+    déf obtenir_periode_productive() -> nombre:
+        """Obtenir la période entre la première et dernière œuvre"""
+        si len(self.oeuvres) < 2:
+            retourner 0
+
+        oeuvres_triees = sorted(self.oeuvres)
+        retourner oeuvres_triees[-1] - oeuvres_triees[0]
+
+    déf obtenir_productivite_moyenne() -> nombre:
+        """Calculer les œuvres par année"""
+        periode = self.obtenir_periode_productive()
+
+        si periode == 0:
+            retourner 0
+
+        retourner len(self.oeuvres) / periode
+
+    déf obtenir_pics_productivite(intervalle: nombre = 5) -> liste:
+        """Obtenir les années les plus productives"""
+        si not self.oeuvres:
+            retourner []
+
+        # Compter par intervalle
+        comptes_intervalle = {}
+        pour annee in self.oeuvres:
+            bin_annee = int(annee / intervalle) * intervalle
+
+            si bin_annee non dans comptes_intervalle:
+                comptes_intervalle[bin_annee] = 0
+
+            comptes_intervalle[bin_annee] = comptes_intervalle[bin_annee] + 1
+
+        # Trier par productivité
+        pics = sorted(comptes_intervalle.items(), key=lambda x: x[1], reverse=vrai)
+
+        resultats = []
+        pour annee_bin, count in pics[:5]:  # Top 5
+            resultats.ajouter({
+                "periode": chaine(annee_bin) + "-" + chaine(annee_bin + intervalle),
+                "oeuvres": count
+            })
+
+        retourner resultats
+
+    déf est_contemporain(autre_artiste: AnalyseArtiste) -> booleen:
+        """Vérifier si deux artistes ont vécu à la même époque"""
+        retourner self.naissance <= autre_artiste.mort and self.mort >= autre_artiste.naissance
+
+
+# ============================================================================
+# Évolution des styles et techniques
+# ============================================================================
+
+classe EvolutionStyle:
+    """Trace l'évolution d'un style artistique au fil du temps"""
+    mouvement_id: chaine
+    mouvement_nom: chaine
+    influences_predecesseurs: liste  # [mouvement_id, ...]
+    influences_successeurs: liste
+    artistes_cles: liste  # [(artiste_id, importance), ...]
+    periodes_force: liste  # [(debut, fin, intensite), ...]
+
+    déf __init__(mouvement_id: chaine, mouvement_nom: chaine):
+        observer self.mouvement_id = mouvement_id
+        observer self.mouvement_nom = mouvement_nom
+        observer self.influences_predecesseurs = []
+        observer self.influences_successeurs = []
+        observer self.artistes_cles = []
+        observer self.periodes_force = []
+
+    déf ajouter_influence_predecesseur(mouvement_id: chaine):
+        """Ajouter une influence du passé"""
+        si mouvement_id non dans self.influences_predecesseurs:
+            observer self.influences_predecesseurs.ajouter(mouvement_id)
+
+    déf ajouter_influence_successeur(mouvement_id: chaine):
+        """Ajouter une influence sur le futur"""
+        si mouvement_id non dans self.influences_successeurs:
+            observer self.influences_successeurs.ajouter(mouvement_id)
+
+    déf ajouter_artiste_cle(artiste_id: chaine, importance: nombre = 1.0):
+        """Ajouter un artiste clé pour ce style"""
+        observer self.artistes_cles.ajouter((artiste_id, importance))
+
+    déf ajouter_periode_force(debut: nombre, fin: nombre, intensite: nombre):
+        """Ajouter une période de force du mouvement"""
+        observer self.periodes_force.ajouter((debut, fin, intensite))
+
+    déf obtenir_lineage_complet() -> dictionnaire:
+        """Obtenir le contexte complet d'évolution du style"""
+        retourner {
+            "mouvement": self.mouvement_nom,
+            "predecesseurs": self.influences_predecesseurs,
+            "successeurs": self.influences_successeurs,
+            "artistes_cles": self.artistes_cles,
+            "periodes_force": self.periodes_force
+        }

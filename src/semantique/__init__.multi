@@ -1,0 +1,5 @@
+# Module sémantique pour le graphe de connaissances
+importer .graphe
+importer .filtres
+importer .geographique
+importer .temporel

@@ -1,0 +1,256 @@
+importer math
+
+# ============================================================================
+# Utilitaires mathématiques pour la visualisation
+# ============================================================================
+
+déf distance_euclidienne(x1: nombre, y1: nombre, x2: nombre, y2: nombre) -> nombre:
+    """Calculer la distance euclidienne entre deux points"""
+    dx = x2 - x1
+    dy = y2 - y1
+    retourner math.sqrt(dx * dx + dy * dy)
+
+
+déf clamp(valeur: nombre, min_val: nombre, max_val: nombre) -> nombre:
+    """Clamp une valeur entre min et max"""
+    si valeur < min_val:
+        retourner min_val
+    sinon si valeur > max_val:
+        retourner max_val
+    sinon:
+        retourner valeur
+
+
+déf interpoler(debut: nombre, fin: nombre, progression: nombre) -> nombre:
+    """Interpolation linéaire"""
+    retourner debut + (fin - debut) * progression
+
+
+déf normaliser_vecteur(vx: nombre, vy: nombre) -> {x: nombre, y: nombre}:
+    """Normaliser un vecteur à magnitude 1"""
+    magnitude = math.sqrt(vx * vx + vy * vy)
+
+    si magnitude == 0:
+        retourner {x: 0, y: 0}
+
+    retourner {
+        x: vx / magnitude,
+        y: vy / magnitude
+    }
+
+
+déf angle_entre_points(x1: nombre, y1: nombre, x2: nombre, y2: nombre) -> nombre:
+    """Calculer l'angle entre deux points (en radians)"""
+    dx = x2 - x1
+    dy = y2 - y1
+    retourner math.atan2(dy, dx)
+
+
+# ============================================================================
+# Algorithme de disposition force-dirigée (Fruchterman-Reingold)
+# ============================================================================
+
+classe DispositionForceGraphe:
+    """Algorithme de force-dirigée pour la disposition des nœuds"""
+
+    noeuds: liste          # [{id, x, y, vx, vy}]
+    relations: liste       # [{source, target, poids}]
+    largeur: nombre
+    hauteur: nombre
+    temperature: nombre
+    force_repulsion: nombre
+    force_attraction: nombre
+    friction: nombre
+    distance_repos: nombre
+
+    déf __init__(largeur: nombre = 800, hauteur: nombre = 600):
+        observer self.noeuds = []
+        observer self.relations = []
+        observer self.largeur = largeur
+        observer self.hauteur = hauteur
+        observer self.temperature = 50.0
+        observer self.force_repulsion = 5000.0
+        observer self.force_attraction = 0.1
+        observer self.friction = 0.9
+        observer self.distance_repos = 150.0
+
+    déf ajouter_noeud(id: chaine, x: nombre = nul, y: nombre = nul):
+        """Ajouter un nœud à la disposition"""
+        si x == nul:
+            x = self.largeur / 2 + (math.random() - 0.5) * 100
+        si y == nul:
+            y = self.hauteur / 2 + (math.random() - 0.5) * 100
+
+        noeud = {
+            "id": id,
+            "x": x,
+            "y": y,
+            "vx": 0,
+            "vy": 0
+        }
+
+        observer self.noeuds.ajouter(noeud)
+
+    déf ajouter_relation(source_id: chaine, target_id: chaine, poids: nombre = 1.0):
+        """Ajouter une relation (arête) entre deux nœuds"""
+        relation = {
+            "source": source_id,
+            "target": target_id,
+            "poids": poids
+        }
+
+        observer self.relations.ajouter(relation)
+
+    déf obtenir_noeud_par_id(id: chaine) -> dictionnaire:
+        """Obtenir un nœud par son ID"""
+        pour noeud dans self.noeuds:
+            si noeud["id"] == id:
+                retourner noeud
+        retourner nul
+
+    asynchrone déf simuler_iteration():
+        """Exécuter une itération de la simulation de forces"""
+
+        # Réinitialiser les forces
+        pour noeud dans self.noeuds:
+            noeud["fx"] = 0
+            noeud["fy"] = 0
+
+        # Forces de répulsion entre tous les nœuds
+        pour i dans intervalle(len(self.noeuds)):
+            pour j dans intervalle(i + 1, len(self.noeuds)):
+                noeud_i = self.noeuds[i]
+                noeud_j = self.noeuds[j]
+
+                dx = noeud_j["x"] - noeud_i["x"]
+                dy = noeud_j["y"] - noeud_i["y"]
+                distance = math.sqrt(dx * dx + dy * dy)
+
+                si distance < 1:
+                    distance = 1
+
+                # Force de répulsion (force_repulsion / distance²)
+                force = self.force_repulsion / (distance * distance)
+
+                vecteur_normalise = normaliser_vecteur(dx, dy)
+
+                # Appliquer la force
+                noeud_i["fx"] = noeud_i["fx"] - vecteur_normalise["x"] * force
+                noeud_i["fy"] = noeud_i["fy"] - vecteur_normalise["y"] * force
+                noeud_j["fx"] = noeud_j["fx"] + vecteur_normalise["x"] * force
+                noeud_j["fy"] = noeud_j["fy"] + vecteur_normalise["y"] * force
+
+        # Forces d'attraction le long des arêtes
+        pour relation dans self.relations:
+            noeud_source = self.obtenir_noeud_par_id(relation["source"])
+            noeud_target = self.obtenir_noeud_par_id(relation["target"])
+
+            si noeud_source et noeud_target:
+                dx = noeud_target["x"] - noeud_source["x"]
+                dy = noeud_target["y"] - noeud_source["y"]
+                distance = math.sqrt(dx * dx + dy * dy)
+
+                si distance < 1:
+                    distance = 1
+
+                # Force d'attraction (poids * (distance - distance_repos))
+                force = self.force_attraction * relation["poids"] * (distance - self.distance_repos)
+
+                vecteur_normalise = normaliser_vecteur(dx, dy)
+
+                # Appliquer la force
+                noeud_source["fx"] = noeud_source["fx"] + vecteur_normalise["x"] * force
+                noeud_source["fy"] = noeud_source["fy"] + vecteur_normalise["y"] * force
+                noeud_target["fx"] = noeud_target["fx"] - vecteur_normalise["x"] * force
+                noeud_target["fy"] = noeud_target["fy"] - vecteur_normalise["y"] * force
+
+        # Mettre à jour les positions et velocités
+        pour noeud dans self.noeuds:
+            # Ajouter la force à la vélocité
+            noeud["vx"] = (noeud["vx"] + noeud["fx"]) * self.friction
+            noeud["vy"] = (noeud["vy"] + noeud["fy"]) * self.friction
+
+            # Limiter la vélocité
+            vitesse = math.sqrt(noeud["vx"] * noeud["vx"] + noeud["vy"] * noeud["vy"])
+            si vitesse > self.temperature:
+                scale = self.temperature / vitesse
+                noeud["vx"] = noeud["vx"] * scale
+                noeud["vy"] = noeud["vy"] * scale
+
+            # Mettre à jour la position
+            noeud["x"] = clamp(noeud["x"] + noeud["vx"], 0, self.largeur)
+            noeud["y"] = clamp(noeud["y"] + noeud["vy"], 0, self.hauteur)
+
+        # Refroidir légèrement la simulation
+        observer self.temperature = self.temperature * 0.99
+
+    asynchrone déf simuler(iterations: nombre = 100):
+        """Exécuter N itérations de simulation"""
+        pour _ dans intervalle(iterations):
+            attendre self.simuler_iteration()
+
+    déf exporter_positions() -> dictionnaire:
+        """Exporter les positions actuelles"""
+        positions = {}
+
+        pour noeud dans self.noeuds:
+            positions[noeud["id"]] = {
+                "x": noeud["x"],
+                "y": noeud["y"]
+            }
+
+        retourner positions
+
+
+# ============================================================================
+# Disposition radiale (pour la vue galaxie)
+# ============================================================================
+
+classe DispositionRadiale:
+    """Disposition radiale avec anneaux concentriques"""
+
+    noeud_centre_id: chaine
+    couches: liste  # [[id1, id2, ...], [id3, id4, ...], ...]
+    rayon_base: nombre
+    largeur: nombre
+    hauteur: nombre
+
+    déf __init__(largeur: nombre = 800, hauteur: nombre = 600):
+        observer self.noeud_centre_id = ""
+        observer self.couches = []
+        observer self.rayon_base = 100
+        observer self.largeur = largeur
+        observer self.hauteur = hauteur
+
+    déf construire_depuis_voisinage(voisinage: dictionnaire):
+        """Construire la disposition à partir d'un voisinage"""
+        observer self.noeud_centre_id = voisinage.obtenir("centre", "")
+        observer self.couches = voisinage.obtenir("couches", [])
+
+    déf calculer_positions() -> dictionnaire:
+        """Calculer les positions radiales"""
+        positions = {}
+        centre_x = self.largeur / 2
+        centre_y = self.hauteur / 2
+
+        # Centre
+        positions[self.noeud_centre_id] = {
+            "x": centre_x,
+            "y": centre_y
+        }
+
+        # Couches concentriques
+        pour couche_num, couche dans enumerate(self.couches):
+            rayon = self.rayon_base * (couche_num + 1)
+            angle_par_element = (2 * math.pi) / len(couche)
+
+            pour element_num, element dans enumerate(couche):
+                noeud_id = element.obtenir("id", "")
+                angle = angle_par_element * element_num
+
+                x = centre_x + rayon * math.cos(angle)
+                y = centre_y + rayon * math.sin(angle)
+
+                positions[noeud_id] = {"x": x, "y": y}
+
+        retourner positions

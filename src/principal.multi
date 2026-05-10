@@ -1,0 +1,90 @@
+# MotusArtium - Interactive Semantic Atlas
+# Simplified JavaScript-compatible implementation
+
+exporter executer_requete_sparql
+exporter charger_mouvement
+exporter charger_artistes
+exporter charger_oeuvres
+exporter basculer_visualisation
+exporter charger_chronologie
+exporter principal
+exporter initialiser_application
+
+asynchrone déf executer_requete_sparql(requete):
+    """Exécuter une requête SPARQL sur Wikidata"""
+    endpoint = "https://query.wikidata.org/sparql"
+    url = endpoint + "?query=" + requete + "&format=json"
+
+    reponse = attendre fetch(url)
+
+    si reponse.ok:
+        donnees = attendre reponse.json()
+        donnees
+    sinon:
+        nul
+
+
+asynchrone déf charger_mouvement(mouvement_id):
+    """Charger les détails d'un mouvement depuis Wikidata"""
+    requete = "SELECT ?label WHERE { wd:" + mouvement_id + " rdfs:label ?label . FILTER(LANG(?label) = 'fr') }"
+
+    resultat = attendre executer_requete_sparql(requete)
+
+    si resultat:
+        resultat
+    sinon:
+        donnees_mock = {
+            "results": {
+                "bindings": [
+                    {"label": {"value": "Impressionism"}},
+                    {"label": {"value": "Post-Impressionism"}},
+                    {"label": {"value": "Fauvism"}},
+                    {"label": {"value": "Cubism"}},
+                    {"label": {"value": "Expressionism"}},
+                    {"label": {"value": "Futurism"}},
+                    {"label": {"value": "Dada"}},
+                    {"label": {"value": "Surrealism"}}
+                ]
+            }
+        }
+        donnees_mock
+
+
+asynchrone déf charger_artistes(mouvement_id):
+    """Charger les artistes d'un mouvement"""
+    requete = "SELECT ?artisteLabel ?artiste WHERE { ?artiste wdt:P135 wd:" + mouvement_id + " ; rdfs:label ?artisteLabel . FILTER(LANG(?artisteLabel) = \"fr\") } LIMIT 20"
+
+    resultat = attendre executer_requete_sparql(requete)
+    resultat
+
+
+asynchrone déf charger_oeuvres(artiste_id):
+    """Charger les œuvres d'un artiste"""
+    requete = "SELECT ?oeuvreLabel WHERE { ?oeuvre wdt:P170 wd:" + artiste_id + " ; rdfs:label ?oeuvreLabel . FILTER(LANG(?oeuvreLabel) = \"fr\") } LIMIT 20"
+
+    resultat = attendre executer_requete_sparql(requete)
+    resultat
+
+
+asynchrone déf basculer_visualisation(mode):
+    """Basculer entre les modes de visualisation"""
+    nul
+
+
+asynchrone déf charger_chronologie(debut, fin):
+    """Charger la chronologie des mouvements"""
+    requete = "SELECT ?movementLabel WHERE { ?movement wdt:P580 ?startTime ; rdfs:label ?movementLabel . FILTER(LANG(?movementLabel) = \"fr\") }"
+
+    resultat = attendre executer_requete_sparql(requete)
+    resultat
+
+
+asynchrone déf principal():
+    """Point d'entrée principal de l'application"""
+    nul
+
+
+asynchrone déf initialiser_application():
+    """Initialiser l'application avec le mouvement par défaut"""
+    donnees = attendre charger_mouvement("Q968159")
+    donnees

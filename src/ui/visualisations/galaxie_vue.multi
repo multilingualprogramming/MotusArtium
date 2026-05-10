@@ -1,0 +1,87 @@
+importer asyncio
+importer math
+importer utilitaires.mathematiques
+importer ui.etat
+importer ui.visualisations.utilitaires_rendu
+
+
+classe VueGalaxie:
+    """Visualisation en galaxie avec anneaux concentriques"""
+
+    canvas: element
+    rendeur: element
+    disposition: element
+    noeud_centre_id: chaine
+    souris_x: nombre
+    souris_y: nombre
+    echelle_zoom: nombre
+
+    déf __init__(canvas: element):
+        observer self.canvas = canvas
+        observer self.rendeur = utilitaires_rendu.RenduGrapheCanvas(canvas)
+        observer self.disposition = nul
+        observer self.noeud_centre_id = ""
+        observer self.souris_x = 0
+        observer self.souris_y = 0
+        observer self.echelle_zoom = 1.0
+
+        # Enregistrer les gestionnaires d'événements
+        canvas.gerer_clic = self.gerer_clic
+        canvas.gerer_roulette = self.gerer_roulette
+
+    asynchrone déf initialiser_depuis_centre(noeud_id: chaine, profondeur: nombre = 2):
+        """Initialiser la galaxie autour d'un nœud central"""
+        observer self.noeud_centre_id = noeud_id
+
+        # Obtenir le voisinage
+        voisinage = interface.etat.graphe.obtenir_voisinage(noeud_id, profondeur)
+
+        # Créer la disposition radiale
+        observer self.disposition = utilitaires_mathematiques.DispositionRadiale(
+            self.canvas.largeur,
+            self.canvas.hauteur
+        )
+
+        observer self.disposition.construire_depuis_voisinage(voisinage)
+
+        # Calculer les positions
+        positions = self.disposition.calculer_positions()
+        observer self.rendeur.mettre_a_jour_positions(positions)
+
+        self.rendeur.rendre_frame(interface.etat.graphe)
+
+    déf gerer_clic(x: nombre, y: nombre):
+        """Gestionnaire de clic sur un nœud"""
+        noeud_id = self.rendeur.obtenir_noeud_a_position(x, y)
+
+        si noeud_id:
+            observer self.rendeur.noeud_selectionne = noeud_id
+            observer interface.etat.entite_selectionnee_id = noeud_id
+
+            # Mettre à jour la galaxie si c'est un nouveau centre
+            si noeud_id != self.noeud_centre_id:
+                attendre self.initialiser_depuis_centre(noeud_id)
+
+    déf gerer_roulette(x: nombre, y: nombre, direction: nombre):
+        """Gestionnaire de zoom"""
+        observer self.echelle_zoom = utilitaires_mathematiques.clamp(
+            self.echelle_zoom + direction * 0.1,
+            0.5,
+            3.0
+        )
+
+        observer self.rendeur.echelle_zoom = self.echelle_zoom
+        self.rendeur.rendre_frame(interface.etat.graphe)
+
+    déf reinitialiser():
+        """Réinitialiser la galaxie"""
+        observer self.echelle_zoom = 1.0
+        observer self.rendeur.echelle_zoom = 1.0
+        self.rendeur.rendre_frame(interface.etat.graphe)
+
+
+asynchrone déf creer_vue_galaxie(canvas: element, noeud_id: chaine) -> VueGalaxie:
+    """Créer et initialiser une vue galaxie"""
+    vue = VueGalaxie(canvas)
+    attendre vue.initialiser_depuis_centre(noeud_id)
+    retourner vue

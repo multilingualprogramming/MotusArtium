@@ -1,0 +1,233 @@
+importer donnees.requetes
+importer semantique.graphe
+importer asyncio
+
+# État global réactif de l'application
+observer var entite_selectionnee_id = ""
+observer var entite_selectionnee_type = ""  # "mouvement", "artiste", "oeuvre"
+observer var mode_visualisation = "graphe"  # "graphe", "galaxie", "riviere", "chronologie"
+observer var graphe = graphe.Graphe()
+observer var affichage_chargement = faux
+observer var message_erreur = ""
+
+# Données en cache
+observer var cache_entites = {}  # id -> entité complète
+observer var cache_relations = {}  # type -> [relations]
+
+# Filtre et plage temporelle
+observer var plage_temporelle_debut = 1400
+observer var plage_temporelle_fin = 2000
+observer var filtres_actifs = []
+
+# État de l'interface
+observer var panneau_detail_visible = faux
+observer var barre_recherche_active = faux
+observer var resultats_recherche = []
+
+
+asynchrone déf charger_mouvement(mouvement_id: chaine):
+    """Charger les détails d'un mouvement et mettre à jour l'état"""
+    observer affichage_chargement = vrai
+    observer message_erreur = ""
+    observer entite_selectionnee_id = mouvement_id
+    observer entite_selectionnee_type = "mouvement"
+
+    chercher:
+        # Récupérer les détails du mouvement
+        donnees = attendre donnees.requetes.obtenir_mouvement_details(mouvement_id)
+
+        si donnees:
+            # Mettre en cache
+            observer cache_entites[mouvement_id] = donnees
+
+            # Ajouter au graphe
+            etiquette = donnees.obtenir("movementLabel", {}).obtenir("value", "Mouvement inconnu")
+            observer graphe.ajouter_noeud(mouvement_id, "mouvement", etiquette, donnees)
+
+            # Charger les artistes du mouvement
+            artistes = attendre donnees.requetes.obtenir_artistes_mouvement(mouvement_id)
+
+            pour artiste dans artistes:
+                artiste_id = artiste.obtenir("artist", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
+                artiste_label = artiste.obtenir("artistLabel", {}).obtenir("value", "Artiste inconnu")
+
+                si artiste_id:
+                    observer graphe.ajouter_noeud(artiste_id, "artiste", artiste_label, artiste)
+                    observer graphe.ajouter_relation(mouvement_id, artiste_id, "contient_artiste", 1.0)
+
+            observer affichage_chargement = faux
+            observer panneau_detail_visible = vrai
+
+        sinon:
+            observer message_erreur = "Mouvement non trouvé"
+            observer affichage_chargement = faux
+
+    exception erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+
+
+asynchrone déf charger_artiste(artiste_id: chaine):
+    """Charger les détails d'un artiste et mettre à jour l'état"""
+    observer affichage_chargement = vrai
+    observer message_erreur = ""
+    observer entite_selectionnee_id = artiste_id
+    observer entite_selectionnee_type = "artiste"
+
+    chercher:
+        # Récupérer les détails de l'artiste
+        donnees = attendre donnees.requetes.obtenir_artiste_details(artiste_id)
+
+        si donnees:
+            # Mettre en cache
+            observer cache_entites[artiste_id] = donnees
+
+            # Ajouter au graphe
+            etiquette = donnees.obtenir("artistLabel", {}).obtenir("value", "Artiste inconnu")
+            observer graphe.ajouter_noeud(artiste_id, "artiste", etiquette, donnees)
+
+            # Charger les œuvres de l'artiste
+            oeuvres = attendre donnees.requetes.obtenir_oeuvres_artiste(artiste_id)
+
+            pour oeuvre dans oeuvres:
+                oeuvre_id = oeuvre.obtenir("artwork", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
+                oeuvre_label = oeuvre.obtenir("artworkLabel", {}).obtenir("value", "Œuvre inconnue")
+
+                si oeuvre_id:
+                    observer graphe.ajouter_noeud(oeuvre_id, "oeuvre", oeuvre_label, oeuvre)
+                    observer graphe.ajouter_relation(artiste_id, oeuvre_id, "a_cree", 1.0)
+
+            # Charger les influences de l'artiste
+            influences = attendre donnees.requetes.obtenir_influences_artiste(artiste_id)
+
+            si "influencedByLabel" dans influences:
+                influence_id = influences.obtenir("influencedBy", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
+                influence_label = influences.obtenir("influencedByLabel", {}).obtenir("value", "")
+
+                si influence_id:
+                    observer graphe.ajouter_noeud(influence_id, "artiste", influence_label, {})
+                    observer graphe.ajouter_relation(influence_id, artiste_id, "a_influence", 1.0)
+
+            observer affichage_chargement = faux
+            observer panneau_detail_visible = vrai
+
+        sinon:
+            observer message_erreur = "Artiste non trouvé"
+            observer affichage_chargement = faux
+
+    exception erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+
+
+asynchrone déf charger_oeuvre(oeuvre_id: chaine):
+    """Charger les détails d'une œuvre et mettre à jour l'état"""
+    observer affichage_chargement = vrai
+    observer message_erreur = ""
+    observer entite_selectionnee_id = oeuvre_id
+    observer entite_selectionnee_type = "oeuvre"
+
+    chercher:
+        # Récupérer les détails de l'œuvre
+        donnees = attendre donnees.requetes.obtenir_oeuvre_details(oeuvre_id)
+
+        si donnees:
+            # Mettre en cache
+            observer cache_entites[oeuvre_id] = donnees
+
+            # Ajouter au graphe
+            etiquette = donnees.obtenir("artworkLabel", {}).obtenir("value", "Œuvre inconnue")
+            observer graphe.ajouter_noeud(oeuvre_id, "oeuvre", etiquette, donnees)
+
+            observer affichage_chargement = faux
+            observer panneau_detail_visible = vrai
+
+        sinon:
+            observer message_erreur = "Œuvre non trouvée"
+            observer affichage_chargement = faux
+
+    exception erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+
+
+asynchrone déf charger_chronologie(debut: nombre, fin: nombre):
+    """Charger la chronologie des mouvements pour une période"""
+    observer affichage_chargement = vrai
+    observer message_erreur = ""
+
+    chercher:
+        mouvements = attendre donnees.requetes.obtenir_chronologie_mouvements(debut, fin)
+
+        pour mouvement dans mouvements:
+            mouvement_id = mouvement.obtenir("movement", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
+            mouvement_label = mouvement.obtenir("movementLabel", {}).obtenir("value", "")
+
+            si mouvement_id:
+                observer graphe.ajouter_noeud(mouvement_id, "mouvement", mouvement_label, mouvement)
+
+        observer plage_temporelle_debut = debut
+        observer plage_temporelle_fin = fin
+        observer affichage_chargement = faux
+        observer mode_visualisation = "chronologie"
+
+    exception erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+
+
+asynchrone déf basculer_visualisation(mode: chaine):
+    """Basculer le mode de visualisation"""
+    observer mode_visualisation = mode
+
+
+asynchrone déf executer_recherche(requete: chaine):
+    """Exécuter une recherche textuelle"""
+    observer affichage_chargement = vrai
+    observer barre_recherche_active = vrai
+    observer resultats_recherche = []
+
+    # Recherche simple dans le cache local
+    resultats = []
+
+    pour id, entite dans cache_entites.items():
+        etiquette = entite.obtenir("movementLabel", {}).obtenir("value", "") ou \
+                    entite.obtenir("artistLabel", {}).obtenir("value", "") ou \
+                    entite.obtenir("artworkLabel", {}).obtenir("value", "")
+
+        si requete.lower() dans etiquette.lower():
+            resultats.ajouter({
+                "id": id,
+                "etiquette": etiquette,
+                "entite": entite
+            })
+
+    observer resultats_recherche = resultats
+    observer affichage_chargement = faux
+
+
+déf obtenir_entite_selectionnee() -> dictionnaire:
+    """Obtenir l'entité actuellement sélectionnée"""
+    si entite_selectionnee_id:
+        retourner cache_entites.obtenir(entite_selectionnee_id, {})
+    sinon:
+        retourner {}
+
+
+déf obtenir_noeud_selectionne() -> NoeudGraphe:
+    """Obtenir le nœud du graphe actuellement sélectionné"""
+    si entite_selectionnee_id:
+        retourner graphe.obtenir_noeud(entite_selectionnee_id)
+    sinon:
+        retourner nul
+
+
+asynchrone déf réinitialiser_etat():
+    """Réinitialiser l'état global"""
+    observer entite_selectionnee_id = ""
+    observer entite_selectionnee_type = ""
+    observer affichage_chargement = faux
+    observer message_erreur = ""
+    observer panneau_detail_visible = faux
+    observer barre_recherche_active = faux
+    observer resultats_recherche = []

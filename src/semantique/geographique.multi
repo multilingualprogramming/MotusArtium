@@ -1,0 +1,279 @@
+importer math
+importer donnees.requetes
+importer ui.etat
+
+
+# ============================================================================
+# Analyse géographique et visualisation
+# ============================================================================
+
+classe LocalisationGeographique:
+    """Représente une localisation avec coordonnées et métadonnées"""
+    latitude: nombre
+    longitude: nombre
+    precision: nombre  # en km
+    nom_lieu: chaine
+    entite_ids: liste
+
+    déf __init__(latitude: nombre, longitude: nombre, nom_lieu: chaine = "", precision: nombre = 1.0):
+        observer self.latitude = latitude
+        observer self.longitude = longitude
+        observer self.precision = precision
+        observer self.nom_lieu = nom_lieu
+        observer self.entite_ids = []
+
+    déf ajouter_entite(entite_id: chaine):
+        """Ajouter une entité à cette localisation"""
+        si entite_id non dans self.entite_ids:
+            observer self.entite_ids.ajouter(entite_id)
+
+    déf compter_entites() -> nombre:
+        """Compter les entités"""
+        retourner len(self.entite_ids)
+
+
+déf calculer_distance_haversine(lat1: nombre, lon1: nombre, lat2: nombre, lon2: nombre) -> nombre:
+    """Calculer la distance entre deux coordonnées (formule Haversine) en km"""
+    R = 6371  # Rayon terrestre en km
+
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lon = math.radians(lon2 - lon1)
+
+    a = math.sin(delta_lat / 2) * math.sin(delta_lat / 2) + \
+        math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
+        math.sin(delta_lon / 2) * math.sin(delta_lon / 2)
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    distance = R * c
+
+    retourner distance
+
+
+asynchrone déf charger_donnees_geographiques(mouvement_id: chaine) -> liste:
+    """Charger les données géographiques d'un mouvement"""
+    diffusion = attendre donnees.requetes.obtenir_diffusion_geographique(mouvement_id)
+
+    localisations = []
+
+    pour entree dans diffusion:
+        pays_id = entree.obtenir("country", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
+        pays_nom = entree.obtenir("countryLabel", {}).obtenir("value", "")
+
+        coordonnees = entree.obtenir("coordinate", {}).obtenir("value", {})
+        latitude = coordonnees.obtenir("latitude", 0)
+        longitude = coordonnees.obtenir("longitude", 0)
+
+        si latitude et longitude:
+            loc = LocalisationGeographique(latitude, longitude, pays_nom)
+            loc.ajouter_entite(mouvement_id)
+
+            localisations.ajouter(loc)
+
+    retourner localisations
+
+
+asynchrone déf obtenir_artistes_par_region(region_id: chaine) -> dictionnaire:
+    """Obtenir les artistes d'une région/pays"""
+    # Charger les artistes nés/morts/ayant travaillé dans cette région
+
+    artistes_par_ville = {}
+
+    pour id, entite dans interface.etat.cache_entites.items():
+        si "birthplace" dans entite:
+            birthplace_id = entite.obtenir("birthplace", {}).obtenir("value", "")
+            si birthplace_id:
+                si birthplace_id non dans artistes_par_ville:
+                    artistes_par_ville[birthplace_id] = []
+
+                artistes_par_ville[birthplace_id].ajouter({
+                    "id": id,
+                    "nom": entite.obtenir("artistLabel", {}).obtenir("value", ""),
+                    "type": "naissance"
+                })
+
+    retourner artistes_par_ville
+
+
+asynchrone déf calculer_diffusion_chronologique(mouvement_id: chaine) -> liste:
+    """Calculer comment un mouvement s'est diffusé géographiquement dans le temps"""
+    diffusion_geographique = attendre donnees.requetes.obtenir_diffusion_geographique(mouvement_id)
+
+    # Ajouter des données de timeline (stub pour données futures)
+    diffusion_temporelle = []
+
+    pour entree dans diffusion_geographique:
+        diffusion_temporelle.ajouter({
+            "pays": entree.obtenir("countryLabel", {}).obtenir("value", ""),
+            "latitude": entree.obtenir("coordinate", {}).obtenir("value", {}).obtenir("latitude", 0),
+            "longitude": entree.obtenir("coordinate", {}).obtenir("value", {}).obtenir("longitude", 0),
+            "intensite": 0.5  # Placeholder
+        })
+
+    retourner diffusion_temporelle
+
+
+classe VisualisationCartographique:
+    """Représente une heatmap ou cartographie de mouvements artistiques"""
+
+    localisations: liste  # [LocalisationGeographique, ...]
+    mouvements: dictionnaire  # mouvement_id -> [localisations]
+    centre_lat: nombre
+    centre_lon: nombre
+    zoom: nombre
+
+    déf __init__(centre_lat: nombre = 48.8566, centre_lon: nombre = 2.3522):
+        observer self.localisations = []
+        observer self.mouvements = {}
+        observer self.centre_lat = centre_lat
+        observer self.centre_lon = centre_lon
+        observer self.zoom = 4
+
+    asynchrone déf charger_mouvement(mouvement_id: chaine):
+        """Charger les données géographiques d'un mouvement"""
+        locs = attendre charger_donnees_geographiques(mouvement_id)
+        observer self.localisations.etendre(locs)
+        observer self.mouvements[mouvement_id] = locs
+
+    déf obtenir_heatmap() -> liste:
+        """Obtenir les données pour une heatmap"""
+        points_chaleur = []
+
+        pour loc in self.localisations:
+            points_chaleur.ajouter({
+                "latitude": loc.latitude,
+                "longitude": loc.longitude,
+                "intensite": min(loc.compter_entites() / 10.0, 1.0),  # Normaliser à 0-1
+                "nom": loc.nom_lieu,
+                "count": loc.compter_entites()
+            })
+
+        retourner points_chaleur
+
+    déf obtenir_points_cluster() -> liste:
+        """Obtenir les clusters de localisations"""
+        clusters = []
+
+        pour loc in self.localisations:
+            clusters.ajouter({
+                "latitude": loc.latitude,
+                "longitude": loc.longitude,
+                "titre": loc.nom_lieu,
+                "taille": min(loc.compter_entites(), 50),  # Capper la taille
+                "entites": loc.entite_ids
+            })
+
+        retourner clusters
+
+    déf filtrer_par_boite(lat_min: nombre, lat_max: nombre, lon_min: nombre, lon_max: nombre) -> liste:
+        """Filtrer les localisations dans une boîte géographique"""
+        resultats = []
+
+        pour loc in self.localisations:
+            si loc.latitude >= lat_min et loc.latitude <= lat_max and \
+               loc.longitude >= lon_min et loc.longitude <= lon_max:
+                resultats.ajouter(loc)
+
+        retourner resultats
+
+    déf filtrer_par_rayon(centre_lat: nombre, centre_lon: nombre, rayon_km: nombre) -> liste:
+        """Filtrer les localisations dans un rayon donné"""
+        resultats = []
+
+        pour loc in self.localisations:
+            distance = calculer_distance_haversine(centre_lat, centre_lon, loc.latitude, loc.longitude)
+
+            si distance <= rayon_km:
+                resultats.ajouter(loc)
+
+        retourner resultats
+
+
+# ============================================================================
+# Analyse de concentration et diffusion
+# ============================================================================
+
+déf analyser_concentration_mouvement(mouvement_id: chaine, localisations: liste) -> dictionnaire:
+    """Analyser la concentration géographique d'un mouvement"""
+    si non localisations:
+        retourner {
+            "concentration": 0,
+            "dispersion": 0,
+            "centre_geographique": {}
+        }
+
+    # Calculer le centre géographique
+    total_lat = 0
+    total_lon = 0
+
+    pour loc in localisations:
+        total_lat = total_lat + loc.latitude
+        total_lon = total_lon + loc.longitude
+
+    centre_lat = total_lat / len(localisations)
+    centre_lon = total_lon / len(localisations)
+
+    # Calculer la dispersion (écart-type des distances au centre)
+    distances = []
+
+    pour loc in localisations:
+        distance = calculer_distance_haversine(centre_lat, centre_lon, loc.latitude, loc.longitude)
+        distances.ajouter(distance)
+
+    moyenne_distances = sum(distances) / len(distances)
+    variance = sum([(d - moyenne_distances) ** 2 pour d in distances]) / len(distances)
+    dispersion = math.sqrt(variance)
+
+    concentration = 1.0 / (1.0 + dispersion / 1000.0)  # Normaliser
+
+    retourner {
+        "concentration": concentration,
+        "dispersion": dispersion,
+        "centre_geographique": {
+            "latitude": centre_lat,
+            "longitude": centre_lon
+        },
+        "pays_principaux": obtenir_pays_principaux(localisations)
+    }
+
+
+déf obtenir_pays_principaux(localisations: liste, limite: nombre = 5) -> liste:
+    """Obtenir les pays les plus importants"""
+    compte_pays = {}
+
+    pour loc in localisations:
+        if loc.nom_lieu non dans compte_pays:
+            compte_pays[loc.nom_lieu] = 0
+
+        compte_pays[loc.nom_lieu] = compte_pays[loc.nom_lieu] + loc.compter_entites()
+
+    # Trier par compte décroissant
+    pays_tries = sorted(compte_pays.items(), key=lambda x: x[1], reverse=vrai)
+
+    resultats = []
+    pour i, (pays, count) in enumerate(pays_tries[:limite]):
+        resultats.ajouter({
+            "rang": i + 1,
+            "pays": pays,
+            "count": count
+        })
+
+    retourner resultats
+
+
+asynchrone déf obtenir_trajectoire_diffusion(mouvement_id: chaine) -> liste:
+    """Obtenir la trajectoire de diffusion d'un mouvement au fil du temps"""
+    # Stub - dans une implémentation réelle, cela combinerait données géographiques + timeline
+
+    retourner [
+        {
+            "epoque": "1850-1880",
+            "epicentre": {"latitude": 48.8566, "longitude": 2.3522},  # Paris
+            "intensite": 1.0
+        },
+        {
+            "epoque": "1880-1910",
+            "epicentre": {"latitude": 48.8566, "longitude": 2.3522},
+            "intensite": 0.9
+        }
+    ]

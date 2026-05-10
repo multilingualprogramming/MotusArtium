@@ -1,0 +1,239 @@
+classe NoeudGraphe:
+    """Représente un nœud dans le graphe de connaissances"""
+    id: chaine
+    type: chaine  # "mouvement", "artiste", "oeuvre", "theme"
+    etiquette: chaine
+    donnees: dictionnaire
+    voisins: liste  # IDs des nœuds adjacents
+
+    déf __init__(id: chaine, type: chaine, etiquette: chaine, donnees: dictionnaire = {}):
+        observer self.id = id
+        observer self.type = type
+        observer self.etiquette = etiquette
+        observer self.donnees = donnees
+        observer self.voisins = []
+
+
+classe RelationGraphe:
+    """Représente une relation entre deux nœuds"""
+    source_id: chaine
+    target_id: chaine
+    type: chaine  # "precede", "suivi_par", "influence", "cree", etc.
+    poids: nombre
+
+    déf __init__(source_id: chaine, target_id: chaine, type: chaine, poids: nombre = 1.0):
+        observer self.source_id = source_id
+        observer self.target_id = target_id
+        observer self.type = type
+        observer self.poids = poids
+
+
+classe Graphe:
+    """Graphe de connaissances pour les mouvements, artistes et œuvres d'art"""
+    noeuds: dictionnaire  # id -> NoeudGraphe
+    relations: liste      # [RelationGraphe]
+
+    déf __init__():
+        observer self.noeuds = {}
+        observer self.relations = []
+
+    déf ajouter_noeud(id: chaine, type: chaine, etiquette: chaine, donnees: dictionnaire = {}):
+        """Ajouter ou mettre à jour un nœud"""
+        si id non dans self.noeuds:
+            noeud = NoeudGraphe(id, type, etiquette, donnees)
+            observer self.noeuds[id] = noeud
+        sinon:
+            observer self.noeuds[id].donnees = donnees
+            observer self.noeuds[id].etiquette = etiquette
+
+    déf ajouter_relation(source_id: chaine, target_id: chaine, type: chaine, poids: nombre = 1.0):
+        """Ajouter une relation entre deux nœuds"""
+        # Vérifier que les nœuds existent
+        si source_id non dans self.noeuds ou target_id non dans self.noeuds:
+            retour
+
+        # Vérifier si la relation existe déjà
+        pour rel dans self.relations:
+            si rel.source_id == source_id et rel.target_id == target_id et rel.type == type:
+                observer rel.poids = poids
+                retour
+
+        # Ajouter la nouvelle relation
+        relation = RelationGraphe(source_id, target_id, type, poids)
+        observer self.relations.ajouter(relation)
+
+        # Ajouter aux voisins
+        observer self.noeuds[source_id].voisins.ajouter(target_id)
+        observer self.noeuds[target_id].voisins.ajouter(source_id)
+
+    déf obtenir_noeud(id: chaine) -> NoeudGraphe:
+        """Obtenir un nœud par ID"""
+        retourner self.noeuds.obtenir(id, nul)
+
+    déf obtenir_voisins(noeud_id: chaine, type_relation: chaine = "") -> liste:
+        """Obtenir les nœuds adjacents"""
+        voisins = []
+
+        pour relation dans self.relations:
+            si relation.source_id == noeud_id:
+                si type_relation == "" ou relation.type == type_relation:
+                    voisins.ajouter(relation.target_id)
+            sinon si relation.target_id == noeud_id:
+                si type_relation == "" ou relation.type == type_relation:
+                    voisins.ajouter(relation.source_id)
+
+        retourner voisins
+
+    déf obtenir_relations_noeud(noeud_id: chaine) -> liste:
+        """Obtenir toutes les relations d'un nœud"""
+        rels = []
+
+        pour relation dans self.relations:
+            si relation.source_id == noeud_id ou relation.target_id == noeud_id:
+                rels.ajouter(relation)
+
+        retourner rels
+
+    déf compter_noeuds() -> nombre:
+        """Compter le nombre de nœuds"""
+        retourner len(self.noeuds)
+
+    déf compter_relations() -> nombre:
+        """Compter le nombre de relations"""
+        retourner len(self.relations)
+
+    déf obtenir_noeuds_par_type(type: chaine) -> liste:
+        """Obtenir tous les nœuds d'un type donné"""
+        resultats = []
+
+        pour id, noeud dans self.noeuds.items():
+            si noeud.type == type:
+                resultats.ajouter(noeud)
+
+        retourner resultats
+
+    déf obtenir_relations_par_type(type: chaine) -> liste:
+        """Obtenir toutes les relations d'un type donné"""
+        resultats = []
+
+        pour relation dans self.relations:
+            si relation.type == type:
+                resultats.ajouter(relation)
+
+        retourner resultats
+
+    déf chemin_plus_court(noeud_depart_id: chaine, noeud_arrivee_id: chaine) -> liste:
+        """Trouver le chemin le plus court entre deux nœuds (BFS)"""
+        si noeud_depart_id non dans self.noeuds ou noeud_arrivee_id non dans self.noeuds:
+            retourner []
+
+        si noeud_depart_id == noeud_arrivee_id:
+            retourner [noeud_depart_id]
+
+        visites = {noeud_depart_id}
+        queue = [[noeud_depart_id]]
+
+        tandis que queue:
+            chemin = queue.pop(0)
+            noeud_actuel = chemin[-1]
+
+            pour voisin_id dans self.obtenir_voisins(noeud_actuel):
+                si voisin_id == noeud_arrivee_id:
+                    retourner chemin + [voisin_id]
+
+                si voisin_id non dans visites:
+                    visites.ajouter(voisin_id)
+                    queue.ajouter(chemin + [voisin_id])
+
+        retourner []
+
+    déf obtenir_voisinage(noeud_id: chaine, profondeur: nombre = 2) -> dictionnaire:
+        """Obtenir le voisinage d'un nœud jusqu'à une certaine profondeur"""
+        voisinage = {
+            "centre": noeud_id,
+            "couches": []
+        }
+
+        visites = {noeud_id}
+        couche_actuelle = [noeud_id]
+
+        pour _ dans intervalle(profondeur):
+            prochaine_couche = []
+            noeuds_couche = []
+
+            pour noeud_courant_id dans couche_actuelle:
+                pour voisin_id dans self.obtenir_voisins(noeud_courant_id):
+                    si voisin_id non dans visites:
+                        visites.ajouter(voisin_id)
+                        prochaine_couche.ajouter(voisin_id)
+                        noeud = self.obtenir_noeud(voisin_id)
+                        si noeud:
+                            noeuds_couche.ajouter({
+                                "id": voisin_id,
+                                "etiquette": noeud.etiquette,
+                                "type": noeud.type
+                            })
+
+            si noeuds_couche:
+                voisinage["couches"].ajouter(noeuds_couche)
+
+            couche_actuelle = prochaine_couche
+            si non couche_actuelle:
+                pause
+
+        retourner voisinage
+
+    déf obtenir_composantes_connexes() -> liste:
+        """Obtenir les composantes connexes du graphe"""
+        visites = {}
+        composantes = []
+
+        pour noeud_id dans self.noeuds.keys():
+            si noeud_id non dans visites:
+                composante = []
+                queue = [noeud_id]
+
+                tandis que queue:
+                    courant = queue.pop(0)
+
+                    si courant non dans visites:
+                        visites[courant] = vrai
+                        composante.ajouter(courant)
+
+                        pour voisin dans self.obtenir_voisins(courant):
+                            si voisin non dans visites:
+                                queue.ajouter(voisin)
+
+                si composante:
+                    composantes.ajouter(composante)
+
+        retourner composantes
+
+    déf exporter_json() -> dictionnaire:
+        """Exporter le graphe en JSON"""
+        noeuds_json = []
+        pour id, noeud dans self.noeuds.items():
+            noeuds_json.ajouter({
+                "id": noeud.id,
+                "type": noeud.type,
+                "etiquette": noeud.etiquette,
+                "donnees": noeud.donnees
+            })
+
+        relations_json = []
+        pour rel dans self.relations:
+            relations_json.ajouter({
+                "source": rel.source_id,
+                "target": rel.target_id,
+                "type": rel.type,
+                "poids": rel.poids
+            })
+
+        retourner {
+            "noeuds": noeuds_json,
+            "relations": relations_json,
+            "stats": {
+                "total_noeuds": self.compter_noeuds(),
+                "total_relations": self.compter_relations()
+            }
+        }

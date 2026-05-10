@@ -421,11 +421,20 @@
         }
 
         .constellation-grid {
+            z-index: 0;
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 88px 88px;
             mask-image: radial-gradient(circle at center, black 28%, transparent 85%);
+        }
+
+        .constellation-links {
+            z-index: 1;
+        }
+
+        .constellation-nodes {
+            z-index: 2;
         }
 
         .link {
@@ -447,6 +456,11 @@
             box-shadow: 0 0 24px rgba(139, 233, 253, 0.12);
             cursor: pointer;
             transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+            transform: translate(-50%, -50%);
+            appearance: none;
+            -webkit-appearance: none;
+            padding: 0;
+            margin: 0;
         }
 
         .node:hover,
@@ -506,6 +520,7 @@
         }
 
         .stage-overlay {
+            z-index: 3;
             display: grid;
             align-items: end;
             padding: 18px;
@@ -534,6 +549,7 @@
         }
 
         .app-root {
+            z-index: 4;
             inset: auto 18px 18px auto;
             width: min(380px, calc(100% - 36px));
             min-height: 120px;
@@ -1425,6 +1441,12 @@
             if (!source || !target) {
                 return;
             }
+            const exists = browserAdapterState.graphe.relations.some((relation) => {
+                return relation.source === source && relation.target === target && relation.type === type;
+            });
+            if (exists) {
+                return;
+            }
             browserAdapterState.graphe.relations.push({
                 source,
                 target,
@@ -1583,6 +1605,7 @@
                     meta: summary.totalNoeuds + " nodes · " + summary.totalRelations + " relations"
                 };
             }
+            renderConstellation();
             renderRuntimeState();
         }
 

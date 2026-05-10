@@ -108,11 +108,87 @@
 
         .topbar {
             display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(280px, 0.8fr) auto;
             gap: 18px;
             align-items: center;
             padding: 18px 22px;
             min-height: var(--header-height);
+        }
+
+        .search-bar-inline {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-bar-inline input {
+            flex: 1;
+            padding: 9px 14px;
+            border: 1px solid var(--line-soft);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            font: inherit;
+            font-size: 0.9rem;
+            transition: 160ms ease;
+        }
+
+        .search-bar-inline input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-bar-inline input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--line-strong);
+            box-shadow: 0 0 24px rgba(139, 233, 253, 0.08);
+        }
+
+        .search-results-dropdown {
+            position: fixed;
+            top: auto;
+            left: auto;
+            background: var(--bg-panel);
+            border: 1px solid var(--line-soft);
+            border-radius: var(--radius-md);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 10000;
+            display: none;
+            box-shadow: var(--shadow-panel);
+            min-width: 280px;
+            max-width: 400px;
+        }
+
+        .search-results-dropdown.is-active {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--line-soft);
+            cursor: pointer;
+            transition: background 160ms ease;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: rgba(139, 233, 253, 0.08);
+        }
+
+        .search-result-item strong {
+            display: block;
+            color: var(--text-main);
+        }
+
+        .search-result-item small {
+            display: block;
+            color: var(--text-soft);
+            font-size: 0.85rem;
+            margin-top: 4px;
         }
 
         .brand {
@@ -875,18 +951,7 @@
             display: none;
         }
 
-        .search-bar-overlay {
-            position: fixed;
-            top: 110px;
-            left: 20px;
-            width: 400px;
-            z-index: 100;
-            display: none;
-        }
-
-        .search-bar-overlay.is-active {
-            display: block;
-        }
+        /* Search bar moved to topbar inline - see .search-bar-inline styles above */
 
         .detail-panel-overlay {
             position: fixed;
@@ -975,17 +1040,19 @@
             </div>
 
             <nav class="mode-switcher" aria-label="Application modes" id="mode-switcher">
-                <button class="mode-button is-active" data-mode="observatory">Observatory</button>
-                <button class="mode-button" data-mode="query-theater">Query Theater</button>
-                <button class="mode-button" data-mode="polyglot-studio">Polyglot Studio</button>
-                <button class="mode-button" data-mode="temporal-river">Temporal River</button>
-                <button class="ghost-button" id="search-toggle" title="Search (Ctrl+K)">🔍 Search</button>
+                <button class="mode-button is-active" data-mode="observatory" title="Observatory - Graph exploration">Observatory</button>
+                <button class="mode-button" data-mode="query-theater" title="Query Theater - Live GraphQL studio">Query Theater</button>
+                <button class="mode-button" data-mode="polyglot-studio" title="Polyglot Studio - Multilingual surfaces">Polyglot Studio</button>
+                <button class="mode-button" data-mode="temporal-river" title="Temporal River - Timeline analysis">Temporal River</button>
             </nav>
+
+            <div class="search-bar-inline">
+                <input type="text" id="search-input" placeholder="Search movements, artists, works..." aria-label="Search art entities" />
+            </div>
 
             <div class="lang-status">
                 <button class="lang-button is-active" data-language="fr">FR</button>
                 <button class="lang-button" data-language="en">EN</button>
-                <span class="chip" id="status-chip">GraphQL Live - 0 docs</span>
             </div>
         </header>
 
@@ -1167,12 +1234,7 @@
                 </section>
             </aside>
 
-            <!-- Search Bar Container -->
-            <div id="search-bar-container" class="search-bar-overlay">
-                <div id="__ml_search_root"></div>
-            </div>
-
-            <!-- Detail Panel Container -->
+            <!-- Detail Panel Container - appears when entity is selected -->
             <div id="detail-panel-container" class="detail-panel-overlay">
                 <div id="__ml_detail_root"></div>
             </div>
@@ -1210,8 +1272,16 @@
                     <span class="chip" id="selected-entity-action">Show Query</span>
                 </div>
             </section>
+
+            <section>
+                <h3 class="section-title">Status</h3>
+                <span class="chip is-live" id="status-chip">GraphQL Live - 0 docs</span>
+            </section>
         </footer>
     </div>
+
+    <!-- Global search results dropdown (positioned via JS) -->
+    <div class="search-results-dropdown" id="search-results-dropdown"></div>
 
     <script>
         const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
@@ -2559,29 +2629,111 @@
             renderRuntimeState();
         }
 
+        // Map HTML button modes to multilingual visualization modes
+        const modeMapping = {
+            "observatory": "graphe",
+            "query-theater": "chronologie",
+            "polyglot-studio": "galaxie",
+            "temporal-river": "riviere"
+        };
+
         modeButtons.forEach((button) => {
             button.addEventListener("click", async () => {
+                const htmlMode = button.dataset.mode;
+                const multilingualMode = modeMapping[htmlMode] || htmlMode;
+
+                console.log(`Mode button clicked: ${htmlMode} -> ${multilingualMode}`);
                 setActiveButton(modeButtons, button);
-                runtimeState.currentMode = button.dataset.mode;
-                const config = modeSummaries[button.dataset.mode];
+                runtimeState.currentMode = htmlMode;
+
+                const config = modeSummaries[htmlMode];
                 if (config) {
                     queryExplanationEl.textContent = config.explanation;
                     lensSummaryEl.textContent = config.lens;
                 }
-                await invokeRuntimeAction("basculer_visualisation", window.ui.etat.basculer_visualisation.bind(window.ui.etat), [button.dataset.mode]);
+
+                try {
+                    if (typeof window.ui.etat.basculer_visualisation === "function") {
+                        console.log(`Calling basculer_visualisation with mode: ${multilingualMode}`);
+                        await window.ui.etat.basculer_visualisation(multilingualMode);
+                        console.log("basculer_visualisation completed");
+                    } else {
+                        console.warn("basculer_visualisation not found");
+                    }
+                } catch (error) {
+                    console.error("Error switching visualization mode:", error);
+                }
+
                 renderRuntimeState();
             });
         });
 
         langButtons.forEach((button) => {
             button.addEventListener("click", () => {
-                setActiveButton(langButtons, button);
-                updateLanguageSurface(button.dataset.language);
+                const language = button.dataset.language;
+                console.log(`Language button clicked: ${language}`);
+                try {
+                    setActiveButton(langButtons, button);
+                    updateLanguageSurface(language);
+                    console.log(`Language switched to: ${language}`);
+                } catch (error) {
+                    console.error(`Error switching language to ${language}:`, error);
+                    runtimeState.lastError = `Language switch failed: ${error.message}`;
+                    renderRuntimeState();
+                }
             });
         });
 
         loadQueryInventory();
         updateLanguageSurface("fr");
+
+        // Log available buttons for debugging
+        console.log("=== Top Bar Buttons ===");
+        console.log("Mode buttons:", modeButtons.length, modeButtons.map(b => b.dataset.mode));
+        console.log("Language buttons:", langButtons.length, langButtons.map(b => b.dataset.language));
+        console.log("Mode mappings:", modeMapping);
+
+        // Test function for button functionality - call from console: testButtons()
+        window.testButtons = function() {
+            console.log("\n=== Button Functionality Test ===\n");
+
+            // Test mode buttons
+            console.log("Testing mode buttons:");
+            modeButtons.forEach((button, index) => {
+                const mode = button.dataset.mode;
+                const multilingualMode = modeMapping[mode];
+                const isActive = button.classList.contains("is-active");
+                console.log(`  [${index}] ${mode} -> ${multilingualMode} (active: ${isActive})`);
+            });
+
+            // Test language buttons
+            console.log("\nTesting language buttons:");
+            langButtons.forEach((button, index) => {
+                const lang = button.dataset.language;
+                const isActive = button.classList.contains("is-active");
+                console.log(`  [${index}] ${lang} (active: ${isActive})`);
+            });
+
+            // Test search input
+            const searchInput = document.getElementById("search-input");
+            console.log("\nSearch input status:");
+            console.log(`  Found: ${!!searchInput}`);
+            console.log(`  Visible: ${searchInput && searchInput.offsetParent !== null}`);
+            console.log(`  Focused: ${document.activeElement === searchInput}`);
+
+            // Test detail panel
+            const detailPanel = document.getElementById("detail-panel-container");
+            console.log("\nDetail panel status:");
+            console.log(`  Found: ${!!detailPanel}`);
+            console.log(`  Active class: ${detailPanel && detailPanel.classList.contains("is-active")}`);
+
+            console.log("\n=== Button Test Complete ===\n");
+            console.log("To test a specific button, click it in the UI or call:");
+            console.log("  modeButtons[0].click()  // Click first mode button");
+            console.log("  langButtons[1].click()  // Click second language button");
+        };
+
+        console.log("Button test function available: testButtons()");
     </script>
     <script src="bundle.js"></script>
     <script>
@@ -2641,223 +2793,143 @@
             }
         })();
 
-        // Search bar interaction wiring
+        // Search bar interaction wiring - simplified for inline search
         function wireupSearchBar() {
-            const searchToggle = document.getElementById("search-toggle");
-            const searchContainer = document.getElementById("search-bar-container");
-            const detailContainer = document.getElementById("detail-panel-container");
-            const searchRoot = document.getElementById("__ml_search_root");
-            const detailRoot = document.getElementById("__ml_detail_root");
+            const searchInput = document.getElementById("search-input");
+            const searchDropdown = document.getElementById("search-results-dropdown");
 
-            console.log("wireupSearchBar: searchToggle=", searchToggle, "searchContainer=", searchContainer, "searchRoot=", searchRoot);
+            console.log("wireupSearchBar: searchInput=", searchInput, "dropdown=", searchDropdown);
 
-            // Wire search button
-            if (searchToggle) {
-                console.log("Attaching click listener to search toggle");
-                searchToggle.addEventListener("click", async () => {
-                    console.log("Search toggle clicked!");
-                    searchContainer.classList.toggle("is-active");
-                    console.log("is-active class:", searchContainer.classList.contains("is-active"));
+            if (!searchInput) {
+                console.warn("Search input not found");
+                return;
+            }
 
-                    // Mount search bar component if not already mounted
-                    if (searchContainer.classList.contains("is-active") && searchRoot && searchRoot.children.length === 0) {
-                        console.log("Creating search bar HTML");
-                        try {
-                            // Create search bar HTML directly
-                            const searchHTML = `
-                                <div class="search-input-wrapper">
-                                    <input type="text" class="search-input" id="search-input" placeholder="Chercher un mouvement, artiste, œuvre..." />
-                                </div>
-                                <div class="search-results" id="search-results"></div>
-                            `;
-                            searchRoot.innerHTML = searchHTML;
-                            console.log("Search bar HTML created");
+            // Debounce search requests
+            let searchTimeout;
 
-                            // Wire up search input
-                            const searchInput = document.getElementById("search-input");
-                            const searchResults = document.getElementById("search-results");
-                            if (searchInput && typeof lancer_recherche === "function") {
-                                searchInput.addEventListener("input", (e) => {
-                                    const query = e.target.value;
-                                    console.log("Search input changed:", query);
-                                    if (query.length > 2) {
-                                        console.log("Calling Wikidata search with:", query);
-                                        // Clear previous results before fetching new ones
-                                        console.log("Clearing searchResults, current content length:", searchResults.innerHTML.length);
-                                        searchResults.innerHTML = '';
-                                        searchResults.innerHTML = '<div style="padding: 8px; color: #999;">Searching...</div>';
-                                        console.log("Cleared and showing Searching message");
-                                        // Simple Wikidata search with CORS origin
-                                        fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`)
-                                            .then(r => r.json())
-                                            .then(data => {
-                                                console.log("Search results:", data);
-                                                if (data.search && data.search.length > 0) {
-                                                    console.log("Got", data.search.length, "results, showing 5");
-                                                    const results = data.search.slice(0, 5).map(item =>
-                                                        `<div class="search-result-item" data-entity-id="${item.id}" style="padding: 8px; border-bottom: 1px solid #ccc; cursor: pointer;">
-                                                            <strong>${item.label}</strong> <br/>
-                                                            <small>${item.description || ''}</small>
-                                                        </div>`
-                                                    ).join('');
-                                                    console.log("HTML generated, length:", results.length);
-                                                    searchResults.innerHTML = results;
-                                                    console.log("Results displayed, container now has", searchResults.children.length, "items");
+            function positionDropdown() {
+                const rect = searchInput.getBoundingClientRect();
+                searchDropdown.style.top = (rect.bottom + 8) + "px";
+                searchDropdown.style.left = rect.left + "px";
+                searchDropdown.style.width = rect.width + "px";
+            }
 
-                                                    // Add click handlers to results
-                                                    const resultItems = document.querySelectorAll(".search-result-item");
-                                                    console.log("Attaching click handlers to", resultItems.length, "result items");
-                                                    resultItems.forEach((item, index) => {
-                                                        console.log("Attaching handler to result item", index, "id:", item.getAttribute("data-entity-id"));
-                                                        item.style.cursor = "pointer";
-                                                        item.addEventListener("click", function(e) {
-                                                            console.log("Click event fired!");
-                                                            try {
-                                                                const entityId = this.getAttribute("data-entity-id");
-                                                                const label = this.querySelector("strong").textContent;
-                                                                console.log("Clicked result:", entityId, label);
-                                                                const newUrl = `?entity=${entityId}&type=movement`;
-                                                                console.log("Reloading page to", newUrl);
-                                                                window.location.href = newUrl;
-                                                            } catch (err) {
-                                                                console.error("Error in click handler:", err);
-                                                            }
-                                                        });
-                                                    });
-                                                } else {
-                                                    searchResults.innerHTML = '<div style="padding: 8px;">No results found</div>';
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error("Search error:", err);
-                                                searchResults.innerHTML = '<div style="padding: 8px; color: red;">Search error</div>';
-                                            });
-                                    } else if (query.length === 0) {
-                                        searchResults.innerHTML = '';
-                                    }
-                                });
-                                console.log("Search input event listener attached");
-                            }
-                        } catch (e) {
-                            console.warn("Could not render search bar:", e);
-                        }
-                    }
-                });
+            searchInput.addEventListener("input", (e) => {
+                const query = e.target.value.trim();
+                console.log("Search input changed:", query);
 
-                // Ctrl+K shortcut
-                document.addEventListener("keydown", async (e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-                        e.preventDefault();
-                        console.log("Ctrl+K pressed");
-                        searchContainer.classList.toggle("is-active");
+                clearTimeout(searchTimeout);
 
-                        // Mount search bar component if not already mounted
-                        if (searchContainer.classList.contains("is-active") && searchRoot && searchRoot.children.length === 0) {
-                            try {
-                                // Create search bar HTML directly (same as click handler)
-                                const searchHTML = `
-                                    <div class="search-input-wrapper">
-                                        <input type="text" class="search-input" id="search-input" placeholder="Chercher un mouvement, artiste, œuvre..." />
-                                    </div>
-                                    <div class="search-results" id="search-results"></div>
-                                `;
-                                searchRoot.innerHTML = searchHTML;
-                                console.log("Search bar HTML created via Ctrl+K");
+                if (query.length < 2) {
+                    searchDropdown.classList.remove("is-active");
+                    searchDropdown.innerHTML = '';
+                    return;
+                }
 
-                                // Wire up search input
-                                const searchInput = document.getElementById("search-input");
-                                const searchResults = document.getElementById("search-results");
-                                if (searchInput && typeof lancer_recherche === "function") {
-                                    searchInput.addEventListener("input", (e) => {
-                                        const query = e.target.value;
-                                        console.log("Search input changed (Ctrl+K):", query);
-                                        if (query.length > 2) {
-                                            console.log("Calling Wikidata search with:", query);
-                                            // Clear previous results before fetching new ones
-                                            searchResults.innerHTML = '<div style="padding: 8px; color: #999;">Searching...</div>';
-                                            // Simple Wikidata search with CORS origin
-                                            fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`)
-                                                .then(r => r.json())
-                                                .then(data => {
-                                                    console.log("Search results:", data);
-                                                    if (data.search && data.search.length > 0) {
-                                                        const results = data.search.slice(0, 5).map(item =>
-                                                            `<div class="search-result-item" data-entity-id="${item.id}" style="padding: 8px; border-bottom: 1px solid #ccc; cursor: pointer;">
-                                                                <strong>${item.label}</strong> <br/>
-                                                                <small>${item.description || ''}</small>
-                                                            </div>`
-                                                        ).join('');
-                                                        searchResults.innerHTML = results;
-                                                        console.log("Results displayed");
+                console.log("Searching for:", query);
+                searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted);">Searching...</div>';
+                positionDropdown();
+                searchDropdown.classList.add("is-active");
 
-                                                        // Add click handlers to results
-                                                        const resultItems = document.querySelectorAll(".search-result-item");
-                                                        console.log("Attaching click handlers to", resultItems.length, "result items (Ctrl+K)");
-                                                        resultItems.forEach((item, index) => {
-                                                            console.log("Attaching handler to result item", index, "id:", item.getAttribute("data-entity-id"));
-                                                            item.style.cursor = "pointer";
-                                                            item.addEventListener("click", function(e) {
-                                                                console.log("Click event fired (Ctrl+K)!");
-                                                                try {
-                                                                    const entityId = this.getAttribute("data-entity-id");
-                                                                    const label = this.querySelector("strong").textContent;
-                                                                    console.log("Clicked result:", entityId, label);
-                                                                    const newUrl = `?entity=${entityId}&type=movement`;
-                                                                    console.log("Reloading page to", newUrl);
-                                                                    window.location.href = newUrl;
-                                                                } catch (err) {
-                                                                    console.error("Error in click handler:", err);
-                                                                }
-                                                            });
-                                                        });
-                                                    } else {
-                                                        searchResults.innerHTML = '<div style="padding: 8px;">No results found</div>';
-                                                    }
-                                                })
-                                                .catch(err => {
-                                                    console.error("Search error:", err);
-                                                    searchResults.innerHTML = '<div style="padding: 8px; color: red;">Search error</div>';
-                                                });
-                                        } else if (query.length === 0) {
-                                            searchResults.innerHTML = '';
-                                        }
+                // Debounce the actual search
+                searchTimeout = setTimeout(() => {
+                    fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`)
+                        .then(r => r.json())
+                        .then(data => {
+                            console.log("Search results:", data);
+                            if (data.search && data.search.length > 0) {
+                                const results = data.search.slice(0, 8).map(item =>
+                                    `<div class="search-result-item" data-entity-id="${item.id}">
+                                        <strong>${item.label}</strong>
+                                        <small>${item.description || ''}</small>
+                                    </div>`
+                                ).join('');
+                                searchDropdown.innerHTML = results;
+
+                                // Add click handlers to results
+                                searchDropdown.querySelectorAll(".search-result-item").forEach((item) => {
+                                    item.addEventListener("click", function() {
+                                        const entityId = this.getAttribute("data-entity-id");
+                                        const label = this.querySelector("strong").textContent;
+                                        console.log("Clicked result:", entityId, label);
+                                        window.location.href = `?entity=${entityId}&type=movement`;
                                     });
-                                    console.log("Search input event listener attached (Ctrl+K)");
-                                }
-                            } catch (e) {
-                                console.warn("Could not render search bar:", e);
+                                });
+                            } else {
+                                searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted);">No results found</div>';
                             }
-                        }
-                    }
-                    if (e.key === "Escape") {
-                        searchContainer.classList.remove("is-active");
-                    }
-                });
-            }
+                        })
+                        .catch(err => {
+                            console.error("Search error:", err);
+                            searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--accent-coral);">Search error</div>';
+                        });
+                }, 300);
+            });
 
-            // Mount detail panel component
-            if (detailRoot && detailRoot.children.length === 0) {
-                (async () => {
-                    try {
-                        if (typeof rendre_panneau_detail === "function") {
-                            const detailElement = await rendre_panneau_detail();
-                            if (detailElement) {
-                                detailRoot.appendChild(detailElement);
-                            }
-                        }
-                    } catch (e) {
-                        console.warn("Could not render detail panel:", e);
-                    }
-                })();
-            }
+            // Ctrl+K to focus search
+            document.addEventListener("keydown", (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+                    e.preventDefault();
+                    console.log("Ctrl+K pressed - focusing search input");
+                    searchInput.focus();
+                }
+            });
+
+            // Escape to clear search
+            searchInput.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    searchInput.value = '';
+                    searchDropdown.classList.remove("is-active");
+                    searchDropdown.innerHTML = '';
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener("click", (e) => {
+                if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+                    searchDropdown.classList.remove("is-active");
+                }
+            });
+
+            // Show dropdown when clicking in input (to re-show previous results)
+            searchInput.addEventListener("focus", () => {
+                if (searchInput.value.length >= 2) {
+                    positionDropdown();
+                    searchDropdown.classList.add("is-active");
+                }
+            });
+
+            // Keep dropdown visible when hovering over results
+            searchDropdown.addEventListener("mouseenter", () => {
+                if (searchDropdown.innerHTML.trim()) {
+                    searchDropdown.classList.add("is-active");
+                }
+            });
+
+            // Reposition dropdown on window resize/scroll
+            window.addEventListener("resize", () => {
+                if (searchDropdown.classList.contains("is-active")) {
+                    positionDropdown();
+                }
+            });
+
+            window.addEventListener("scroll", () => {
+                if (searchDropdown.classList.contains("is-active")) {
+                    positionDropdown();
+                }
+            }, true);
 
             // Watch for detail panel visibility changes
-            if (typeof obtenir_instantane_etat === "function") {
-                // Create a simple observer to watch state changes
+            const detailContainer = document.getElementById("detail-panel-container");
+            const detailRoot = document.getElementById("__ml_detail_root");
+
+            if (typeof obtenir_instantane_etat === "function" && detailContainer) {
+                console.log("Setting up detail panel visibility watcher");
                 setInterval(() => {
                     try {
                         const etat = obtenir_instantane_etat();
-                        if (etat.panneau_detail_visible) {
+                        if (etat && etat.panneau_detail_visible) {
                             detailContainer.classList.add("is-active");
                         } else {
                             detailContainer.classList.remove("is-active");
@@ -2866,6 +2938,22 @@
                         // Ignore errors during state polling
                     }
                 }, 100);
+            }
+
+            // Mount detail panel component if not already mounted
+            if (detailRoot && typeof rendre_panneau_detail === "function") {
+                (async () => {
+                    try {
+                        console.log("Mounting detail panel component");
+                        const detailElement = await rendre_panneau_detail();
+                        if (detailElement && detailRoot.children.length === 0) {
+                            detailRoot.appendChild(detailElement);
+                            console.log("Detail panel mounted");
+                        }
+                    } catch (e) {
+                        console.warn("Could not render detail panel:", e);
+                    }
+                })();
             }
         }
     </script>

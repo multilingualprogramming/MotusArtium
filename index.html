@@ -5,14 +5,22 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="description"
-            content="MotusArtium - Polyglot query observatory for art history using Wikidata GraphQL and Multilingual">
-        <title>MotusArtium</title>
+            content="MotusArtium - An immersive interactive semantic atlas for exploring the evolution of art movements, artists, and cultural influences across time and geography using Wikidata's GraphQL API.">
+        <meta name="theme-color" content="#081019">
+        <meta name="color-scheme" content="dark light">
+        <title>MotusArtium - Semantic Art History Atlas</title>
         <link rel="stylesheet" href="styles.css">
+        <style>
+            @supports (display: grid) {
+                /* Critical rendering path optimization */
+            }
+        </style>
     </head>
 
     <body>
+        <a href="#main-content" class="sr-only-focusable">Skip to main content</a>
         <div class="shell" id="app-shell">
-            <header class="topbar panel">
+            <header class="topbar panel" role="banner">
                 <div class="brand">
                     <span class="eyebrow" id="brand-eyebrow">Multilingual x Wikidata GraphQL</span>
                     <h1 id="brand-title">MotusArtium</h1>
@@ -20,25 +28,42 @@
                         influence across art history.</p>
                 </div>
 
-                <nav class="mode-switcher" aria-label="Application modes" id="mode-switcher">
-                    <button class="mode-button is-active" data-mode="observatory"
-                        title="Observatory - Graph exploration">Observatory</button>
-                    <button class="mode-button" data-mode="query-theater"
-                        title="Query Theater - Live GraphQL studio">Query Theater</button>
-                    <button class="mode-button" data-mode="polyglot-studio"
-                        title="Polyglot Studio - Multilingual surfaces">Polyglot Studio</button>
-                    <button class="mode-button" data-mode="temporal-river"
-                        title="Temporal River - Timeline analysis">Temporal River</button>
+                <nav class="mode-switcher" aria-label="Application visualization modes" id="mode-switcher" role="tablist">
+                    <button type="button" class="mode-button is-active" data-mode="observatory"
+                        title="Observatory - Graph constellation exploration" role="tab" aria-selected="true">Observatory</button>
+                    <button type="button" class="mode-button" data-mode="query-theater"
+                        title="Query Theater - Live GraphQL query editor" role="tab" aria-selected="false">Query Theater</button>
+                    <button type="button" class="mode-button" data-mode="polyglot-studio"
+                        title="Polyglot Studio - Multilingual entity surfaces" role="tab" aria-selected="false">Polyglot Studio</button>
+                    <button type="button" class="mode-button" data-mode="temporal-river"
+                        title="Temporal River - Timeline and chronological analysis" role="tab" aria-selected="false">Temporal River</button>
                 </nav>
 
-                <div class="search-bar-inline">
+                <div class="search-bar-inline" role="search">
+                    <label for="search-input" class="sr-only">Search art entities</label>
                     <input type="text" id="search-input" placeholder="Search movements, artists, works..."
-                        aria-label="Search art entities" />
+                        aria-label="Search art entities" autocomplete="off" />
                 </div>
 
-                <div class="lang-status">
-                    <button class="lang-button is-active" data-language="fr">FR</button>
-                    <button class="lang-button" data-language="en">EN</button>
+                <div class="lang-status" role="group" aria-label="Interface settings">
+                    <div class="lang-controls">
+                        <button type="button" class="lang-button is-active" data-language="fr" aria-pressed="true" title="French interface">FR</button>
+                        <button type="button" class="lang-button" data-language="en" aria-pressed="false" title="English interface">EN</button>
+                    </div>
+                    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle between dark and light color modes" title="Toggle theme (dark/light)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle class="sun-icon" cx="12" cy="12" r="5"></circle>
+                            <line class="sun-icon" x1="12" y1="1" x2="12" y2="3"></line>
+                            <line class="sun-icon" x1="12" y1="21" x2="12" y2="23"></line>
+                            <line class="sun-icon" x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line class="sun-icon" x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line class="sun-icon" x1="1" y1="12" x2="3" y2="12"></line>
+                            <line class="sun-icon" x1="21" y1="12" x2="23" y2="12"></line>
+                            <line class="sun-icon" x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line class="sun-icon" x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                            <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
                 </div>
             </header>
 
@@ -52,22 +77,22 @@
                             dashboard: a place where GraphQL documents, semantic relationships, and language-aware
                             exploration are visible at the same time.</p>
 
-                        <div class="hero-actions">
-                            <article class="entry-card">
+                        <div class="hero-actions" role="region" aria-label="Exploration entry points">
+                            <button type="button" class="entry-card" data-entry="movements" aria-label="Start by exploring art movements">
                                 <strong id="entry-movements-title">Start with Movements</strong>
                                 <span id="entry-movements-copy">Enter through schools, ruptures, and successions to
                                     watch art history reorganize itself as a living constellation.</span>
-                            </article>
-                            <article class="entry-card">
+                            </button>
+                            <button type="button" class="entry-card" data-entry="artists" aria-label="Start by exploring individual artists">
                                 <strong id="entry-artists-title">Start with Artists</strong>
                                 <span id="entry-artists-copy">Trace creation through people, influence, birthplace, and
-                                    oeuvre while the active GraphQL path remains visible.</span>
-                            </article>
-                            <article class="entry-card">
+                                    works while the active GraphQL query remains visible.</span>
+                            </button>
+                            <button type="button" class="entry-card" data-entry="themes" aria-label="Start by exploring themes and materials">
                                 <strong id="entry-themes-title">Start with Themes</strong>
                                 <span id="entry-themes-copy">Approach the atlas by material, subject, museum, or place
                                     and let the interface reshape the narrative lens.</span>
-                            </article>
+                            </button>
                         </div>
 
                         <section class="preview-card hero-journey">
@@ -88,34 +113,35 @@
                 <aside class="rail panel">
                     <section class="subpanel">
                         <h3 class="section-title">Semantic Compass</h3>
-                        <div class="compass">
+                        <fieldset class="compass" aria-labelledby="compass-label">
+                            <legend class="sr-only">Semantic Lens Selection</legend>
                             <div class="compass-ring" aria-hidden="true">
                                 <div class="compass-axis compass-axis--vertical"></div>
                                 <div class="compass-axis compass-axis--horizontal"></div>
                                 <div class="compass-axis compass-axis--diagonal-left"></div>
                                 <div class="compass-axis compass-axis--diagonal-right"></div>
                                 <div class="compass-core">
-                                    <span class="compass-core-label">Lens</span>
+                                    <span class="compass-core-label" id="compass-label">Lens</span>
                                 </div>
-                                <button type="button" class="compass-pole is-primary" data-position="top" data-lens="movement">Movement</button>
-                                <button type="button" class="compass-pole" data-position="top-right" data-lens="artist">Artist</button>
-                                <button type="button" class="compass-pole" data-position="bottom-right" data-lens="work">Work</button>
-                                <button type="button" class="compass-pole" data-position="bottom" data-lens="place">Place</button>
-                                <button type="button" class="compass-pole" data-position="bottom-left" data-lens="time">Time</button>
-                                <button type="button" class="compass-pole" data-position="top-left" data-lens="influence">Influence</button>
+                                <button type="button" class="compass-pole is-primary" data-position="top" data-lens="movement" aria-label="Movement lens - emphasize art movements and schools" aria-pressed="true">Movement</button>
+                                <button type="button" class="compass-pole" data-position="top-right" data-lens="artist" aria-label="Artist lens - emphasize artists and creators" aria-pressed="false">Artist</button>
+                                <button type="button" class="compass-pole" data-position="bottom-right" data-lens="work" aria-label="Work lens - emphasize artworks and creations" aria-pressed="false">Work</button>
+                                <button type="button" class="compass-pole" data-position="bottom" data-lens="place" aria-label="Place lens - emphasize geography and locations" aria-pressed="false">Place</button>
+                                <button type="button" class="compass-pole" data-position="bottom-left" data-lens="time" aria-label="Time lens - emphasize temporal periods" aria-pressed="false">Time</button>
+                                <button type="button" class="compass-pole" data-position="top-left" data-lens="influence" aria-label="Influence lens - emphasize artistic influences and connections" aria-pressed="false">Influence</button>
                             </div>
-                        </div>
-                        <p id="compass-copy">The compass replaces flat filters with a semantic lens: emphasize movement, artist, work,
-                            place, time, or influence and let the atlas reorganize itself.</p>
+                        </fieldset>
+                        <p id="compass-copy">The semantic compass replaces flat filters with interactive lenses: emphasize movement, artist, work,
+                            place, time, or influence and let the atlas reorganize itself dynamically.</p>
                     </section>
 
                     <section class="subpanel">
-                        <h3 class="section-title">Lens Presets</h3>
-                        <div class="preset-list" id="lens-preset-list">
-                            <button type="button" class="preset preset-button" data-preset="lineage"><span>Lineage</span><small>movement to successor</small></button>
-                            <button type="button" class="preset preset-button" data-preset="geography"><span>Geography</span><small>country and diffusion</small></button>
-                            <button type="button" class="preset preset-button" data-preset="materials"><span>Materials</span><small>mediums and subjects</small></button>
-                            <button type="button" class="preset preset-button" data-preset="cross-language"><span>Cross-Language</span><small>multilingual labels</small></button>
+                        <h3 class="section-title">Quick Lens Presets</h3>
+                        <div class="preset-list" id="lens-preset-list" role="group" aria-label="Preset lens configurations">
+                            <button type="button" class="preset preset-button" data-preset="lineage" aria-label="Lineage preset - explore artistic succession and movement evolution"><span>Lineage</span><small>movement to successor</small></button>
+                            <button type="button" class="preset preset-button" data-preset="geography" aria-label="Geography preset - explore geographic diffusion and cultural context"><span>Geography</span><small>country and diffusion</small></button>
+                            <button type="button" class="preset preset-button" data-preset="materials" aria-label="Materials preset - explore mediums, materials, and artistic subjects"><span>Materials</span><small>mediums and subjects</small></button>
+                            <button type="button" class="preset preset-button" data-preset="cross-language" aria-label="Cross-language preset - explore multilingual entity labels and descriptions"><span>Cross-Language</span><small>multilingual labels</small></button>
                         </div>
                     </section>
 
@@ -139,20 +165,20 @@
                     <div class="stage-head">
                         <div>
                             <h3>Observatory Constellation</h3>
-                            <p>The central stage brings entities, query logic, and language context into one visible
-                                field.</p>
+                            <p>The central visualization brings entities, query logic, and language context into one visible
+                                field. Interact with nodes to explore relationships and navigate through art history.</p>
                         </div>
-                        <div class="query-list">
-                            <span class="chip" id="active-doc-chip">movement_details.graphql</span>
-                            <span class="chip">languageCode: <span id="active-language-chip">fr</span></span>
-                            <span class="chip mobile-only">Mode: Observatory</span>
+                        <div class="query-list" role="complementary" aria-label="Active query information">
+                            <span class="chip" id="active-doc-chip" aria-label="Active GraphQL document">movement_details.graphql</span>
+                            <span class="chip" aria-label="Interface language">languageCode: <span id="active-language-chip">fr</span></span>
+                            <span class="chip mobile-only" aria-label="Current visualization mode">Mode: Observatory</span>
                         </div>
                     </div>
 
-                    <div class="constellation">
+                    <div class="constellation" role="main" aria-label="Interactive constellation visualization of art movements, artists, and influences">
                         <div class="constellation-grid" aria-hidden="true"></div>
                         <div class="constellation-links" id="constellation-links" aria-hidden="true"></div>
-                        <div class="constellation-nodes" id="constellation-nodes"></div>
+                        <div class="constellation-nodes" id="constellation-nodes" role="group" aria-label="Interactive entity nodes"></div>
 
                         <div class="stage-overlay">
                             <div class="stage-caption">
@@ -193,7 +219,7 @@
                 </section>
             </section>
 
-            <main class="workspace">
+            <main class="workspace" id="main-content">
                 <aside class="mirror panel">
                     <section class="subpanel mirror-primary">
                         <h3 class="section-title">Query Mirror</h3>
@@ -202,10 +228,10 @@
                         </div>
                     </section>
 
-                    <section class="subpanel mirror-session">
+                    <section class="subpanel mirror-session" aria-label="Active session and query history">
                         <div class="subpanel-head">
                             <h3 class="section-title">Session Flow</h3>
-                            <button type="button" class="ghost-button subpanel-action" id="clear-session-button">Clear Session</button>
+                            <button type="button" class="ghost-button subpanel-action" id="clear-session-button" aria-label="Clear all session history and reset to initial state">Clear Session</button>
                         </div>
                         <div class="query-session-list" id="query-session-list">
                             <div class="session-entry">
@@ -253,14 +279,14 @@
                 </div>
             </main>
 
-            <footer class="footer-rail panel">
-                <section class="timeline">
+            <footer class="footer-rail panel" role="contentinfo">
+                <section class="timeline" aria-label="Temporal and chronological visualization">
                     <h3 class="section-title">Temporal Rail</h3>
                     <div class="timeline-track" aria-hidden="true">
-                        <div class="timeline-window"></div>
+                        <div class="timeline-window" aria-label="Selected time period"></div>
                     </div>
-                    <div class="timeline-caption" id="timeline-caption">Awaiting dated selection</div>
-                    <div class="timeline-labels">
+                    <div class="timeline-caption" id="timeline-caption" role="status" aria-live="polite">Awaiting dated selection</div>
+                    <div class="timeline-labels" aria-hidden="true">
                         <span>1400</span>
                         <span>1600</span>
                         <span>1800</span>
@@ -304,8 +330,9 @@
         </div>
 
         <!-- Global search results dropdown (positioned via JS) -->
-        <div class="search-results-dropdown" id="search-results-dropdown"></div>
+        <div class="search-results-dropdown" id="search-results-dropdown" role="listbox" aria-label="Search results" aria-hidden="true"></div>
 
+        <script src="theme.js"></script>
         <script src="app.js"></script>
         <script src="bundle.js"></script>
         <script src="bootstrap.js"></script>

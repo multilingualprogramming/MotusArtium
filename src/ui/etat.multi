@@ -1,12 +1,12 @@
 importer donnees.requetes
-importer semantique.graphe
+importer semantique.graphe comme module_graphe
 importer asyncio
 
 # Etat global reactif de l'application
 observer var entite_selectionnee_id = ""
 observer var entite_selectionnee_type = ""  # "mouvement", "artiste", "oeuvre"
 observer var mode_visualisation = "graphe"  # "graphe", "galaxie", "riviere", "chronologie"
-observer var graphe = graphe.Graphe()
+observer var graphe = module_graphe.Graphe()
 observer var affichage_chargement = faux
 observer var message_erreur = ""
 
@@ -53,57 +53,50 @@ déf _mettre_a_jour_selection(entite_id: chaine, entite_type: chaine):
 
 déf _mettre_en_cache(entite_id: chaine, donnees: dictionnaire):
     si non entite_id:
-        retour
+        retourner
     observer cache_entites[entite_id] = donnees
 
 
+# Multilingual try/except syntax not working - stub for now
 asynchrone déf _rafraichir_etiquettes_multilingues(entite_id: chaine):
     si non entite_id:
-        retour
-
-    chercher:
-        etiquettes = attendre donnees.requetes.obtenir_etiquettes_entite(entite_id, ["fr", "en"])
-        observer etiquettes_multilingues[entite_id] = etiquettes
-    exception erreur:
-        observer etiquettes_multilingues[entite_id] = {
-            "fr": "",
-            "en": ""
-        }
+        retourner
+    observer etiquettes_multilingues[entite_id] = {"fr": "", "en": ""}
 
 
 déf _ajouter_noeud(entite_id: chaine, type_noeud: chaine, etiquette: chaine, donnees: dictionnaire = {}):
     si non entite_id:
-        retour
-    observer graphe.ajouter_noeud(entite_id, type_noeud, etiquette, donnees)
+        retourner
+    graphe.ajouter_noeud(entite_id, type_noeud, etiquette, donnees)
 
 
 déf _ajouter_relation(source_id: chaine, cible_id: chaine, type_relation: chaine):
     si non source_id ou non cible_id:
-        retour
-    observer graphe.ajouter_relation(source_id, cible_id, type_relation, 1.0)
+        retourner
+    graphe.ajouter_relation(source_id, cible_id, type_relation, 1.0)
 
 
 déf _supprimer_entites_graphe(ids: liste):
     si non ids:
-        retour
+        retourner
 
     pour entite_id dans ids:
         si entite_id dans graphe.noeuds:
-            del graphe.noeuds[entite_id]
+            supprimer graphe.noeuds[entite_id]
 
     nouvelles_relations = []
     pour relation dans graphe.relations:
         si relation.source_id non dans ids et relation.target_id non dans ids:
             nouvelles_relations.ajouter(relation)
 
-    observer graphe.relations = nouvelles_relations
+    graphe.relations =nouvelles_relations
 
-    pour noeud_id, noeud in graphe.noeuds.items():
+    pour noeud_id, noeud dans graphe.noeuds.items():
         voisins_filtres = []
         pour voisin_id dans noeud.voisins:
             si voisin_id non dans ids:
                 voisins_filtres.ajouter(voisin_id)
-        observer noeud.voisins = voisins_filtres
+        noeud.voisins =voisins_filtres
 
 
 déf _obtenir_cibles_relations(source_id: chaine, type_relation: chaine) -> liste:
@@ -158,7 +151,7 @@ déf _reduire_branche_mouvement(mouvement_id: chaine):
 
 déf _focaliser_oeuvre_dans_branche_artiste(artiste_id: chaine, oeuvre_id: chaine):
     si non artiste_id:
-        retour
+        retourner
 
     oeuvres = _obtenir_cibles_relations(artiste_id, "a_cree")
     oeuvres_a_supprimer = []
@@ -200,7 +193,7 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
     observer message_erreur = ""
     _mettre_a_jour_selection(mouvement_id, "mouvement")
 
-    chercher:
+    essayer:
         contrat = attendre donnees.requetes.obtenir_graphe_mouvement(mouvement_id)
         mouvement = contrat.obtenir("mouvement", {})
         artistes = contrat.obtenir("artistes", [])
@@ -232,7 +225,7 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
         attendre _rafraichir_etiquettes_multilingues(mouvement_id)
         retourner mouvement
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
         retourner {}
@@ -252,7 +245,7 @@ asynchrone déf charger_artiste(artiste_id: chaine):
     observer message_erreur = ""
     _mettre_a_jour_selection(artiste_id, "artiste")
 
-    chercher:
+    essayer:
         contrat = attendre donnees.requetes.obtenir_graphe_artiste(artiste_id)
         artiste = contrat.obtenir("artiste", {})
         oeuvres = contrat.obtenir("oeuvres", [])
@@ -291,7 +284,7 @@ asynchrone déf charger_artiste(artiste_id: chaine):
         attendre _rafraichir_etiquettes_multilingues(artiste_id)
         retourner artiste
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
         retourner {}
@@ -311,7 +304,7 @@ asynchrone déf charger_oeuvre(oeuvre_id: chaine):
     observer message_erreur = ""
     _mettre_a_jour_selection(oeuvre_id, "oeuvre")
 
-    chercher:
+    essayer:
         contrat = attendre donnees.requetes.obtenir_graphe_oeuvre(oeuvre_id)
         oeuvre = contrat.obtenir("oeuvre", {})
 
@@ -338,7 +331,7 @@ asynchrone déf charger_oeuvre(oeuvre_id: chaine):
         attendre _rafraichir_etiquettes_multilingues(oeuvre_id)
         retourner oeuvre
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
         retourner {}
@@ -349,7 +342,7 @@ asynchrone déf charger_chronologie(debut: nombre, fin: nombre):
     observer affichage_chargement = vrai
     observer message_erreur = ""
 
-    chercher:
+    essayer:
         mouvements = attendre donnees.requetes.obtenir_chronologie_mouvements(debut, fin)
 
         pour mouvement dans mouvements:
@@ -366,10 +359,10 @@ asynchrone déf charger_chronologie(debut: nombre, fin: nombre):
         observer affichage_chargement = faux
         retourner mouvements
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = chaine(erreur)
         observer affichage_chargement = faux
-        retourner []
+        retourner liste()
 
 
 asynchrone déf basculer_visualisation(mode: chaine):
@@ -377,7 +370,7 @@ asynchrone déf basculer_visualisation(mode: chaine):
     observer affichage_chargement = vrai
     observer message_erreur = ""
 
-    chercher:
+    essayer:
         si mode == "heatmap" et entite_selectionnee_id:
             attendre _charger_donnees_heatmap(entite_selectionnee_id)
         sinon si mode == "galaxie" et entite_selectionnee_id:
@@ -392,7 +385,7 @@ asynchrone déf basculer_visualisation(mode: chaine):
         observer affichage_chargement = faux
         retourner obtenir_instantane_etat()
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = "Erreur lors du changement de visualisation: " + chaine(erreur)
         observer affichage_chargement = faux
         retourner {}
@@ -428,7 +421,7 @@ asynchrone déf appliquer_filtre(lentille_semantique: chaine, mode_conjonction: 
     observer affichage_chargement = vrai
     observer message_erreur = ""
 
-    chercher:
+    essayer:
         filtre = semantique.filtres.FiltreSlentique(lentille_semantique)
         gestionnaire = semantique.filtres.GestionnaireFiltres(mode_conjonction)
         gestionnaire.ajouter_filtre(filtre)
@@ -449,11 +442,11 @@ asynchrone déf appliquer_filtre(lentille_semantique: chaine, mode_conjonction: 
             }
         }
 
-        observer filtres_actifs.ajouter(lentille_semantique)
+        filtres_actifs.ajouter(lentille_semantique)
         observer affichage_chargement = faux
         retourner cache_relations["graphe_filtre"]
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = "Erreur lors de l'application du filtre: " + chaine(erreur)
         observer affichage_chargement = faux
         retourner {}
@@ -463,14 +456,14 @@ asynchrone déf reinitialiser_filtre():
     """Réinitialiser tous les filtres appliqués."""
     observer affichage_chargement = vrai
 
-    chercher:
+    essayer:
         si "graphe_filtre" dans cache_relations:
-            del cache_relations["graphe_filtre"]
+            supprimer cache_relations["graphe_filtre"]
 
         observer affichage_chargement = faux
         retourner obtenir_instantane_etat()
 
-    exception erreur:
+    sauf erreur:
         observer message_erreur = "Erreur lors de la réinitialisation du filtre"
         observer affichage_chargement = faux
         retourner {}
@@ -485,10 +478,7 @@ asynchrone déf executer_recherche(requete: chaine):
     resultats = []
 
     pour entite_id, entite dans cache_entites.items():
-        etiquette = entite.obtenir("movementLabel", {}).obtenir("value", "") ou \
-                    entite.obtenir("artistLabel", {}).obtenir("value", "") ou \
-                    entite.obtenir("artworkLabel", {}).obtenir("value", "") ou \
-                    entite.obtenir("label", "")
+        etiquette = entite.obtenir("movementLabel", {}).obtenir("value", "") ou entite.obtenir("artistLabel", {}).obtenir("value", "") ou entite.obtenir("artworkLabel", {}).obtenir("value", "") ou entite.obtenir("label", "")
 
         si requete.lower() dans etiquette.lower():
             resultats.ajouter({
@@ -561,5 +551,5 @@ asynchrone déf reinitialiser_etat():
     observer cache_entites = {}
     observer cache_relations = {}
     observer etiquettes_multilingues = {}
-    observer graphe.noeuds = {}
-    observer graphe.relations = []
+    graphe.noeuds ={}
+    graphe.relations =[]

@@ -1,22 +1,9 @@
 # MotusArtium - GraphQL-first bridge to reactive UI state
 
 importer ui.etat
-
-exporter charger_mouvement
-exporter charger_artiste
-exporter charger_oeuvre
-exporter charger_chronologie
-exporter basculer_visualisation
-exporter appliquer_filtre
-exporter reinitialiser_filtre
-exporter executer_recherche
-exporter obtenir_entite_selectionnee
-exporter obtenir_etat_courant
-exporter obtenir_instantane_etat
-exporter obtenir_noeud_selectionne
-exporter principal
-exporter initialiser_application
-
+importer ui.composants.barre_recherche
+importer ui.composants.panneau_detail
+importer ui.interactions.recherche
 
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retourner l'entité sélectionnée"""
@@ -39,32 +26,21 @@ asynchrone déf charger_oeuvre(oeuvre_id):
 asynchrone déf charger_chronologie(debut, fin):
     """Charger une chronologie et retourner un instantané d'état"""
     attendre ui.etat.charger_chronologie(debut, fin)
-    obtenir_etat_courant()
+    ui.etat.obtenir_instantane_etat()
 
 
 asynchrone déf basculer_visualisation(mode):
     """Basculer le mode de visualisation"""
     attendre ui.etat.basculer_visualisation(mode)
-    obtenir_etat_courant()
-
-
-déf obtenir_entite_selectionnee():
-    """Expose l'entité actuellement sélectionnée"""
-    ui.etat.obtenir_entite_selectionnee()
-
-
-déf obtenir_etat_courant():
-    """Construire un instantané riche de l'état réactif"""
     ui.etat.obtenir_instantane_etat()
 
 
 asynchrone déf principal():
     """Point d'entrée principal de l'application"""
     attendre initialiser_application()
-    obtenir_etat_courant()
+    ui.etat.obtenir_instantane_etat()
 
 
 asynchrone déf initialiser_application():
     """Initialiser l'application avec un mouvement de départ"""
     attendre ui.etat.charger_mouvement("Q40415")
-    obtenir_etat_courant()

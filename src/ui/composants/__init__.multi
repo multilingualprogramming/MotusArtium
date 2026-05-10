@@ -1,2 +1,7 @@
 # Module composants UI
 importer .panneau_filtres
+importer .barre_recherche
+importer .panneau_detail
+
+exporter barre_recherche.rendre_barre_recherche
+exporter panneau_detail.rendre_panneau_detail

@@ -1,2 +1,5 @@
 # Module interface et gestion d'état réactif
 importer .etat
+importer .composants
+importer .interactions
+importer .visualisations

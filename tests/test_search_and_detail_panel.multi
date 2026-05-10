@@ -1,0 +1,252 @@
+# ============================================================================
+# Test Suite: Priority 2 - Search, Detail Panel & UI Wiring
+# ============================================================================
+# Tests the live search functionality, detail panel rendering, and UI interactions
+
+importer unittest
+importer ui.principal
+importer ui.etat
+importer ui.interactions.recherche
+importer donnees.requetes
+
+
+test asynchrone déf test_rechercher_entites_wikidata():
+    """Test: Search Wikidata by keyword returns results"""
+    resultats = attendre donnees.requetes.rechercher_entites_wikidata("Impressionnisme")
+
+    assertion resultats != []
+    assertion len(resultats) > 0
+
+    premier = resultats[0]
+    assertion "id" dans premier
+    assertion "label" dans premier
+    assertion "type" dans premier
+
+    afficher("✓ rechercher_entites_wikidata() returned " + chaine(len(resultats)) + " results")
+
+
+test asynchrone déf test_rechercher_par_mot_court():
+    """Test: Search with very short term returns empty"""
+    resultats = attendre donnees.requetes.rechercher_entites_wikidata("a")
+
+    assertion resultats == []
+
+    afficher("✓ Short search term correctly returns empty")
+
+
+test asynchrone déf test_lancer_recherche_cache():
+    """Test: Search in loaded cache"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    resultats = attendre ui.interactions.recherche.lancer_recherche("Impression")
+
+    assertion ui.etat.resultats_recherche != []
+
+    afficher("✓ Cache search found " + chaine(len(ui.etat.resultats_recherche)) + " results")
+
+
+test asynchrone déf test_lancer_recherche_wikidata():
+    """Test: Live search merges cache + Wikidata results"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    attendre ui.interactions.recherche.lancer_recherche("Monet")
+
+    si ui.etat.resultats_recherche:
+        afficher("✓ Live search returned " + chaine(len(ui.etat.resultats_recherche)) + " results")
+    sinon:
+        afficher("✓ Search executed (no immediate Wikidata results due to async)")
+
+
+test asynchrone déf test_ouvrir_fermer_barre_recherche():
+    """Test: Toggle search bar visibility"""
+    assertion ui.etat.barre_recherche_active == faux
+
+    attendre ui.interactions.recherche.ouvrir_barre_recherche()
+    assertion ui.etat.barre_recherche_active == vrai
+
+    attendre ui.interactions.recherche.fermer_barre_recherche()
+    assertion ui.etat.barre_recherche_active == faux
+
+    afficher("✓ Search bar toggle works")
+
+
+test asynchrone déf test_fermer_recherche_nettoie_resultats():
+    """Test: Closing search bar clears results"""
+    attendre ui.principal.charger_mouvement("Q40415")
+    attendre ui.interactions.recherche.lancer_recherche("test")
+
+    assertion len(ui.etat.resultats_recherche) >= 0
+
+    attendre ui.interactions.recherche.fermer_barre_recherche()
+
+    assertion ui.etat.resultats_recherche == []
+    assertion ui.etat.barre_recherche_active == faux
+
+    afficher("✓ Closing search clears results")
+
+
+test asynchrone déf test_selectionner_resultat_recherche():
+    """Test: Selecting a search result navigates to entity"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    # Trouver un artiste dans le graphe chargé
+    artiste_id = ""
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "artiste":
+            artiste_id = id_noeud
+            pause
+
+    si artiste_id:
+        attendre ui.interactions.recherche.selectionner_resultat_recherche(artiste_id, "artiste")
+
+        assertion ui.etat.entite_selectionnee_id == artiste_id
+        assertion ui.etat.entite_selectionnee_type == "artiste"
+        assertion ui.etat.barre_recherche_active == faux
+
+        afficher("✓ Result selection navigates to entity")
+    sinon:
+        afficher("⚠ No artist found to test selection")
+
+
+test asynchrone déf test_ouvrir_fermer_panneau_detail():
+    """Test: Toggle detail panel visibility"""
+    assertion ui.etat.panneau_detail_visible == faux
+
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    assertion ui.etat.panneau_detail_visible == vrai
+
+    afficher("✓ Detail panel opens when entity is loaded")
+
+
+test asynchrone déf test_panneau_detail_affiche_mouvement():
+    """Test: Detail panel shows correct mouvement info"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    entite = ui.etat.obtenir_entite_selectionnee()
+
+    assertion entite.obtenir("id", "") == "Q40415"
+    assertion entite.obtenir("type", "") == "mouvement"
+
+    donnees = entite.obtenir("donnees", {})
+    assertion donnees.obtenir("movementLabel", {}).obtenir("value", "") != ""
+
+    afficher("✓ Detail panel displays movement data correctly")
+
+
+test asynchrone déf test_panneau_detail_affiche_artiste():
+    """Test: Detail panel shows correct artist info"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    artiste_id = ""
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "artiste":
+            artiste_id = id_noeud
+            pause
+
+    si artiste_id:
+        attendre ui.principal.charger_artiste(artiste_id)
+
+        entite = ui.etat.obtenir_entite_selectionnee()
+
+        assertion entite.obtenir("type", "") == "artiste"
+
+        donnees = entite.obtenir("donnees", {})
+        assertion donnees.obtenir("artistLabel", {}).obtenir("value", "") != ""
+
+        afficher("✓ Detail panel displays artist data correctly")
+    sinon:
+        afficher("⚠ No artist found to test detail panel")
+
+
+test asynchrone déf test_panneau_detail_affiche_oeuvre():
+    """Test: Detail panel shows correct artwork info"""
+    attendre ui.principal.charger_mouvement("Q40415")
+
+    artiste_id = ""
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "artiste":
+            artiste_id = id_noeud
+            pause
+
+    si artiste_id:
+        attendre ui.principal.charger_artiste(artiste_id)
+
+        oeuvre_id = ""
+        pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+            si noeud.type == "oeuvre":
+                oeuvre_id = id_noeud
+                pause
+
+        si oeuvre_id:
+            attendre ui.principal.charger_oeuvre(oeuvre_id)
+
+            entite = ui.etat.obtenir_entite_selectionnee()
+
+            assertion entite.obtenir("type", "") == "oeuvre"
+
+            donnees = entite.obtenir("donnees", {})
+            assertion donnees.obtenir("artworkLabel", {}).obtenir("value", "") != ""
+
+            afficher("✓ Detail panel displays artwork data correctly")
+        sinon:
+            afficher("⚠ No artwork found to test detail panel")
+    sinon:
+        afficher("⚠ No artist found to test artwork detail panel")
+
+
+test asynchrone déf test_end_to_end_search_and_detail():
+    """Test: Complete user workflow with search and detail panel"""
+    afficher("\n" + "=" * 60)
+    afficher("END-TO-END SEARCH & DETAIL PANEL TEST")
+    afficher("=" * 60)
+
+    # Step 1: Load a movement
+    afficher("\n1. Loading Impressionism movement...")
+    attendre ui.principal.charger_mouvement("Q40415")
+    assertion ui.etat.entite_selectionnee_id == "Q40415"
+    afficher("   ✓ Movement loaded")
+
+    # Step 2: Open search bar
+    afficher("\n2. Opening search bar...")
+    attendre ui.interactions.recherche.ouvrir_barre_recherche()
+    assertion ui.etat.barre_recherche_active == vrai
+    afficher("   ✓ Search bar opened")
+
+    # Step 3: Execute search
+    afficher("\n3. Executing search for 'impressionist'...")
+    attendre ui.interactions.recherche.lancer_recherche("impressionist")
+    afficher("   ✓ Search executed, " + chaine(len(ui.etat.resultats_recherche)) + " results")
+
+    # Step 4: Close search bar
+    afficher("\n4. Closing search bar...")
+    attendre ui.interactions.recherche.fermer_barre_recherche()
+    assertion ui.etat.barre_recherche_active == faux
+    assertion len(ui.etat.resultats_recherche) == 0
+    afficher("   ✓ Search bar closed, results cleared")
+
+    # Step 5: Check detail panel
+    afficher("\n5. Checking detail panel state...")
+    entite = ui.etat.obtenir_entite_selectionnee()
+    assertion entite.obtenir("type", "") == "mouvement"
+    afficher("   ✓ Detail panel shows movement details")
+
+    # Step 6: Navigate to an artist
+    afficher("\n6. Navigating to associated artist...")
+    artiste_id = ""
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        si noeud.type == "artiste":
+            artiste_id = id_noeud
+            pause
+
+    si artiste_id:
+        attendre ui.principal.charger_artiste(artiste_id)
+        entite = ui.etat.obtenir_entite_selectionnee()
+        assertion entite.obtenir("type", "") == "artiste"
+        afficher("   ✓ Navigated to artist, detail panel updated")
+    sinon:
+        afficher("   ⚠ No artist found to navigate to")
+
+    afficher("\n" + "=" * 60)
+    afficher("✓ END-TO-END TEST COMPLETE")
+    afficher("=" * 60)

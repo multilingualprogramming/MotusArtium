@@ -1,0 +1,22 @@
+query RechercheParTexte($terme: String!, $languageCode: LanguageCode!) {
+  searchItems(
+    query: { label: { value: $terme, languageCode: $languageCode } }
+    first: 20
+  ) {
+    edges {
+      node {
+        id
+        label: label(languageCode: $languageCode)
+        description: description(languageCode: $languageCode)
+        instanceOf: statements(propertyId: "P31") {
+          value {
+            ... on ItemValue {
+              id
+              label(languageCode: $languageCode)
+            }
+          }
+        }
+      }
+    }
+  }
+}

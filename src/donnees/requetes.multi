@@ -636,3 +636,59 @@ asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
         "sujets": _extraire_items(item.obtenir("depicts", [])),
         "materiaux": _extraire_items(item.obtenir("material", []))
     }
+
+
+# ============================================================================
+# Recherche par texte / keyword search
+# ============================================================================
+
+asynchrone déf rechercher_entites_wikidata(terme: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> liste:
+    """Rechercher des entités sur Wikidata par texte/mot-clé"""
+    si non terme ou len(terme) < 2:
+        retourner []
+
+    donnees = attendre executer_requete_graphql(
+        "recherche_par_texte.graphql",
+        {
+            "terme": terme,
+            "languageCode": langue
+        }
+    )
+
+    edges = donnees.obtenir("searchItems", {}).obtenir("edges", [])
+    resultats = []
+
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si non noeud:
+            passe
+
+        entite_id = noeud.obtenir("id", "")
+        etiquette = noeud.obtenir("label", "")
+        description = noeud.obtenir("description", "")
+
+        # Déterminer le type basé sur P31 (instance of)
+        instance_of = _extraire_items(noeud.obtenir("instanceOf", []))
+        type_entite = "entite"
+
+        pour instance dans instance_of:
+            instance_id = instance.obtenir("id", "")
+            si instance_id == TYPE_MOUVEMENT_ARTISTIQUE:
+                type_entite = "mouvement"
+                pause
+            sinon si instance_id == TYPE_ETRE_HUMAIN:
+                type_entite = "artiste"
+                pause
+            sinon si instance_id == TYPE_OEUVRE_ART:
+                type_entite = "oeuvre"
+                pause
+
+        si entite_id:
+            resultats.ajouter({
+                "id": entite_id,
+                "label": etiquette,
+                "description": description,
+                "type": type_entite
+            })
+
+    retourner resultats

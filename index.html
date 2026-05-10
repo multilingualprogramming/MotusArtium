@@ -875,6 +875,34 @@
             display: none;
         }
 
+        .search-bar-overlay {
+            position: fixed;
+            top: 110px;
+            left: 20px;
+            width: 400px;
+            z-index: 100;
+            display: none;
+        }
+
+        .search-bar-overlay.is-active {
+            display: block;
+        }
+
+        .detail-panel-overlay {
+            position: fixed;
+            right: 20px;
+            top: 110px;
+            width: 350px;
+            max-height: 80vh;
+            z-index: 90;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .detail-panel-overlay.is-active {
+            display: block;
+        }
+
         @media (max-width: 1200px) {
             .hero,
             .workspace,
@@ -951,6 +979,7 @@
                 <button class="mode-button" data-mode="query-theater">Query Theater</button>
                 <button class="mode-button" data-mode="polyglot-studio">Polyglot Studio</button>
                 <button class="mode-button" data-mode="temporal-river">Temporal River</button>
+                <button class="ghost-button" id="search-toggle" title="Search (Ctrl+K)">🔍 Search</button>
             </nav>
 
             <div class="lang-status">
@@ -1137,6 +1166,16 @@
                     <p id="query-explanation">This panel turns the data layer into part of the experience: the app should always be able to show which GraphQL document is active, which variables are in play, and what semantic shape is being retrieved.</p>
                 </section>
             </aside>
+
+            <!-- Search Bar Container -->
+            <div id="search-bar-container" class="search-bar-overlay">
+                <div id="__ml_search_root"></div>
+            </div>
+
+            <!-- Detail Panel Container -->
+            <div id="detail-panel-container" class="detail-panel-overlay">
+                <div id="__ml_detail_root"></div>
+            </div>
         </main>
 
         <footer class="footer-rail panel">
@@ -2175,19 +2214,6 @@
             renderConstellation();
             renderRuntimeState();
             refreshMultilingualEntityLabels();
-            return;
-            const summary = adapterEntitySummary();
-            if (summary.id || summary.label) {
-                runtimeState.selectedEntity = {
-                    id: summary.id,
-                    type: summary.type || inferEntityTypeFromDocument(runtimeState.currentDocument),
-                    name: summary.label || summary.id || "Awaiting response",
-                    meta: summary.totalNoeuds + " nodes · " + summary.totalRelations + " relations"
-                };
-            }
-            renderConstellation();
-            renderRuntimeState();
-            refreshMultilingualEntityLabels();
         }
 
         window.ui = window.ui || {};
@@ -2206,6 +2232,25 @@
                 if (browserAdapterState.expandedArtistId) {
                     collapseArtistExpansion(browserAdapterState.expandedArtistId);
                 }
+
+                // Clear the graph and cache for fresh start
+                console.log("Clearing old graph data");
+                browserAdapterState.graphe_noeuds = {};
+                browserAdapterState.graphe_relations = [];
+                browserAdapterState.cache_entites = {};
+                browserAdapterState.expandedMovementId = "";
+                browserAdapterState.expandedArtistId = "";
+                browserAdapterState.focusedArtworkId = "";
+
+                // Clear the graph visualization
+                const graphContainer = document.querySelector("svg");
+                if (graphContainer) {
+                    graphContainer.innerHTML = "";
+                    console.log("Cleared SVG graph");
+                }
+
+                renderConstellation();
+                renderRuntimeState();
 
                 browserAdapterState.affichage_chargement = true;
                 browserAdapterState.message_erreur = "";
@@ -2540,20 +2585,289 @@
     </script>
     <script src="bundle.js"></script>
     <script>
+        console.log("=== Page script started ===");
+        console.log("bundle.js loaded, checking functions...");
+        console.log("typeof initialiser_application:", typeof initialiser_application);
+        console.log("typeof lancer_recherche:", typeof lancer_recherche);
+
         (async () => {
+            console.log("Starting async initialization");
             if (typeof initialiser_application === "function") {
                 try {
-                    await initialiser_application();
+                    // Check for entity in URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const entityId = urlParams.get("entity");
+                    const entityType = urlParams.get("type");
+
+                    if (entityId && entityType) {
+                        console.log(`Loading entity from URL: ${entityId} (${entityType})`);
+                        // Load the specific entity based on URL parameters
+                        // Handle both English and French type names
+                        if ((entityType === "mouvement" || entityType === "movement") && typeof charger_mouvement === "function") {
+                            console.log("Loading movement:", entityId);
+                            await charger_mouvement(entityId);
+                        } else if ((entityType === "artiste" || entityType === "artist") && typeof charger_artiste === "function") {
+                            console.log("Loading artist:", entityId);
+                            await charger_artiste(entityId);
+                        } else if ((entityType === "oeuvre" || entityType === "artwork") && typeof charger_oeuvre === "function") {
+                            console.log("Loading artwork:", entityId);
+                            await charger_oeuvre(entityId);
+                        } else {
+                            // Default to initialiser_application if type doesn't match
+                            console.log("Entity type not recognized:", entityType, "using default initialization");
+                            await initialiser_application();
+                        }
+                    } else {
+                        console.log("Calling initialiser_application");
+                        await initialiser_application();
+                    }
+                    console.log("initialiser_application completed");
                     syncShellFromSnapshot(readRuntimeSnapshot());
                     renderConstellation();
                     renderRuntimeState();
                     await refreshMultilingualEntityLabels();
+
+                    // Wire up search functionality
+                    console.log("Calling wireupSearchBar");
+                    wireupSearchBar();
+                    console.log("wireupSearchBar completed");
                 } catch (error) {
+                    console.error("Bootstrap error:", error);
                     runtimeState.lastError = "Bootstrap warning: " + error.message;
                     renderRuntimeState();
                 }
+            } else {
+                console.error("initialiser_application not found!");
             }
         })();
+
+        // Search bar interaction wiring
+        function wireupSearchBar() {
+            const searchToggle = document.getElementById("search-toggle");
+            const searchContainer = document.getElementById("search-bar-container");
+            const detailContainer = document.getElementById("detail-panel-container");
+            const searchRoot = document.getElementById("__ml_search_root");
+            const detailRoot = document.getElementById("__ml_detail_root");
+
+            console.log("wireupSearchBar: searchToggle=", searchToggle, "searchContainer=", searchContainer, "searchRoot=", searchRoot);
+
+            // Wire search button
+            if (searchToggle) {
+                console.log("Attaching click listener to search toggle");
+                searchToggle.addEventListener("click", async () => {
+                    console.log("Search toggle clicked!");
+                    searchContainer.classList.toggle("is-active");
+                    console.log("is-active class:", searchContainer.classList.contains("is-active"));
+
+                    // Mount search bar component if not already mounted
+                    if (searchContainer.classList.contains("is-active") && searchRoot && searchRoot.children.length === 0) {
+                        console.log("Creating search bar HTML");
+                        try {
+                            // Create search bar HTML directly
+                            const searchHTML = `
+                                <div class="search-input-wrapper">
+                                    <input type="text" class="search-input" id="search-input" placeholder="Chercher un mouvement, artiste, œuvre..." />
+                                </div>
+                                <div class="search-results" id="search-results"></div>
+                            `;
+                            searchRoot.innerHTML = searchHTML;
+                            console.log("Search bar HTML created");
+
+                            // Wire up search input
+                            const searchInput = document.getElementById("search-input");
+                            const searchResults = document.getElementById("search-results");
+                            if (searchInput && typeof lancer_recherche === "function") {
+                                searchInput.addEventListener("input", (e) => {
+                                    const query = e.target.value;
+                                    console.log("Search input changed:", query);
+                                    if (query.length > 2) {
+                                        console.log("Calling Wikidata search with:", query);
+                                        // Clear previous results before fetching new ones
+                                        console.log("Clearing searchResults, current content length:", searchResults.innerHTML.length);
+                                        searchResults.innerHTML = '';
+                                        searchResults.innerHTML = '<div style="padding: 8px; color: #999;">Searching...</div>';
+                                        console.log("Cleared and showing Searching message");
+                                        // Simple Wikidata search with CORS origin
+                                        fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`)
+                                            .then(r => r.json())
+                                            .then(data => {
+                                                console.log("Search results:", data);
+                                                if (data.search && data.search.length > 0) {
+                                                    console.log("Got", data.search.length, "results, showing 5");
+                                                    const results = data.search.slice(0, 5).map(item =>
+                                                        `<div class="search-result-item" data-entity-id="${item.id}" style="padding: 8px; border-bottom: 1px solid #ccc; cursor: pointer;">
+                                                            <strong>${item.label}</strong> <br/>
+                                                            <small>${item.description || ''}</small>
+                                                        </div>`
+                                                    ).join('');
+                                                    console.log("HTML generated, length:", results.length);
+                                                    searchResults.innerHTML = results;
+                                                    console.log("Results displayed, container now has", searchResults.children.length, "items");
+
+                                                    // Add click handlers to results
+                                                    const resultItems = document.querySelectorAll(".search-result-item");
+                                                    console.log("Attaching click handlers to", resultItems.length, "result items");
+                                                    resultItems.forEach((item, index) => {
+                                                        console.log("Attaching handler to result item", index, "id:", item.getAttribute("data-entity-id"));
+                                                        item.style.cursor = "pointer";
+                                                        item.addEventListener("click", function(e) {
+                                                            console.log("Click event fired!");
+                                                            try {
+                                                                const entityId = this.getAttribute("data-entity-id");
+                                                                const label = this.querySelector("strong").textContent;
+                                                                console.log("Clicked result:", entityId, label);
+                                                                const newUrl = `?entity=${entityId}&type=movement`;
+                                                                console.log("Reloading page to", newUrl);
+                                                                window.location.href = newUrl;
+                                                            } catch (err) {
+                                                                console.error("Error in click handler:", err);
+                                                            }
+                                                        });
+                                                    });
+                                                } else {
+                                                    searchResults.innerHTML = '<div style="padding: 8px;">No results found</div>';
+                                                }
+                                            })
+                                            .catch(err => {
+                                                console.error("Search error:", err);
+                                                searchResults.innerHTML = '<div style="padding: 8px; color: red;">Search error</div>';
+                                            });
+                                    } else if (query.length === 0) {
+                                        searchResults.innerHTML = '';
+                                    }
+                                });
+                                console.log("Search input event listener attached");
+                            }
+                        } catch (e) {
+                            console.warn("Could not render search bar:", e);
+                        }
+                    }
+                });
+
+                // Ctrl+K shortcut
+                document.addEventListener("keydown", async (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+                        e.preventDefault();
+                        console.log("Ctrl+K pressed");
+                        searchContainer.classList.toggle("is-active");
+
+                        // Mount search bar component if not already mounted
+                        if (searchContainer.classList.contains("is-active") && searchRoot && searchRoot.children.length === 0) {
+                            try {
+                                // Create search bar HTML directly (same as click handler)
+                                const searchHTML = `
+                                    <div class="search-input-wrapper">
+                                        <input type="text" class="search-input" id="search-input" placeholder="Chercher un mouvement, artiste, œuvre..." />
+                                    </div>
+                                    <div class="search-results" id="search-results"></div>
+                                `;
+                                searchRoot.innerHTML = searchHTML;
+                                console.log("Search bar HTML created via Ctrl+K");
+
+                                // Wire up search input
+                                const searchInput = document.getElementById("search-input");
+                                const searchResults = document.getElementById("search-results");
+                                if (searchInput && typeof lancer_recherche === "function") {
+                                    searchInput.addEventListener("input", (e) => {
+                                        const query = e.target.value;
+                                        console.log("Search input changed (Ctrl+K):", query);
+                                        if (query.length > 2) {
+                                            console.log("Calling Wikidata search with:", query);
+                                            // Clear previous results before fetching new ones
+                                            searchResults.innerHTML = '<div style="padding: 8px; color: #999;">Searching...</div>';
+                                            // Simple Wikidata search with CORS origin
+                                            fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`)
+                                                .then(r => r.json())
+                                                .then(data => {
+                                                    console.log("Search results:", data);
+                                                    if (data.search && data.search.length > 0) {
+                                                        const results = data.search.slice(0, 5).map(item =>
+                                                            `<div class="search-result-item" data-entity-id="${item.id}" style="padding: 8px; border-bottom: 1px solid #ccc; cursor: pointer;">
+                                                                <strong>${item.label}</strong> <br/>
+                                                                <small>${item.description || ''}</small>
+                                                            </div>`
+                                                        ).join('');
+                                                        searchResults.innerHTML = results;
+                                                        console.log("Results displayed");
+
+                                                        // Add click handlers to results
+                                                        const resultItems = document.querySelectorAll(".search-result-item");
+                                                        console.log("Attaching click handlers to", resultItems.length, "result items (Ctrl+K)");
+                                                        resultItems.forEach((item, index) => {
+                                                            console.log("Attaching handler to result item", index, "id:", item.getAttribute("data-entity-id"));
+                                                            item.style.cursor = "pointer";
+                                                            item.addEventListener("click", function(e) {
+                                                                console.log("Click event fired (Ctrl+K)!");
+                                                                try {
+                                                                    const entityId = this.getAttribute("data-entity-id");
+                                                                    const label = this.querySelector("strong").textContent;
+                                                                    console.log("Clicked result:", entityId, label);
+                                                                    const newUrl = `?entity=${entityId}&type=movement`;
+                                                                    console.log("Reloading page to", newUrl);
+                                                                    window.location.href = newUrl;
+                                                                } catch (err) {
+                                                                    console.error("Error in click handler:", err);
+                                                                }
+                                                            });
+                                                        });
+                                                    } else {
+                                                        searchResults.innerHTML = '<div style="padding: 8px;">No results found</div>';
+                                                    }
+                                                })
+                                                .catch(err => {
+                                                    console.error("Search error:", err);
+                                                    searchResults.innerHTML = '<div style="padding: 8px; color: red;">Search error</div>';
+                                                });
+                                        } else if (query.length === 0) {
+                                            searchResults.innerHTML = '';
+                                        }
+                                    });
+                                    console.log("Search input event listener attached (Ctrl+K)");
+                                }
+                            } catch (e) {
+                                console.warn("Could not render search bar:", e);
+                            }
+                        }
+                    }
+                    if (e.key === "Escape") {
+                        searchContainer.classList.remove("is-active");
+                    }
+                });
+            }
+
+            // Mount detail panel component
+            if (detailRoot && detailRoot.children.length === 0) {
+                (async () => {
+                    try {
+                        if (typeof rendre_panneau_detail === "function") {
+                            const detailElement = await rendre_panneau_detail();
+                            if (detailElement) {
+                                detailRoot.appendChild(detailElement);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Could not render detail panel:", e);
+                    }
+                })();
+            }
+
+            // Watch for detail panel visibility changes
+            if (typeof obtenir_instantane_etat === "function") {
+                // Create a simple observer to watch state changes
+                setInterval(() => {
+                    try {
+                        const etat = obtenir_instantane_etat();
+                        if (etat.panneau_detail_visible) {
+                            detailContainer.classList.add("is-active");
+                        } else {
+                            detailContainer.classList.remove("is-active");
+                        }
+                    } catch (e) {
+                        // Ignore errors during state polling
+                    }
+                }, 100);
+            }
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,73 @@
+importer ui.etat
+importer ui.interactions.navigation
+importer donnees.requetes
+
+
+asynchrone déf lancer_recherche(requete: chaine):
+    """Lancer une recherche: cache + Wikidata, fusionner et afficher"""
+    si non requete ou len(requete) < 2:
+        ui.etat.resultats_recherche = []
+        retourner
+
+    # Rechercher dans le cache (entités déjà chargées)
+    resultats_cache = _rechercher_cache(requete)
+
+    # Rechercher sur Wikidata
+    resultats_wikidata = attendre donnees.requetes.rechercher_entites_wikidata(requete)
+
+    # Fusionner les résultats (cache en premier, puis Wikidata)
+    entites_vues = {}
+    resultats_fusionnes = []
+
+    # Ajouter les résultats du cache
+    pour resultat dans resultats_cache:
+        cle = resultat.obtenir("id", "")
+        si cle et cle non dans entites_vues:
+            entites_vues[cle] = vrai
+            resultats_fusionnes.ajouter(resultat)
+
+    # Ajouter les résultats Wikidata
+    pour resultat dans resultats_wikidata:
+        cle = resultat.obtenir("id", "")
+        si cle et cle non dans entites_vues:
+            entites_vues[cle] = vrai
+            resultats_fusionnes.ajouter(resultat)
+
+    ui.etat.resultats_recherche = resultats_fusionnes
+
+
+déf _rechercher_cache(requete: chaine) -> liste:
+    """Rechercher dans le cache des entités chargées"""
+    resultats = []
+    requete_bas = requete.minuscule()
+
+    pour id_noeud, noeud dans ui.etat.graphe.noeuds.items():
+        etiquette = noeud.etiquette.minuscule()
+
+        si requete_bas dans etiquette:
+            type_noeud = noeud.type
+            resultats.ajouter({
+                "id": id_noeud,
+                "label": noeud.etiquette,
+                "description": "(dans le graphe chargé)",
+                "type": type_noeud
+            })
+
+    retourner resultats
+
+
+asynchrone déf selectionner_resultat_recherche(entite_id: chaine, entite_type: chaine):
+    """Sélectionner un résultat: naviguer vers l'entité et fermer la barre"""
+    attendre ui.interactions.navigation.naviguer_vers_entite(entite_id, entite_type)
+    attendre fermer_barre_recherche()
+
+
+asynchrone déf ouvrir_barre_recherche():
+    """Ouvrir la barre de recherche"""
+    ui.etat.barre_recherche_active = vrai
+
+
+asynchrone déf fermer_barre_recherche():
+    """Fermer la barre de recherche et nettoyer les résultats"""
+    ui.etat.barre_recherche_active = faux
+    ui.etat.resultats_recherche = []

@@ -1,0 +1,43 @@
+importer ui.etat
+importer ui.interactions.recherche
+
+
+asynchrone déf ouvrir_barre_recherche():
+    """Ouvrir la barre de recherche"""
+    attendre ui.interactions.recherche.ouvrir_barre_recherche()
+
+
+asynchrone déf fermer_barre_recherche():
+    """Fermer la barre de recherche"""
+    attendre ui.interactions.recherche.fermer_barre_recherche()
+
+
+déf rendre_barre_recherche():
+    """Rendre la barre de recherche et la liste des résultats"""
+    si non ui.etat.barre_recherche_active:
+        retourner ""
+
+    # Rendre l'input de recherche
+    html = '<div class="search-bar-container">'
+    html = html + '<input type="text" class="search-input" placeholder="Chercher..." />'
+    html = html + '<div class="search-results">'
+
+    # Rendre les résultats de recherche
+    pour resultat dans ui.etat.resultats_recherche:
+        entite_id = resultat.obtenir("id", "")
+        label = resultat.obtenir("label", "")
+        description = resultat.obtenir("description", "")
+        type_entite = resultat.obtenir("type", "")
+
+        html = html + '<div class="search-result-item" data-entity-id="' + entite_id + '">'
+        html = html + '<strong>' + label + '</strong>'
+
+        si description:
+            html = html + '<br/><small>' + description + '</small>'
+
+        html = html + '</div>'
+
+    html = html + '</div>'
+    html = html + '</div>'
+
+    retourner html

@@ -1,2 +1,8 @@
 # Module interactions
 importer .navigation
+importer .recherche
+
+exporter recherche.lancer_recherche
+exporter recherche.ouvrir_barre_recherche
+exporter recherche.fermer_barre_recherche
+exporter recherche.selectionner_resultat_recherche

@@ -1,0 +1,133 @@
+importer ui.etat
+
+
+asynchrone déf ouvrir_panneau_detail():
+    """Ouvrir le panneau de détails"""
+    ui.etat.panneau_detail_visible = vrai
+
+
+asynchrone déf fermer_panneau_detail():
+    """Fermer le panneau de détails"""
+    ui.etat.panneau_detail_visible = faux
+
+
+déf rendre_panneau_detail():
+    """Rendre le panneau de détails avec les informations de l'entité sélectionnée"""
+    si non ui.etat.panneau_detail_visible:
+        retourner ""
+
+    entite = ui.etat.obtenir_entite_selectionnee()
+    si non entite:
+        retourner ""
+
+    type_entite = entite.obtenir("type", "")
+
+    si type_entite == "mouvement":
+        retourner _rendre_detail_mouvement(entite)
+    sinon si type_entite == "artiste":
+        retourner _rendre_detail_artiste(entite)
+    sinon si type_entite == "oeuvre":
+        retourner _rendre_detail_oeuvre(entite)
+    sinon:
+        retourner _rendre_detail_generique(entite)
+
+
+déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
+    """Rendre les détails d'un mouvement artistique"""
+    donnees = entite.obtenir("donnees", {})
+    label = donnees.obtenir("movementLabel", {}).obtenir("value", "")
+    debut = donnees.obtenir("startTime", {}).obtenir("value", "")
+    fin = donnees.obtenir("endTime", {}).obtenir("value", "")
+    pays = donnees.obtenir("country", {})
+    pays_label = ""
+    si pays:
+        pays_label = pays.obtenir("label", "")
+
+    # Format simplifié (render: block)
+    html = '<div class="detail-section">'
+    html = html + '<h3>' + label + '</h3>'
+
+    si debut ou fin:
+        periodes = []
+        si debut:
+            periodes.ajouter("Début: " + debut)
+        si fin:
+            periodes.ajouter("Fin: " + fin)
+        html = html + '<p class="detail-row">' + " | ".joindre(periodes) + '</p>'
+
+    si pays_label:
+        html = html + '<p class="detail-row">Pays: ' + pays_label + '</p>'
+
+    html = html + '</div>'
+    retourner html
+
+
+déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
+    """Rendre les détails d'un artiste"""
+    donnees = entite.obtenir("donnees", {})
+    label = donnees.obtenir("artistLabel", {}).obtenir("value", "")
+    naissance = donnees.obtenir("birthTime", {}).obtenir("value", "")
+    deces = donnees.obtenir("deathTime", {}).obtenir("value", "")
+    lieu_naissance = donnees.obtenir("birthPlace", {})
+    lieu_naissance_label = ""
+    si lieu_naissance:
+        lieu_naissance_label = lieu_naissance.obtenir("label", "")
+
+    html = '<div class="detail-section">'
+    html = html + '<h3>' + label + '</h3>'
+
+    si naissance ou deces:
+        periodes = []
+        si naissance:
+            periodes.ajouter("Né: " + naissance)
+        si deces:
+            periodes.ajouter("Décédé: " + deces)
+        html = html + '<p class="detail-row">' + " | ".joindre(periodes) + '</p>'
+
+    si lieu_naissance_label:
+        html = html + '<p class="detail-row">Lieu de naissance: ' + lieu_naissance_label + '</p>'
+
+    html = html + '</div>'
+    retourner html
+
+
+déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
+    """Rendre les détails d'une œuvre"""
+    donnees = entite.obtenir("donnees", {})
+    label = donnees.obtenir("artworkLabel", {}).obtenir("value", "")
+    createur = donnees.obtenir("creator", {})
+    createur_label = ""
+    si createur:
+        createur_label = createur.obtenir("label", "")
+    date = donnees.obtenir("creationDate", {}).obtenir("value", "")
+    musee = donnees.obtenir("museum", {})
+    musee_label = ""
+    si musee:
+        musee_label = musee.obtenir("label", "")
+
+    html = '<div class="detail-section">'
+    html = html + '<h3>' + label + '</h3>'
+
+    si createur_label:
+        html = html + '<p class="detail-row">Créateur: ' + createur_label + '</p>'
+
+    si date:
+        html = html + '<p class="detail-row">Date: ' + date + '</p>'
+
+    si musee_label:
+        html = html + '<p class="detail-row">Musée: ' + musee_label + '</p>'
+
+    html = html + '</div>'
+    retourner html
+
+
+déf _rendre_detail_generique(entite: dictionnaire) -> chaine:
+    """Rendre les détails génériques pour tout autre type d'entité"""
+    donnees = entite.obtenir("donnees", {})
+    entite_id = entite.obtenir("id", "")
+
+    html = '<div class="detail-section">'
+    html = html + '<h3>' + entite_id + '</h3>'
+    html = html + '<p class="detail-row">Type: ' + entite.obtenir("type", "inconnu") + '</p>'
+    html = html + '</div>'
+    retourner html

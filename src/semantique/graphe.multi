@@ -1,31 +1,31 @@
 classe NoeudGraphe:
     """Représente un nœud dans le graphe de connaissances"""
     id: chaine
-    type: chaine  # "mouvement", "artiste", "oeuvre", "theme"
+    type_noeud: chaine
     etiquette: chaine
     donnees: dictionnaire
     voisins: liste  # IDs des nœuds adjacents
 
-    déf __init__(id: chaine, type: chaine, etiquette: chaine, donnees: dictionnaire = {}):
-        observer self.id = id
-        observer self.type = type
-        observer self.etiquette = etiquette
-        observer self.donnees = donnees
-        observer self.voisins = []
+    déf __init__(id: chaine, type_noeud: chaine, etiquette: chaine, donnees: dictionnaire = {}):
+        self.id = id
+        self.type_noeud = type_noeud
+        self.etiquette = etiquette
+        self.donnees = donnees
+        self.voisins = []
 
 
 classe RelationGraphe:
     """Représente une relation entre deux nœuds"""
     source_id: chaine
     target_id: chaine
-    type: chaine  # "precede", "suivi_par", "influence", "cree", etc.
+    type_noeud: chaine  # "precede", "suivi_par", "influence", "cree", etc.
     poids: nombre
 
-    déf __init__(source_id: chaine, target_id: chaine, type: chaine, poids: nombre = 1.0):
-        observer self.source_id = source_id
-        observer self.target_id = target_id
-        observer self.type = type
-        observer self.poids = poids
+    déf __init__(source_id: chaine, target_id: chaine, type_noeud: chaine, poids: nombre = 1.0):
+        self.source_id = source_id
+        self.target_id = target_id
+        self.type_noeud = type_noeud
+        self.poids = poids
 
 
 classe Graphe:
@@ -34,19 +34,19 @@ classe Graphe:
     relations: liste      # [RelationGraphe]
 
     déf __init__():
-        observer self.noeuds = {}
-        observer self.relations = []
+        self.noeuds = {}
+        self.relations = []
 
-    déf ajouter_noeud(id: chaine, type: chaine, etiquette: chaine, donnees: dictionnaire = {}):
+    déf ajouter_noeud(id: chaine, type_noeud: chaine, etiquette: chaine, donnees: dictionnaire = {}):
         """Ajouter ou mettre à jour un nœud"""
         si id non dans self.noeuds:
-            noeud = NoeudGraphe(id, type, etiquette, donnees)
-            observer self.noeuds[id] = noeud
+            noeud = NoeudGraphe(id, type_noeud, etiquette, donnees)
+            self.noeuds[id] = noeud
         sinon:
-            observer self.noeuds[id].donnees = donnees
-            observer self.noeuds[id].etiquette = etiquette
+            self.noeuds[id].donnees = donnees
+            self.noeuds[id].etiquette = etiquette
 
-    déf ajouter_relation(source_id: chaine, target_id: chaine, type: chaine, poids: nombre = 1.0):
+    déf ajouter_relation(source_id: chaine, target_id: chaine, type_noeud: chaine, poids: nombre = 1.0):
         """Ajouter une relation entre deux nœuds"""
         # Vérifier que les nœuds existent
         si source_id non dans self.noeuds ou target_id non dans self.noeuds:
@@ -54,17 +54,17 @@ classe Graphe:
 
         # Vérifier si la relation existe déjà
         pour rel dans self.relations:
-            si rel.source_id == source_id et rel.target_id == target_id et rel.type == type:
-                observer rel.poids = poids
+            si rel.source_id == source_id et rel.target_id == target_id et rel.type_noeud == type_noeud:
+    rel.poids = poids
                 retour
 
         # Ajouter la nouvelle relation
-        relation = RelationGraphe(source_id, target_id, type, poids)
-        observer self.relations.ajouter(relation)
+        relation = RelationGraphe(source_id, target_id, type_noeud, poids)
+        self.relations.ajouter(relation)
 
         # Ajouter aux voisins
-        observer self.noeuds[source_id].voisins.ajouter(target_id)
-        observer self.noeuds[target_id].voisins.ajouter(source_id)
+        self.noeuds[source_id].voisins.ajouter(target_id)
+        self.noeuds[target_id].voisins.ajouter(source_id)
 
     déf obtenir_noeud(id: chaine) -> NoeudGraphe:
         """Obtenir un nœud par ID"""
@@ -76,10 +76,10 @@ classe Graphe:
 
         pour relation dans self.relations:
             si relation.source_id == noeud_id:
-                si type_relation == "" ou relation.type == type_relation:
+                si type_relation == "" ou relation.type_noeud == type_relation:
                     voisins.ajouter(relation.target_id)
             sinon si relation.target_id == noeud_id:
-                si type_relation == "" ou relation.type == type_relation:
+                si type_relation == "" ou relation.type_noeud == type_relation:
                     voisins.ajouter(relation.source_id)
 
         retourner voisins
@@ -107,7 +107,7 @@ classe Graphe:
         resultats = []
 
         pour id, noeud dans self.noeuds.items():
-            si noeud.type == type:
+            si noeud.type_noeud == type:
                 resultats.ajouter(noeud)
 
         retourner resultats
@@ -117,7 +117,7 @@ classe Graphe:
         resultats = []
 
         pour relation dans self.relations:
-            si relation.type == type:
+            si relation.type_noeud == type:
                 resultats.ajouter(relation)
 
         retourner resultats
@@ -171,7 +171,7 @@ classe Graphe:
                             noeuds_couche.ajouter({
                                 "id": voisin_id,
                                 "etiquette": noeud.etiquette,
-                                "type": noeud.type
+                                "type": noeud.type_noeud
                             })
 
             si noeuds_couche:
@@ -215,7 +215,7 @@ classe Graphe:
         pour id, noeud dans self.noeuds.items():
             noeuds_json.ajouter({
                 "id": noeud.id,
-                "type": noeud.type,
+                "type": noeud.type_noeud,
                 "etiquette": noeud.etiquette,
                 "donnees": noeud.donnees
             })

@@ -33,7 +33,7 @@ asynchrone déf basculer_filtre(lentille: chaine):
 
 asynchrone déf appliquer_filtres():
     """Appliquer tous les filtres actifs"""
-    observer interface.etat.affichage_chargement = vrai
+    observer ui.etat.affichage_chargement = vrai
 
     gestionnaire = semantique.filtres.GestionnaireFiltres(
         mode_conjonction=(mode_fusion == "conjonction")
@@ -47,12 +47,12 @@ asynchrone déf appliquer_filtres():
 
     # Appliquer au graphe
     si gestionnaire.filtres_actifs:
-        graphe_filtre = gestionnaire.filtrer_graphe(interface.etat.graphe)
+        graphe_filtre = gestionnaire.filtrer_graphe(ui.etat.graphe)
         observer graphe_filtre_actif = graphe_filtre
     sinon:
         observer graphe_filtre_actif = nul
 
-    observer interface.etat.affichage_chargement = faux
+    observer ui.etat.affichage_chargement = faux
 
 
 asynchrone déf basculer_mode_fusion(mode: chaine):

@@ -1465,6 +1465,114 @@
             return relationMatchesLensType(relation.type, filter.effectiveLens);
         }
 
+        function getLegendLabels(selectedType, lens) {
+            const lang = runtimeState.currentLanguage || "en";
+            const isFr = lang === "fr";
+            const labels = {
+                influence: {
+                    top: isFr ? "Succession" : "Succession",
+                    bottom: isFr ? "Artistes / Oeuvres" : "Artists / Works",
+                    left: isFr ? "Influencé par" : "Influenced by",
+                    right: isFr ? "A influencé" : "Influenced"
+                },
+                time: {
+                    top: isFr ? "Antérieurs" : "Earlier",
+                    bottom: "",
+                    left: isFr ? "Prédécesseurs" : "Predecessors",
+                    right: isFr ? "Successeurs" : "Successors"
+                },
+                artist: {
+                    top: isFr ? "Mouvements" : "Movements",
+                    bottom: isFr ? "Oeuvres" : "Works",
+                    left: isFr ? "Influences reçues" : "Influenced by",
+                    right: isFr ? "Influences données" : "Influenced"
+                },
+                place: {
+                    top: isFr ? "Musées / Lieux" : "Museums / Places",
+                    bottom: "",
+                    left: "",
+                    right: ""
+                },
+                work: {
+                    top: isFr ? "Exposé à" : "Exhibited at",
+                    bottom: "",
+                    left: isFr ? "Sujets représentés" : "Subjects depicted",
+                    right: isFr ? "Matériaux" : "Materials"
+                }
+            };
+            if (labels[lens]) return labels[lens];
+            // Default by entity type
+            if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
+                return {
+                    top: isFr ? "Mouvements successeurs" : "Successor movements",
+                    bottom: isFr ? "Artistes" : "Artists",
+                    left: isFr ? "Prédécesseurs" : "Predecessors",
+                    right: ""
+                };
+            }
+            if (selectedType.includes("artist") || selectedType.includes("artiste")) {
+                return {
+                    top: isFr ? "Mouvements" : "Movements",
+                    bottom: isFr ? "Oeuvres créées" : "Created works",
+                    left: isFr ? "Influencé par" : "Influenced by",
+                    right: isFr ? "A influencé" : "Influenced"
+                };
+            }
+            if (selectedType.includes("work") || selectedType.includes("oeuvre")) {
+                return { top: isFr ? "Musée" : "Museum", bottom: "", left: isFr ? "Sujets" : "Subjects", right: isFr ? "Matériaux" : "Materials" };
+            }
+            return { top: "", bottom: "", left: "", right: "" };
+        }
+
+        function renderConstellationLegend() {
+            const legendEl = document.getElementById("constellation-legend");
+            if (!legendEl) return;
+            const selectedType = String((runtimeState.selectedEntity && runtimeState.selectedEntity.type) || "").toLowerCase();
+            const lens = runtimeState.activeCompassLens || "movement";
+            const labels = getLegendLabels(selectedType, lens);
+            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text || ""; };
+            set("legend-top", labels.top);
+            set("legend-bottom", labels.bottom);
+            set("legend-left", labels.left);
+            set("legend-right", labels.right);
+        }
+
+        function countNodesForLens(lens) {
+            const snapshot = currentSnapshot();
+            const nodes = (((snapshot.graphe || {}).noeuds) || []);
+            if (!nodes.length) return 0;
+            return nodes.filter((node) => nodeMatchesLensType(node, lens)).length;
+        }
+
+        function updateCompassCore() {
+            const coreEl = document.querySelector(".compass-core");
+            if (!coreEl) return;
+            const activeLens = runtimeState.activeCompassLens || "movement";
+            const entity = runtimeState.selectedEntity;
+
+            const labelEl = coreEl.querySelector(".compass-core-label");
+            if (labelEl) {
+                const lensDisplay = activeLens.charAt(0).toUpperCase() + activeLens.slice(1);
+                labelEl.textContent = lensDisplay;
+            }
+
+            let entityEl = coreEl.querySelector(".compass-core-entity");
+            const name = entity && entity.name;
+            const isPlaceholder = !name || name === "Impressionism" || name === "Awaiting response";
+            if (!isPlaceholder) {
+                if (!entityEl) {
+                    entityEl = document.createElement("span");
+                    entityEl.className = "compass-core-entity";
+                    coreEl.appendChild(entityEl);
+                }
+                const firstWord = name.split(" ")[0];
+                entityEl.textContent = firstWord.length > 10 ? firstWord.slice(0, 9) + "…" : firstWord;
+                entityEl.title = name;
+            } else if (entityEl) {
+                entityEl.remove();
+            }
+        }
+
         function renderLensControls() {
             const hasPreset = Boolean(runtimeState.activeLensPreset);
             compassPoleButtons.forEach((button) => {
@@ -1472,12 +1580,20 @@
                 button.classList.toggle("is-active", isActive);
                 button.classList.toggle("is-muted", hasPreset);
                 button.classList.toggle("is-primary", isActive);
+                const lens = button.dataset.lens;
+                const count = countNodesForLens(lens);
+                if (count > 0) {
+                    button.dataset.count = count;
+                } else {
+                    delete button.dataset.count;
+                }
             });
             lensPresetButtons.forEach((button) => {
                 const isActive = button.dataset.preset === runtimeState.activeLensPreset;
                 button.classList.toggle("is-active", isActive);
                 button.classList.toggle("is-muted", !isActive && hasPreset);
             });
+            updateCompassCore();
         }
 
         function updateLensNarrative() {
@@ -1715,6 +1831,68 @@
             const constellationEl = document.querySelector(".constellation");
             if (constellationEl) {
                 constellationEl.classList.toggle("can-pan", zoom > 1.01);
+            }
+            renderConstellationMinimap();
+        }
+
+        function renderConstellationMinimap() {
+            const canvas = document.getElementById("constellation-minimap");
+            if (!canvas) return;
+            const zoom = runtimeState.constellationZoom || 1;
+            const isVisible = zoom > 1.05;
+            canvas.classList.toggle("is-visible", isVisible);
+            if (!isVisible) return;
+
+            const ctx = canvas.getContext("2d");
+            const W = canvas.width;
+            const H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+
+            const positions = runtimeState.lastConstellationPositions;
+            const nodes = getRenderableNodes();
+            const snapshot = currentSnapshot();
+            const selectedId = snapshot.entite_selectionnee_id;
+
+            if (positions && nodes.length) {
+                nodes.forEach((node) => {
+                    const pos = positions.get(node.id);
+                    if (!pos) return;
+                    const cx = pos.x / 100 * W;
+                    const cy = pos.y / 100 * H;
+                    const isSelected = node.id === selectedId;
+                    const ntype = String(node.type || "").toLowerCase();
+                    let color;
+                    if (isSelected) {
+                        color = "rgba(214,164,88,0.95)";
+                    } else if (ntype.includes("movement") || ntype.includes("mouvement")) {
+                        color = "rgba(214,164,88,0.55)";
+                    } else if (ntype.includes("artist") || ntype.includes("artiste")) {
+                        color = "rgba(77,182,172,0.55)";
+                    } else {
+                        color = "rgba(238,161,200,0.55)";
+                    }
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, isSelected ? 3 : 1.8, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                });
+            }
+
+            // Viewport rectangle: solve for visible % range given pan and zoom
+            const constellationEl = document.querySelector(".constellation");
+            if (constellationEl) {
+                const cRect = constellationEl.getBoundingClientRect();
+                const panX = runtimeState.constellationPanX || 0;
+                const panY = runtimeState.constellationPanY || 0;
+                const panXPct = panX / cRect.width * 100;
+                const panYPct = panY / cRect.height * 100;
+                const xMin = Math.max(0, 50 + (-50 - panXPct) / zoom);
+                const xMax = Math.min(100, 50 + (50 - panXPct) / zoom);
+                const yMin = Math.max(0, 50 + (-50 - panYPct) / zoom);
+                const yMax = Math.min(100, 50 + (50 - panYPct) / zoom);
+                ctx.strokeStyle = "rgba(139,233,253,0.6)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(xMin / 100 * W, yMin / 100 * H, (xMax - xMin) / 100 * W, (yMax - yMin) / 100 * H);
             }
         }
 
@@ -2897,6 +3075,8 @@
 
         function semanticLayoutSectors(selectedNode, nodes, relationByTarget, relationBySource) {
             const selectedType = String((selectedNode && selectedNode.type) || "").toLowerCase();
+            const activeLens = runtimeState.activeCompassLens || "movement";
+
             const sectors = {
                 primary: { start: -150, end: 150, nodes: [], radii: [22, 32, 41, 47] },
                 left: { start: 145, end: 215, nodes: [], radii: [24, 35, 44] },
@@ -2905,8 +3085,7 @@
                 bottom: { start: 55, end: 125, nodes: [], radii: [24, 34, 42, 47] }
             };
 
-            // Movements typically have many artists → widen artist arc to full bottom hemisphere
-            // and pull primary sector back so it doesn't also crowd the bottom
+            // Widen artist arc for movement entities
             if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
                 sectors.bottom.start = 18;
                 sectors.bottom.end = 162;
@@ -2914,8 +3093,69 @@
                 sectors.primary.end = 14;
             }
 
+            // Lens-driven sector overrides: map relation types to compass directions
+            const lensSectorRules = {
+                influence: {
+                    influenced_by: "left",
+                    influenced: "right",
+                    follows: "top",
+                    followed_by: "top",
+                    contains_movement: "top",
+                    contains_artist: "bottom"
+                },
+                artist: {
+                    contains_artist: "primary",
+                    created: "bottom",
+                    influenced_by: "left",
+                    influenced: "right",
+                    follows: "top",
+                    followed_by: "top"
+                },
+                place: {
+                    displayed_at: "top",
+                    houses_work: "top",
+                    contains_artist: "primary"
+                },
+                time: {
+                    follows: "left",
+                    followed_by: "right",
+                    influenced_by: "left",
+                    influenced: "right",
+                    contains_movement: "top"
+                },
+                work: {
+                    depicts: "left",
+                    made_of: "right",
+                    displayed_at: "top",
+                    houses_work: "top",
+                    created: "primary"
+                }
+            };
+
+            const activeLensRules = (activeLens !== "movement") ? (lensSectorRules[activeLens] || null) : null;
+
+            // Widen sectors for influence/time lenses to emphasize left/right directionality
+            if (activeLens === "influence" || activeLens === "time") {
+                sectors.left.start = 130;
+                sectors.left.end = 230;
+                sectors.left.radii = [22, 33, 43, 48];
+                sectors.right.start = -50;
+                sectors.right.end = 50;
+                sectors.right.radii = [22, 33, 43, 48];
+                sectors.primary.start = -120;
+                sectors.primary.end = 120;
+            }
+
             nodes.forEach((node) => {
                 const relation = relationByTarget.get(node.id) || relationBySource.get(node.id) || "";
+
+                // Apply active lens sector override first
+                if (activeLensRules && relation && activeLensRules[relation]) {
+                    sectors[activeLensRules[relation]].nodes.push(node);
+                    return;
+                }
+
+                // Entity-type default routing
                 if (selectedType.includes("artist") || selectedType.includes("artiste")) {
                     if (relation === "influenced_by") {
                         sectors.left.nodes.push(node);
@@ -2988,8 +3228,17 @@
             const snapshot = currentSnapshot();
             const nodes = getRenderableNodes();
             const temporalFocus = runtimeState.currentMode === "temporal-river" ? runtimeState.temporalFocus : null;
+
+            // Capture pre-render node positions for FLIP animation
+            const oldNodeRects = new Map();
+            constellationNodesEl.querySelectorAll(".node[data-node-id]").forEach((el) => {
+                const rect = el.getBoundingClientRect();
+                oldNodeRects.set(el.dataset.nodeId, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+            });
+
             constellationNodesEl.innerHTML = "";
-            constellationLinksEl.innerHTML = "";
+            // Clear only link lines, preserve SVG <defs> (markers)
+            constellationLinksEl.querySelectorAll("line.link").forEach((el) => el.remove());
             const isDense = nodes.length > 32;
             constellationNodesEl.classList.toggle("is-dense", isDense);
             constellationLinksEl.classList.toggle("is-dense", isDense);
@@ -3004,9 +3253,16 @@
             }
 
             const positions = computeConstellationLayout();
+            runtimeState.lastConstellationPositions = positions;
             const selectedId = snapshot.entite_selectionnee_id;
             const seenRelations = new Set();
             const visibleNodeIds = new Set(nodes.map((node) => node.id));
+
+            const nodeDegree = new Map();
+            (((snapshot.graphe || {}).relations) || []).forEach((rel) => {
+                if (visibleNodeIds.has(rel.source)) nodeDegree.set(rel.source, (nodeDegree.get(rel.source) || 0) + 1);
+                if (visibleNodeIds.has(rel.target)) nodeDegree.set(rel.target, (nodeDegree.get(rel.target) || 0) + 1);
+            });
 
             function updateHoverState(activeNodeId) {
                 const nodeEls = constellationNodesEl.querySelectorAll(".node");
@@ -3065,20 +3321,21 @@
                     return;
                 }
 
-                const dx = target.x - source.x;
-                const dy = target.y - source.y;
-                const length = Math.sqrt(dx * dx + dy * dy);
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-                const link = document.createElement("div");
                 const isMutedTemporally = temporalFocus && (!temporalFocus.activeIds.has(relation.source) || !temporalFocus.activeIds.has(relation.target));
-                link.className = "link" + (isMutedTemporally ? " is-muted-temporal" : "");
+                const link = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                link.setAttribute("class", "link" + (isMutedTemporally ? " is-muted-temporal" : ""));
                 link.dataset.source = relation.source;
                 link.dataset.target = relation.target;
-                link.style.left = source.x + "%";
-                link.style.top = source.y + "%";
-                link.style.width = length + "%";
-                link.style.transform = "rotate(" + angle + "deg)";
+                link.setAttribute("x1", source.x);
+                link.setAttribute("y1", source.y);
+                link.setAttribute("x2", target.x);
+                link.setAttribute("y2", target.y);
+                const successionRelations = ["follows", "followed_by"];
+                const directedRelations = ["follows", "followed_by", "influenced", "influenced_by", "created"];
+                if (directedRelations.includes(relation.type)) {
+                    const markerId = successionRelations.includes(relation.type) ? "arrow-succession" : "arrow-directed";
+                    link.setAttribute("marker-end", "url(#" + markerId + ")");
+                }
                 constellationLinksEl.appendChild(link);
             });
 
@@ -3093,6 +3350,9 @@
                 nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (runtimeState.shellFilter && runtimeState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
+                const degree = nodeDegree.get(node.id) || 0;
+                const nodeScale = (1 + Math.min(degree, 8) * 0.05).toFixed(2);
+                nodeEl.style.setProperty("--node-scale", nodeScale);
                 nodeEl.setAttribute("aria-label", (node.etiquette || node.id) + " (" + node.type + ")");
 
                 const label = document.createElement("span");
@@ -3116,7 +3376,35 @@
 
                 constellationNodesEl.appendChild(nodeEl);
             });
+
+            // Apply FLIP animation: nodes that existed before glide to their new positions
+            if (oldNodeRects.size > 0) {
+                constellationNodesEl.querySelectorAll(".node[data-node-id]").forEach((el) => {
+                    const old = oldNodeRects.get(el.dataset.nodeId);
+                    if (!old) return;
+                    const newRect = el.getBoundingClientRect();
+                    const dx = old.x - (newRect.left + newRect.width / 2);
+                    const dy = old.y - (newRect.top + newRect.height / 2);
+                    if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
+                    el.style.animation = "none";
+                    el.style.transition = "none";
+                    el.style.transform = "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px))";
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            el.style.transition = "transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)";
+                            el.style.transform = "";
+                            el.addEventListener("transitionend", () => {
+                                el.style.animation = "";
+                                el.style.transition = "";
+                            }, { once: true });
+                        });
+                    });
+                });
+            }
+
             renderConstellationZoomControls();
+            renderLensControls();
+            renderConstellationLegend();
         }
 
         function syncShellFromSnapshot(snapshot) {
@@ -3135,6 +3423,7 @@
                 name: derivedName || selectedEntity.id || "Awaiting response",
                 meta: describeEntityMeta(derivedType, selectedRecord) || fallbackMeta
             };
+            updateCompassCore();
         }
 
         function applyAdapterStateToShell() {

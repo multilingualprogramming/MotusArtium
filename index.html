@@ -189,8 +189,24 @@
 
                     <div class="constellation" role="main" aria-label="Interactive constellation visualization of art movements, artists, and influences">
                         <div class="constellation-grid" aria-hidden="true"></div>
-                        <div class="constellation-links" id="constellation-links" aria-hidden="true"></div>
+                        <div class="constellation-legend" id="constellation-legend" aria-hidden="true">
+                            <span class="constellation-legend-label constellation-legend-label--top" id="legend-top"></span>
+                            <span class="constellation-legend-label constellation-legend-label--bottom" id="legend-bottom"></span>
+                            <span class="constellation-legend-label constellation-legend-label--left" id="legend-left"></span>
+                            <span class="constellation-legend-label constellation-legend-label--right" id="legend-right"></span>
+                        </div>
+                        <svg class="constellation-links" id="constellation-links" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <defs>
+                                <marker id="arrow-directed" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="userSpaceOnUse">
+                                    <polygon points="0 0, 5 2.5, 0 5" fill="rgba(110,243,255,0.55)" />
+                                </marker>
+                                <marker id="arrow-succession" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto" markerUnits="userSpaceOnUse">
+                                    <polygon points="0 0, 5 2.5, 0 5" fill="rgba(214,164,88,0.65)" />
+                                </marker>
+                            </defs>
+                        </svg>
                         <div class="constellation-nodes" id="constellation-nodes" role="group" aria-label="Interactive entity nodes"></div>
+                        <canvas class="constellation-minimap" id="constellation-minimap" width="130" height="86" aria-hidden="true"></canvas>
                         <div class="constellation-controls" aria-label="Constellation zoom controls">
                             <button type="button" class="icon-button" id="constellation-zoom-out" aria-label="Zoom out" title="Zoom out (scroll down)">−</button>
                             <span class="zoom-readout" id="constellation-zoom-readout" aria-live="polite">100%</span>

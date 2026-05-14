@@ -1157,6 +1157,112 @@
             pointer-events: none;
             transform-origin: 50% 50%;
             transition: transform var(--transition-normal);
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        /* SVG link lines (replaces old div .link geometry) */
+        .constellation-links line.link {
+            stroke: rgba(214, 164, 88, 0.42);
+            stroke-width: 0.8;
+            fill: none;
+            stroke-linecap: round;
+            opacity: 0.62;
+            transition: opacity 180ms ease, stroke-width 180ms ease;
+        }
+
+        .constellation-links line.link.is-connected {
+            stroke: rgba(110, 243, 255, 0.75);
+            stroke-width: 1.4;
+            opacity: 1;
+            filter: drop-shadow(0 0 2px rgba(110, 243, 255, 0.35));
+        }
+
+        .constellation-links.is-dense line.link {
+            opacity: 0.22;
+            stroke-width: 0.4;
+        }
+
+        .constellation-links.is-dense line.link.is-connected {
+            opacity: 0.95;
+            stroke-width: 1;
+        }
+
+        .constellation-links line.link.is-muted-temporal {
+            opacity: 0.1;
+        }
+
+        /* Constellation legend labels */
+        .constellation-legend {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .constellation-legend-label {
+            position: absolute;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.64rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(139, 233, 253, 0.28);
+            white-space: nowrap;
+            transition: color 0.3s ease;
+        }
+
+        html.theme-light .constellation-legend-label {
+            color: rgba(43, 143, 134, 0.3);
+        }
+
+        .constellation-legend-label--top {
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .constellation-legend-label--bottom {
+            bottom: 52px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .constellation-legend-label--left {
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+        }
+
+        .constellation-legend-label--right {
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+        }
+
+        /* Minimap canvas */
+        .constellation-minimap {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            z-index: 5;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(6, 10, 16, 0.78);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        html.theme-light .constellation-minimap {
+            background: rgba(240, 238, 235, 0.88);
+            border-color: rgba(0, 0, 0, 0.14);
+        }
+
+        .constellation-minimap.is-visible {
+            opacity: 1;
         }
 
         .constellation-nodes {
@@ -1365,26 +1471,26 @@
         }
 
         .node--movement {
-            width: 72px;
-            height: 72px;
+            width: calc(72px * var(--node-scale, 1));
+            height: calc(72px * var(--node-scale, 1));
             background: radial-gradient(circle, rgba(214, 164, 88, 0.34), rgba(214, 164, 88, 0.06));
         }
 
         .node--artist {
-            width: 42px;
-            height: 42px;
+            width: calc(42px * var(--node-scale, 1));
+            height: calc(42px * var(--node-scale, 1));
             background: radial-gradient(circle, rgba(77, 182, 172, 0.34), rgba(77, 182, 172, 0.06));
         }
 
         .node--work {
-            width: 26px;
-            height: 26px;
+            width: calc(26px * var(--node-scale, 1));
+            height: calc(26px * var(--node-scale, 1));
             background: radial-gradient(circle, rgba(238, 161, 200, 0.34), rgba(238, 161, 200, 0.06));
         }
 
         .constellation-nodes.is-dense .node--work {
-            width: 22px;
-            height: 22px;
+            width: calc(22px * var(--node-scale, 1));
+            height: calc(22px * var(--node-scale, 1));
         }
 
         .node-label {
@@ -1714,6 +1820,8 @@
             border-radius: 50%;
             display: grid;
             place-items: center;
+            align-content: center;
+            gap: 2px;
             background:
                 radial-gradient(circle, rgba(7, 14, 24, 0.96), rgba(7, 14, 24, 0.72)),
                 linear-gradient(135deg, rgba(77, 182, 172, 0.1), rgba(214, 164, 88, 0.08));
@@ -1746,6 +1854,35 @@
             letter-spacing: 0.16em;
             text-transform: uppercase;
             color: var(--accent-cyan);
+        }
+
+        .compass-core-entity {
+            display: block;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: center;
+            max-width: 62px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.1;
+            opacity: 0.88;
+            transition: opacity 0.25s ease;
+        }
+
+        html.theme-light .compass-core-entity {
+            color: #1a1a18;
+        }
+
+        /* Count badge on compass poles */
+        .compass-pole[data-count]::after {
+            content: " ×" attr(data-count);
+            font-size: 0.68em;
+            opacity: 0.62;
+            letter-spacing: 0;
+            vertical-align: super;
         }
 
         .compass-pole {

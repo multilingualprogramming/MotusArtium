@@ -1,4 +1,4 @@
-query ArtworksByArtist($artistId: String!, $languageCode: LanguageCode!) {
+query ArtworksByArtist($artistId: String!, $languageCode: LanguageCode!, $first: Int = 28, $after: String) {
   searchItems(
     query: {
       and: [
@@ -6,12 +6,18 @@ query ArtworksByArtist($artistId: String!, $languageCode: LanguageCode!) {
         { property: "P31", value: "Q3305213" }
       ]
     }
+    first: $first
+    after: $after
   ) {
     edges {
       node {
         id
         artworkLabel: label(languageCode: $languageCode)
       }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
     }
   }
 }

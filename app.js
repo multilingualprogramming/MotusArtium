@@ -1662,6 +1662,9 @@
             if (paginationKind === "movementArtists") {
                 chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'artistes" : "Load more artists";
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
+            } else if (paginationKind === "artistWorks") {
+                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'oeuvres" : "Load more works";
+                chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             } else {
                 chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus de mouvements" : "Load more movements";
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
@@ -1698,16 +1701,27 @@
             }
 
             const type = String(browserAdapterState.entite_selectionnee_type || "").toLowerCase();
-            const selectedMovementId = browserAdapterState.entite_selectionnee_id || "";
+            const selectedEntityId = browserAdapterState.entite_selectionnee_id || "";
             const isMovementSelection = type.includes("movement") || type.includes("mouvement");
             if (
                 isMovementSelection &&
-                selectedMovementId &&
-                browserAdapterState.expandedMovementId === selectedMovementId &&
-                browserAdapterState.movementArtistsSourceId === selectedMovementId &&
+                selectedEntityId &&
+                browserAdapterState.expandedMovementId === selectedEntityId &&
+                browserAdapterState.movementArtistsSourceId === selectedEntityId &&
                 browserAdapterState.movementArtistsHasNextPage
             ) {
                 return "movementArtists";
+            }
+
+            const isArtistSelection = type.includes("artist") || type.includes("artiste");
+            if (
+                isArtistSelection &&
+                selectedEntityId &&
+                browserAdapterState.expandedArtistId === selectedEntityId &&
+                browserAdapterState.artistWorksSourceId === selectedEntityId &&
+                browserAdapterState.artistWorksHasNextPage
+            ) {
+                return "artistWorks";
             }
 
             return "";
@@ -1730,6 +1744,33 @@
                 const node = edge && edge.node ? edge.node : {};
                 if (node.id) {
                     addGraphNode(node.id, "movement", node.movementLabel || node.label || node.id, node);
+                }
+            });
+
+            return data;
+        }
+
+        async function fetchArtistWorksPage(artistId, afterCursor) {
+            const data = await executeGraphQLDocument("artworks_by_artist.graphql", {
+                artistId: artistId,
+                languageCode: runtimeState.currentLanguage,
+                first: browserAdapterState.artistWorksPageSize,
+                after: afterCursor || null
+            });
+
+            const searchItems = (data.searchItems || {});
+            const edges = searchItems.edges || [];
+            const pageInfo = searchItems.pageInfo || {};
+            browserAdapterState.artistWorksCursor = pageInfo.endCursor || null;
+            browserAdapterState.artistWorksHasNextPage = !!pageInfo.hasNextPage;
+            browserAdapterState.artistWorksSourceId = artistId;
+
+            edges.forEach((edge) => {
+                const node = edge && edge.node ? edge.node : {};
+                if (node.id) {
+                    browserAdapterState.cache_entites[node.id] = node;
+                    addGraphNode(node.id, "work", node.artworkLabel || node.label || node.id, node);
+                    addGraphRelation(artistId, node.id, "created");
                 }
             });
 
@@ -2192,6 +2233,10 @@
             movementArtistsCursor: null,
             movementArtistsHasNextPage: false,
             movementArtistsSourceId: "",
+            artistWorksPageSize: 24,
+            artistWorksCursor: null,
+            artistWorksHasNextPage: false,
+            artistWorksSourceId: "",
             graphe: {
                 noeuds: new Map(),
                 relations: []
@@ -2209,6 +2254,8 @@
                 try {
                     if (paginationKind === "movementArtists") {
                         await window.ui.etat.charger_mouvement_artistes_page_suivante();
+                    } else if (paginationKind === "artistWorks") {
+                        await window.ui.etat.charger_artiste_oeuvres_page_suivante();
                     } else {
                         await window.ui.etat.charger_chronologie_page_suivante();
                     }
@@ -2284,6 +2331,9 @@
             browserAdapterState.movementArtistsCursor = null;
             browserAdapterState.movementArtistsHasNextPage = false;
             browserAdapterState.movementArtistsSourceId = "";
+            browserAdapterState.artistWorksCursor = null;
+            browserAdapterState.artistWorksHasNextPage = false;
+            browserAdapterState.artistWorksSourceId = "";
         }
 
         function removeGraphNodes(nodeIds) {
@@ -2316,6 +2366,11 @@
             removeGraphNodes(workIds);
             if (browserAdapterState.expandedArtistId === artistId) {
                 browserAdapterState.expandedArtistId = "";
+            }
+            if (browserAdapterState.artistWorksSourceId === artistId) {
+                browserAdapterState.artistWorksCursor = null;
+                browserAdapterState.artistWorksHasNextPage = false;
+                browserAdapterState.artistWorksSourceId = "";
             }
             browserAdapterState.focusedArtworkId = "";
         }
@@ -2659,7 +2714,9 @@
             const temporalFocus = runtimeState.currentMode === "temporal-river" ? runtimeState.temporalFocus : null;
             constellationNodesEl.innerHTML = "";
             constellationLinksEl.innerHTML = "";
-            constellationNodesEl.classList.toggle("is-dense", nodes.length > 32);
+            const isDense = nodes.length > 32;
+            constellationNodesEl.classList.toggle("is-dense", isDense);
+            constellationLinksEl.classList.toggle("is-dense", isDense);
 
             if (!nodes.length) {
                 const empty = document.createElement("div");
@@ -2967,10 +3024,6 @@
                     id: artisteId,
                     languageCode: runtimeState.currentLanguage
                 });
-                const artworks = await executeGraphQLDocument("artworks_by_artist.graphql", {
-                    artistId: artisteId,
-                    languageCode: runtimeState.currentLanguage
-                });
 
                 const artist = details.item || {};
                 browserAdapterState.cache_entites[artisteId] = artist;
@@ -2997,14 +3050,10 @@
                     addGraphRelation(artisteId, influencedArtist.id, "influenced");
                 });
 
-                (((artworks.searchItems || {}).edges) || []).forEach((edge) => {
-                    const node = edge && edge.node ? edge.node : {};
-                    if (node.id) {
-                        browserAdapterState.cache_entites[node.id] = node;
-                        addGraphNode(node.id, "work", node.artworkLabel || node.label || node.id, node);
-                        addGraphRelation(artisteId, node.id, "created");
-                    }
-                });
+                browserAdapterState.artistWorksCursor = null;
+                browserAdapterState.artistWorksHasNextPage = false;
+                browserAdapterState.artistWorksSourceId = artisteId;
+                await fetchArtistWorksPage(artisteId, browserAdapterState.artistWorksCursor);
 
                 browserAdapterState.expandedArtistId = artisteId;
                 browserAdapterState.focusedArtworkId = "";
@@ -3212,6 +3261,21 @@
                 browserAdapterState.affichage_chargement = true;
 
                 const data = await fetchMovementArtistsPage(mouvementId, browserAdapterState.movementArtistsCursor);
+
+                browserAdapterState.affichage_chargement = false;
+                applyAdapterStateToShell();
+                return data;
+            },
+
+            async charger_artiste_oeuvres_page_suivante() {
+                const artisteId = browserAdapterState.artistWorksSourceId || browserAdapterState.expandedArtistId || browserAdapterState.entite_selectionnee_id;
+                if (!artisteId || !browserAdapterState.artistWorksHasNextPage) {
+                    return null;
+                }
+                runtimeState.lastRequestedEntityId = artisteId;
+                browserAdapterState.affichage_chargement = true;
+
+                const data = await fetchArtistWorksPage(artisteId, browserAdapterState.artistWorksCursor);
 
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();

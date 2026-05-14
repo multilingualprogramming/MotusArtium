@@ -2446,9 +2446,10 @@
                 const total = Math.max(remaining.length, 1);
                 const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
                 const nodeClass = constellationClassForType(node.type);
-                const ring = nodeClass === "node--movement" ? 30 : (nodeClass === "node--artist" ? 24 : 18);
-                const x = 50 + Math.cos(angle) * ring;
-                const y = 50 + Math.sin(angle) * (ring * 0.78);
+                const ring = nodeClass === "node--movement" ? 34 : (nodeClass === "node--artist" ? 26 : 18);
+                const jitter = ((index % 2 === 0 ? 1 : -1) * 0.9) + ((index % 3) - 1) * 0.4;
+                const x = 50 + Math.cos(angle) * ring + Math.sin(angle) * (ring * 0.08) * jitter;
+                const y = 50 + Math.sin(angle) * ring * 0.92 + Math.cos(angle) * (ring * 0.06) * jitter;
                 positions.set(node.id, {
                     x: Math.max(12, Math.min(88, x)),
                     y: Math.max(14, Math.min(84, y))
@@ -2478,6 +2479,46 @@
             const seenRelations = new Set();
             const visibleNodeIds = new Set(nodes.map((node) => node.id));
 
+            function updateHoverState(activeNodeId) {
+                const nodeEls = constellationNodesEl.querySelectorAll(".node");
+                const linkEls = constellationLinksEl.querySelectorAll(".link");
+                const connectedIds = new Set();
+
+                linkEls.forEach((linkEl) => {
+                    const sourceId = linkEl.dataset.source;
+                    const targetId = linkEl.dataset.target;
+                    if (sourceId === activeNodeId || targetId === activeNodeId) {
+                        linkEl.classList.add("is-connected");
+                        connectedIds.add(sourceId);
+                        connectedIds.add(targetId);
+                    } else {
+                        linkEl.classList.remove("is-connected");
+                    }
+                });
+
+                nodeEls.forEach((nodeEl2) => {
+                    const id = nodeEl2.dataset.nodeId;
+                    if (id === activeNodeId) {
+                        nodeEl2.classList.add("is-hovered");
+                        nodeEl2.classList.remove("is-connected");
+                    } else if (connectedIds.has(id)) {
+                        nodeEl2.classList.add("is-connected");
+                        nodeEl2.classList.remove("is-hovered");
+                    } else {
+                        nodeEl2.classList.remove("is-connected", "is-hovered");
+                    }
+                });
+            }
+
+            function resetHoverState() {
+                constellationLinksEl.querySelectorAll(".link").forEach((linkEl) => {
+                    linkEl.classList.remove("is-connected");
+                });
+                constellationNodesEl.querySelectorAll(".node").forEach((nodeEl2) => {
+                    nodeEl2.classList.remove("is-connected", "is-hovered");
+                });
+            }
+
             ((((snapshot.graphe || {}).relations) || [])).forEach((relation) => {
                 const key = [relation.source, relation.target, relation.type].join("|");
                 if (seenRelations.has(key)) {
@@ -2503,6 +2544,8 @@
                 const link = document.createElement("div");
                 const isMutedTemporally = temporalFocus && (!temporalFocus.activeIds.has(relation.source) || !temporalFocus.activeIds.has(relation.target));
                 link.className = "link" + (isMutedTemporally ? " is-muted-temporal" : "");
+                link.dataset.source = relation.source;
+                link.dataset.target = relation.target;
                 link.style.left = source.x + "%";
                 link.style.top = source.y + "%";
                 link.style.width = length + "%";
@@ -2517,6 +2560,7 @@
                 const isFilterFocus = nodeMatchesShellFilter(node, snapshot);
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
+                nodeEl.dataset.nodeId = node.id;
                 nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (runtimeState.shellFilter && runtimeState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
@@ -2526,6 +2570,11 @@
                 label.className = "node-label";
                 label.textContent = node.etiquette || node.id;
                 nodeEl.appendChild(label);
+
+                nodeEl.addEventListener("mouseenter", () => updateHoverState(node.id));
+                nodeEl.addEventListener("focus", () => updateHoverState(node.id));
+                nodeEl.addEventListener("mouseleave", resetHoverState);
+                nodeEl.addEventListener("blur", resetHoverState);
 
                 nodeEl.addEventListener("click", async () => {
                     try {

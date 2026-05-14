@@ -55,6 +55,9 @@ jobs:
           cp _build/bundle.js _site/bundle.js
           cp -r graphql _site/graphql
 
+      - name: Smoke test static artifact
+        run: python tests/smoke_static_site.py _site
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

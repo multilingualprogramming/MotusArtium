@@ -639,6 +639,94 @@ asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
 
 
 # ============================================================================
+# Requêtes paginées (curseur) pour le chargement progressif
+# ============================================================================
+
+asynchrone déf obtenir_artistes_mouvement_page(mouvement_id: chaine, premier: nombre = 20, apres: chaine = "") -> dictionnaire:
+    """Récupère une page d'artistes pour un mouvement avec pagination curseur."""
+    variables = {
+        "movementId": mouvement_id,
+        "languageCode": LANGUE_PAR_DEFAUT,
+        "first": premier
+    }
+    si apres:
+        variables["after"] = apres
+
+    donnees = attendre executer_requete_graphql("artists_by_movement.graphql", variables)
+    connexion = donnees.obtenir("searchItems", {})
+    edges = connexion.obtenir("edges", [])
+    page_info = connexion.obtenir("pageInfo", {})
+
+    artistes = []
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud:
+            artistes.ajouter(_normaliser_artiste_resume(noeud))
+
+    retour {
+        "artistes": artistes,
+        "a_page_suivante": page_info.obtenir("hasNextPage", faux),
+        "curseur_fin": page_info.obtenir("endCursor", "")
+    }
+
+
+asynchrone déf obtenir_oeuvres_artiste_page(artiste_id: chaine, premier: nombre = 20, apres: chaine = "") -> dictionnaire:
+    """Récupère une page d'œuvres pour un artiste avec pagination curseur."""
+    variables = {
+        "artistId": artiste_id,
+        "languageCode": LANGUE_PAR_DEFAUT,
+        "first": premier
+    }
+    si apres:
+        variables["after"] = apres
+
+    donnees = attendre executer_requete_graphql("artworks_by_artist.graphql", variables)
+    connexion = donnees.obtenir("searchItems", {})
+    edges = connexion.obtenir("edges", [])
+    page_info = connexion.obtenir("pageInfo", {})
+
+    oeuvres = []
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud:
+            oeuvres.ajouter(_normaliser_oeuvre_resume(noeud))
+
+    retour {
+        "oeuvres": oeuvres,
+        "a_page_suivante": page_info.obtenir("hasNextPage", faux),
+        "curseur_fin": page_info.obtenir("endCursor", "")
+    }
+
+
+asynchrone déf obtenir_oeuvres_musee_page(musee_id: chaine, premier: nombre = 20, apres: chaine = "") -> dictionnaire:
+    """Récupère une page d'œuvres pour un musée avec pagination curseur."""
+    variables = {
+        "museumId": musee_id,
+        "languageCode": LANGUE_PAR_DEFAUT,
+        "first": premier
+    }
+    si apres:
+        variables["after"] = apres
+
+    donnees = attendre executer_requete_graphql("artworks_by_museum.graphql", variables)
+    connexion = donnees.obtenir("searchItems", {})
+    edges = connexion.obtenir("edges", [])
+    page_info = connexion.obtenir("pageInfo", {})
+
+    oeuvres = []
+    pour edge dans edges:
+        noeud = edge.obtenir("node", {})
+        si noeud:
+            oeuvres.ajouter(_normaliser_oeuvre_resume(noeud))
+
+    retour {
+        "oeuvres": oeuvres,
+        "a_page_suivante": page_info.obtenir("hasNextPage", faux),
+        "curseur_fin": page_info.obtenir("endCursor", "")
+    }
+
+
+# ============================================================================
 # Recherche par texte / keyword search
 # ============================================================================
 

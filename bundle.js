@@ -135,6 +135,11 @@ async function basculer_visualisation(mode) {
   ui.etat.obtenir_instantane_etat();
 }
 
+async function basculer_langue(langue) {
+  'Basculer entre les langues';
+  await ui.etat.basculer_langue(langue);
+}
+
 async function principal() {
   "Point d'entrée principal de l'application";
   await initialiser_application();
@@ -163,10 +168,30 @@ async function fermer_barre_recherche() {
 
 async function ouvrir_panneau_detail() {
   'Ouvrir le panneau de détails';
-  ui.etat.panneau_detail_visible = true;
+  await ui.composants.panneau_detail.ouvrir_panneau_detail();
 }
 
 async function fermer_panneau_detail() {
   'Fermer le panneau de détails';
-  ui.etat.panneau_detail_visible = false;
+  await ui.composants.panneau_detail.fermer_panneau_detail();
+}
+
+async function charger_mouvement_artistes_page_suivante() {
+  "Charger la page suivante d'artistes pour le mouvement courant";
+  return await ui.etat.charger_mouvement_artistes_page_suivante();
+}
+
+async function charger_artiste_oeuvres_page_suivante() {
+  "Charger la page suivante d'œuvres pour l'artiste courant";
+  return await ui.etat.charger_artiste_oeuvres_page_suivante();
+}
+
+async function charger_musee_oeuvres_page_suivante() {
+  "Charger la page suivante d'œuvres pour le musée courant";
+  return await ui.etat.charger_musee_oeuvres_page_suivante();
+}
+
+async function creer_vue_polyglot_studio(conteneur, entite_id) {
+  'Créer et initialiser la visualisation polyglot studio (stub - implementation in HTML)';
+  passe;
 }

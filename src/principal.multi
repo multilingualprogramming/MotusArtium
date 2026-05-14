@@ -59,21 +59,71 @@ asynchrone déf initialiser_application():
     attendre ui.etat.charger_mouvement("Q40415")
 
 
-# Re-export search function from interactions module
+# ============================================================================
+# Recherche et navigation
+# ============================================================================
+
 asynchrone déf lancer_recherche(requete):
     """Lancer une recherche textuelle"""
     attendre ui.interactions.recherche.lancer_recherche(requete)
 
 
-# Stub functions for UI rendering - implementations provided by HTML
+asynchrone déf ouvrir_barre_recherche():
+    """Ouvrir la barre de recherche"""
+    attendre ui.interactions.recherche.ouvrir_barre_recherche()
+
+
+asynchrone déf fermer_barre_recherche():
+    """Fermer la barre de recherche"""
+    attendre ui.interactions.recherche.fermer_barre_recherche()
+
+
+# ============================================================================
+# Panneau de détails
+# ============================================================================
+
+asynchrone déf ouvrir_panneau_detail():
+    """Ouvrir le panneau de détails"""
+    attendre ui.composants.panneau_detail.ouvrir_panneau_detail()
+
+
+asynchrone déf fermer_panneau_detail():
+    """Fermer le panneau de détails"""
+    attendre ui.composants.panneau_detail.fermer_panneau_detail()
+
+
 déf rendre_panneau_detail():
-    """Rendre le panneau de détails (stub - implementation in HTML)"""
-    retour ""
+    """Rendre le panneau de détails depuis le composant Multilingual"""
+    retour ui.composants.panneau_detail.rendre_panneau_detail()
+
 
 déf rendre_barre_recherche():
-    """Rendre la barre de recherche (stub - implementation in HTML)"""
-    retour ""
+    """Rendre la barre de recherche depuis le composant Multilingual"""
+    retour ui.composants.barre_recherche.rendre_barre_recherche()
 
+
+# ============================================================================
+# Pagination curseur — re-exports depuis ui.etat
+# ============================================================================
+
+asynchrone déf charger_mouvement_artistes_page_suivante():
+    """Charger la page suivante d'artistes pour le mouvement courant"""
+    retour attendre ui.etat.charger_mouvement_artistes_page_suivante()
+
+
+asynchrone déf charger_artiste_oeuvres_page_suivante():
+    """Charger la page suivante d'œuvres pour l'artiste courant"""
+    retour attendre ui.etat.charger_artiste_oeuvres_page_suivante()
+
+
+asynchrone déf charger_musee_oeuvres_page_suivante():
+    """Charger la page suivante d'œuvres pour le musée courant"""
+    retour attendre ui.etat.charger_musee_oeuvres_page_suivante()
+
+
+# ============================================================================
+# Polyglot studio
+# ============================================================================
 
 asynchrone déf creer_vue_polyglot_studio(conteneur, entite_id):
     """Créer et initialiser la visualisation polyglot studio (stub - implementation in HTML)"""

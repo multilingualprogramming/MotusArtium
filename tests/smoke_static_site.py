@@ -43,6 +43,41 @@ PAGINATED_QUERIES = [
     "graphql/movements_catalog.graphql",
 ]
 
+# Async functions compiled from principal.multi into bundle.js by the
+# Multilingual UI-lowering pass.  Only async functions are emitted; sync
+# helper functions (rendre_panneau_detail, rendre_barre_recherche) are not
+# emitted by the compiler and remain in the JS layer.
+#
+# Adding a name here means: it must live in bundle.js, not only in app.js.
+# This list grows as logic migrates from app.js into Multilingual source.
+BUNDLE_EXPORTS = [
+    # Core entity loaders
+    "charger_mouvement",
+    "charger_artiste",
+    "charger_oeuvre",
+    "basculer_visualisation",
+    # Search and navigation bridge
+    "lancer_recherche",
+    "ouvrir_barre_recherche",
+    "fermer_barre_recherche",
+    # Detail panel bridge
+    "ouvrir_panneau_detail",
+    "fermer_panneau_detail",
+    # Cursor-based pagination (Phase 1 addition)
+    "charger_mouvement_artistes_page_suivante",
+    "charger_artiste_oeuvres_page_suivante",
+    "charger_musee_oeuvres_page_suivante",
+]
+
+# Every entity-loader in bundle.js must delegate to ui.etat, not re-implement.
+# Checking for these strings ensures the bundle stays a thin bridge.
+BUNDLE_DELEGATION_MARKERS = [
+    "ui.etat.charger_mouvement",
+    "ui.etat.charger_artiste",
+    "ui.etat.charger_oeuvre",
+    "ui.etat.basculer_visualisation",
+]
+
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
@@ -93,6 +128,17 @@ def validate_files(site_root: pathlib.Path) -> None:
         query = (site_root / query_path).read_text(encoding="utf-8")
         for expected in ["$first", "$after", "pageInfo", "endCursor", "hasNextPage"]:
             assert_contains(query, expected, query_path)
+
+    validate_bundle_exports(site_root)
+
+
+def validate_bundle_exports(site_root: pathlib.Path) -> None:
+    """Check that bundle.js contains all expected Multilingual-owned exports."""
+    bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
+    for name in BUNDLE_EXPORTS:
+        assert_contains(bundle_js, name, "bundle.js")
+    for marker in BUNDLE_DELEGATION_MARKERS:
+        assert_contains(bundle_js, marker, "bundle.js delegation")
 
 
 def validate_http(site_root: pathlib.Path) -> None:

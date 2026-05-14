@@ -1,220 +1,17 @@
-        // Provide UI rendering functions with proper HTML generation
-        if (typeof rendre_panneau_detail !== "function") {
-            window.rendre_panneau_detail = function() {
-                if (!window.ui || !window.ui.etat) return "";
-
-                const entite = window.ui.etat.entite_selectionnee || {};
-                if (!entite.id) return "";
-
-                const type = entite.type || "inconnu";
-                const donnees = entite.donnees || {};
-                let html = '<div class="detail-section">';
-
-                // Get appropriate label based on type
-                let label = entite.id;
-                if (type === "mouvement") {
-                    label = donnees.movementLabel?.value || entite.id;
-                } else if (type === "artiste") {
-                    label = donnees.artistLabel?.value || entite.id;
-                } else if (type === "oeuvre") {
-                    label = donnees.artworkLabel?.value || entite.id;
+        // Detail panel rendering delegates to ui.composants.panneau_detail (panneau_detail.multi).
+        // The Multilingual sync lowering pass does not emit rendre_panneau_detail into bundle.js,
+        // so this bridge is the single definition of window.rendre_panneau_detail.
+        window.rendre_panneau_detail = function() {
+            try {
+                const render = window.ui?.composants?.panneau_detail?.rendre_panneau_detail;
+                if (typeof render === "function") {
+                    return render() || "";
                 }
-
-                html += '<h3>' + label + '</h3>';
-                html += '<p><strong>Type:</strong> ' + type + '</p>';
-                html += '<p><strong>ID:</strong> ' + entite.id + '</p>';
-
-                // Add type-specific details
-                if (type === "mouvement") {
-                    const debut = donnees.startTime?.value;
-                    const fin = donnees.endTime?.value;
-                    if (debut || fin) {
-                        html += '<p><strong>Période:</strong> ' + (debut || '?') + ' - ' + (fin || '?') + '</p>';
-                    }
-                } else if (type === "artiste") {
-                    const naissance = donnees.birthTime?.value;
-                    const deces = donnees.deathTime?.value;
-                    if (naissance || deces) {
-                        html += '<p><strong>Dates:</strong> ' + (naissance || '?') + ' - ' + (deces || '?') + '</p>';
-                    }
-                }
-
-                html += '</div>';
-                return html;
-            };
-        }
-
-        if (typeof rendre_barre_recherche !== "function") {
-            window.rendre_barre_recherche = function() {
-                return '<input type="text" placeholder="Rechercher..." id="search-input" class="search-input">';
-            };
-        }
-
-        function normaliseDetailType(type) {
-            const normalised = String(type || "").toLowerCase();
-            if (normalised.includes("movement") || normalised.includes("mouvement")) {
-                return "mouvement";
-            }
-            if (normalised.includes("artist") || normalised.includes("artiste")) {
-                return "artiste";
-            }
-            if (normalised.includes("work") || normalised.includes("oeuvre")) {
-                return "oeuvre";
-            }
-            if (normalised.includes("museum") || normalised.includes("musee") || normalised.includes("gallery") || normalised.includes("galerie")) {
-                return "musee";
-            }
-            return normalised || "inconnu";
-        }
-
-        function escapeHtml(value) {
-            return String(value || "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#39;");
-        }
-
-        function readSelectedEntity() {
-            const snapshot = typeof readRuntimeSnapshot === "function" ? readRuntimeSnapshot() : null;
-            const entity = snapshot?.entite_selectionnee || {};
-            return {
-                id: entity.id || snapshot?.entite_selectionnee_id || "",
-                type: normaliseDetailType(entity.type || snapshot?.entite_selectionnee_type),
-                donnees: entity.donnees || {}
-            };
-        }
-
-        function readDetailValue(value) {
-            if (value == null) {
-                return "";
-            }
-            if (typeof value === "string") {
-                return value;
-            }
-            if (typeof value === "object") {
-                if (typeof value.value === "string") {
-                    return value.value;
-                }
-                if (typeof value.label === "string") {
-                    return value.label;
-                }
-                if (typeof value.content === "string") {
-                    return value.content;
-                }
-                if (typeof value.time === "string") {
-                    return value.time;
-                }
+            } catch (e) {
+                console.warn("panneau_detail render error:", e);
             }
             return "";
-        }
-
-        function buildDetailPanelFallback(entity) {
-            if (!entity.id) {
-                return "";
-            }
-
-            const type = normaliseDetailType(entity.type);
-            const donnees = entity.donnees || {};
-            const label = type === "mouvement"
-                ? (readDetailValue(donnees.movementLabel) || entity.id)
-                : type === "artiste"
-                    ? (readDetailValue(donnees.artistLabel) || entity.id)
-                    : type === "oeuvre"
-                        ? (readDetailValue(donnees.artworkLabel) || entity.id)
-                        : type === "musee"
-                            ? (readDetailValue(donnees.museumLabel || donnees.label) || entity.id)
-                        : type === "sujet"
-                            ? (readDetailValue(donnees.subjectLabel || donnees.label) || entity.id)
-                        : entity.id;
-            const metaRows = [];
-
-            if (type === "mouvement") {
-                const debut = readDetailValue(donnees.startTime);
-                const fin = readDetailValue(donnees.endTime);
-                const pays = readDetailValue(donnees.country);
-                if (debut || fin) {
-                    metaRows.push(`<p class="detail-row">${escapeHtml([debut && "Debut: " + debut, fin && "Fin: " + fin].filter(Boolean).join(" | "))}</p>`);
-                }
-                if (pays) {
-                    metaRows.push(`<p class="detail-row">Pays: ${escapeHtml(pays)}</p>`);
-                }
-            } else if (type === "artiste") {
-                const naissance = readDetailValue(donnees.birthTime || donnees.birthDate);
-                const deces = readDetailValue(donnees.deathTime || donnees.deathDate);
-                const lieuNaissance = readDetailValue(donnees.birthPlace);
-                if (naissance || deces) {
-                    metaRows.push(`<p class="detail-row">${escapeHtml([naissance && "Ne: " + naissance, deces && "Decede: " + deces].filter(Boolean).join(" | "))}</p>`);
-                }
-                if (lieuNaissance) {
-                    metaRows.push(`<p class="detail-row">Lieu de naissance: ${escapeHtml(lieuNaissance)}</p>`);
-                }
-            } else if (type === "oeuvre") {
-                const createur = readDetailValue(donnees.creator);
-                const date = readDetailValue(donnees.creationDate || donnees.inceptionDate);
-                const musee = readDetailValue(donnees.museum);
-                if (createur) {
-                    metaRows.push(`<p class="detail-row">Createur: ${escapeHtml(createur)}</p>`);
-                }
-                if (date) {
-                    metaRows.push(`<p class="detail-row">Date: ${escapeHtml(date)}</p>`);
-                }
-                if (musee) {
-                    metaRows.push(`<p class="detail-row">Musee: ${escapeHtml(musee)}</p>`);
-                }
-            } else if (type === "musee") {
-                const count = readDetailValue(donnees.artworkCount);
-                if (count) {
-                    metaRows.push(`<p class="detail-row">Oeuvres chargees: ${escapeHtml(count)}</p>`);
-                }
-            } else if (type === "sujet") {
-                const count = readDetailValue(donnees.artworkCount);
-                if (count) {
-                    metaRows.push(`<p class="detail-row">Oeuvres liees: ${escapeHtml(count)}</p>`);
-                }
-            }
-
-            return `<section class="detail-section detail-section--spotlight">
-                <p class="detail-kicker">${escapeHtml(type)}</p>
-                <h3>${escapeHtml(label)}</h3>
-                <p class="detail-row detail-row--id">${escapeHtml(entity.id)}</p>
-                ${metaRows.join("")}
-            </section>`;
-        }
-
-        const runtimeDetailRenderer = typeof window.rendre_panneau_detail === "function" &&
-            !String(window.rendre_panneau_detail).includes("<strong>ID:</strong>")
-            ? window.rendre_panneau_detail.bind(window)
-            : null;
-
-        if (!runtimeDetailRenderer) {
-            window.rendre_panneau_detail = function() {
-                return buildDetailPanelFallback(readSelectedEntity());
-            };
-        }
-
-        if (typeof window.ouvrir_panneau_detail !== "function") {
-            window.ouvrir_panneau_detail = async function() {
-                if (window.ui && window.ui.etat) {
-                    window.ui.etat.panneau_detail_visible = true;
-                }
-                if (typeof window.renderDetailPanel === "function") {
-                    window.renderDetailPanel();
-                }
-            };
-        }
-
-        if (typeof window.fermer_panneau_detail !== "function") {
-            window.fermer_panneau_detail = async function() {
-                if (window.ui && window.ui.etat) {
-                    window.ui.etat.panneau_detail_visible = false;
-                }
-                if (typeof window.renderDetailPanel === "function") {
-                    window.renderDetailPanel();
-                }
-            };
-        }
+        };
 
         window.renderDetailPanel = function() {
             const detailContainer = document.getElementById("detail-panel-container");
@@ -231,17 +28,7 @@
                 return;
             }
 
-            let html = "";
-            if (runtimeDetailRenderer) {
-                try {
-                    html = runtimeDetailRenderer() || "";
-                } catch (error) {
-                    console.warn("Error in runtime detail renderer:", error);
-                }
-            }
-            if (!html) {
-                html = buildDetailPanelFallback(readSelectedEntity());
-            }
+            const html = window.rendre_panneau_detail() || "";
             if (html) {
                 detailRoot.innerHTML = html;
                 detailContainer.classList.add("is-active");

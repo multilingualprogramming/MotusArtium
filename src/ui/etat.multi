@@ -34,6 +34,17 @@ observer var mode_langue_actif = "fr"  # "fr" ou "en"
 observer var afficher_surfaces_paralleles = vrai  # afficher cote a cote ou par onglets
 observer var entite_multilingue_focus = ""  # id de l'entite en focus pour polyglot-studio
 
+# Etat de pagination curseur pour le chargement progressif
+observer var curseur_artistes_mouvement = ""
+observer var a_page_suivante_artistes_mouvement = faux
+observer var source_id_artistes_mouvement = ""
+observer var curseur_oeuvres_artiste = ""
+observer var a_page_suivante_oeuvres_artiste = faux
+observer var source_id_oeuvres_artiste = ""
+observer var curseur_oeuvres_musee = ""
+observer var a_page_suivante_oeuvres_musee = faux
+observer var source_id_oeuvres_musee = ""
+
 
 déf _extraire_id_entite(champ: dictionnaire) -> chaine:
     valeur = champ.obtenir("value", "")
@@ -226,6 +237,9 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
         observer artiste_etendu_id = ""
         observer oeuvre_etendue_id = ""
         observer oeuvre_focus_id = ""
+        observer source_id_artistes_mouvement = mouvement_id
+        observer curseur_artistes_mouvement = contrat.obtenir("curseur_fin", "")
+        observer a_page_suivante_artistes_mouvement = contrat.obtenir("a_page_suivante", faux)
         observer affichage_chargement = faux
         attendre _rafraichir_etiquettes_multilingues(mouvement_id)
         retour mouvement
@@ -285,6 +299,9 @@ asynchrone déf charger_artiste(artiste_id: chaine):
         observer artiste_etendu_id = artiste_id
         observer oeuvre_etendue_id = ""
         observer oeuvre_focus_id = ""
+        observer source_id_oeuvres_artiste = artiste_id
+        observer curseur_oeuvres_artiste = contrat.obtenir("curseur_fin", "")
+        observer a_page_suivante_oeuvres_artiste = contrat.obtenir("a_page_suivante", faux)
         observer affichage_chargement = faux
         attendre _rafraichir_etiquettes_multilingues(artiste_id)
         retour artiste
@@ -581,6 +598,105 @@ déf obtenir_instantane_etat() -> dictionnaire:
         "entite_selectionnee": obtenir_entite_selectionnee(),
         "graphe": graphe.exporter_json()
     }
+
+
+asynchrone déf charger_mouvement_artistes_page_suivante():
+    """Charger la page suivante d'artistes pour le mouvement en cours."""
+    si non source_id_artistes_mouvement ou non a_page_suivante_artistes_mouvement:
+        retour nul
+
+    affichage_chargement = vrai
+
+    essayer:
+        page = attendre donnees.requetes.obtenir_artistes_mouvement_page(
+            source_id_artistes_mouvement,
+            20,
+            curseur_artistes_mouvement
+        )
+
+        pour artiste dans page.obtenir("artistes", []):
+            artiste_id = _extraire_id_entite(artiste.obtenir("artist", {}))
+            artiste_label = _etiquette_entite(artiste, ["artistLabel"], "Artiste inconnu")
+            si artiste_id:
+                _mettre_en_cache(artiste_id, artiste)
+                _ajouter_noeud(artiste_id, "artiste", artiste_label, artiste)
+                _ajouter_relation(source_id_artistes_mouvement, artiste_id, "contient_artiste")
+
+        observer curseur_artistes_mouvement = page.obtenir("curseur_fin", "")
+        observer a_page_suivante_artistes_mouvement = page.obtenir("a_page_suivante", faux)
+        observer affichage_chargement = faux
+        retour page
+
+    sauf erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+        retour nul
+
+
+asynchrone déf charger_artiste_oeuvres_page_suivante():
+    """Charger la page suivante d'œuvres pour l'artiste en cours."""
+    si non source_id_oeuvres_artiste ou non a_page_suivante_oeuvres_artiste:
+        retour nul
+
+    affichage_chargement = vrai
+
+    essayer:
+        page = attendre donnees.requetes.obtenir_oeuvres_artiste_page(
+            source_id_oeuvres_artiste,
+            20,
+            curseur_oeuvres_artiste
+        )
+
+        pour oeuvre dans page.obtenir("oeuvres", []):
+            oeuvre_id = _extraire_id_entite(oeuvre.obtenir("artwork", {}))
+            oeuvre_label = _etiquette_entite(oeuvre, ["artworkLabel"], "Oeuvre inconnue")
+            si oeuvre_id:
+                _mettre_en_cache(oeuvre_id, oeuvre)
+                _ajouter_noeud(oeuvre_id, "oeuvre", oeuvre_label, oeuvre)
+                _ajouter_relation(source_id_oeuvres_artiste, oeuvre_id, "a_cree")
+
+        observer curseur_oeuvres_artiste = page.obtenir("curseur_fin", "")
+        observer a_page_suivante_oeuvres_artiste = page.obtenir("a_page_suivante", faux)
+        observer affichage_chargement = faux
+        retour page
+
+    sauf erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+        retour nul
+
+
+asynchrone déf charger_musee_oeuvres_page_suivante():
+    """Charger la page suivante d'œuvres pour le musée en cours."""
+    si non source_id_oeuvres_musee ou non a_page_suivante_oeuvres_musee:
+        retour nul
+
+    affichage_chargement = vrai
+
+    essayer:
+        page = attendre donnees.requetes.obtenir_oeuvres_musee_page(
+            source_id_oeuvres_musee,
+            20,
+            curseur_oeuvres_musee
+        )
+
+        pour oeuvre dans page.obtenir("oeuvres", []):
+            oeuvre_id = _extraire_id_entite(oeuvre.obtenir("artwork", {}))
+            oeuvre_label = _etiquette_entite(oeuvre, ["artworkLabel"], "Oeuvre inconnue")
+            si oeuvre_id:
+                _mettre_en_cache(oeuvre_id, oeuvre)
+                _ajouter_noeud(oeuvre_id, "musee_oeuvre", oeuvre_label, oeuvre)
+                _ajouter_relation(source_id_oeuvres_musee, oeuvre_id, "expose")
+
+        observer curseur_oeuvres_musee = page.obtenir("curseur_fin", "")
+        observer a_page_suivante_oeuvres_musee = page.obtenir("a_page_suivante", faux)
+        observer affichage_chargement = faux
+        retour page
+
+    sauf erreur:
+        observer message_erreur = chaine(erreur)
+        observer affichage_chargement = faux
+        retour nul
 
 
 asynchrone déf reinitialiser_etat():

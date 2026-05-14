@@ -146,6 +146,8 @@
             shellFilter: null,
             shellFilterEnabled: false,
             constellationZoom: 1,
+            constellationPanX: 0,
+            constellationPanY: 0,
             replayingSessionId: 0
         };
 
@@ -748,6 +750,8 @@
             runtimeState.shellFilterEnabled = false;
             runtimeState.multilingualEntityLabels = {};
             runtimeState.constellationZoom = 1;
+            runtimeState.constellationPanX = 0;
+            runtimeState.constellationPanY = 0;
             buildShellFilter();
             setActiveButton(modeButtons, modeButtons.find((button) => button.dataset.mode === "observatory"));
             renderConstellationZoomControls();
@@ -1689,25 +1693,33 @@
 
         function renderConstellationZoomControls() {
             const zoom = runtimeState.constellationZoom || 1;
+            const panX = runtimeState.constellationPanX || 0;
+            const panY = runtimeState.constellationPanY || 0;
+            const transform = "translate(" + panX + "px, " + panY + "px) scale(" + zoom + ")";
             if (constellationLinksEl) {
-                constellationLinksEl.style.transform = "scale(" + zoom + ")";
+                constellationLinksEl.style.transform = transform;
             }
             if (constellationNodesEl) {
-                constellationNodesEl.style.transform = "scale(" + zoom + ")";
+                constellationNodesEl.style.transform = transform;
+                constellationNodesEl.classList.toggle("is-zoomed", zoom >= 1.3);
             }
             if (constellationZoomReadoutEl) {
                 constellationZoomReadoutEl.textContent = Math.round(zoom * 100) + "%";
             }
             if (constellationZoomOutEl) {
-                constellationZoomOutEl.disabled = zoom <= 0.7;
+                constellationZoomOutEl.disabled = zoom <= 0.3;
             }
             if (constellationZoomInEl) {
-                constellationZoomInEl.disabled = zoom >= 1.6;
+                constellationZoomInEl.disabled = zoom >= 2.5;
+            }
+            const constellationEl = document.querySelector(".constellation");
+            if (constellationEl) {
+                constellationEl.classList.toggle("can-pan", zoom > 1.01);
             }
         }
 
         function setConstellationZoom(nextZoom) {
-            runtimeState.constellationZoom = clamp(nextZoom, 0.7, 1.6);
+            runtimeState.constellationZoom = clamp(nextZoom, 0.3, 2.5);
             renderConstellationZoomControls();
         }
 
@@ -2393,21 +2405,83 @@
 
         if (constellationZoomOutEl) {
             constellationZoomOutEl.addEventListener("click", () => {
-                setConstellationZoom((runtimeState.constellationZoom || 1) - 0.15);
+                setConstellationZoom((runtimeState.constellationZoom || 1) - 0.2);
             });
         }
 
         if (constellationZoomInEl) {
             constellationZoomInEl.addEventListener("click", () => {
-                setConstellationZoom((runtimeState.constellationZoom || 1) + 0.15);
+                setConstellationZoom((runtimeState.constellationZoom || 1) + 0.2);
             });
         }
 
         if (constellationZoomResetEl) {
             constellationZoomResetEl.addEventListener("click", () => {
+                runtimeState.constellationPanX = 0;
+                runtimeState.constellationPanY = 0;
                 setConstellationZoom(1);
             });
         }
+
+        // Scroll-to-zoom and drag-to-pan for the constellation
+        (function () {
+            const constellationEl = document.querySelector(".constellation");
+            if (!constellationEl) {
+                return;
+            }
+
+            constellationEl.addEventListener("wheel", (e) => {
+                e.preventDefault();
+                const step = 0.15;
+                const delta = e.deltaY > 0 ? -step : step;
+                setConstellationZoom((runtimeState.constellationZoom || 1) + delta);
+            }, { passive: false });
+
+            let isPanning = false;
+            let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
+
+            constellationEl.addEventListener("pointerdown", (e) => {
+                if (e.target.closest(".node") || e.target.closest(".constellation-controls")) {
+                    return;
+                }
+                if ((runtimeState.constellationZoom || 1) <= 1.01) {
+                    return;
+                }
+                isPanning = true;
+                panStart = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    panX: runtimeState.constellationPanX || 0,
+                    panY: runtimeState.constellationPanY || 0
+                };
+                constellationEl.setPointerCapture(e.pointerId);
+                constellationEl.classList.add("is-panning");
+                e.preventDefault();
+            });
+
+            constellationEl.addEventListener("pointermove", (e) => {
+                if (!isPanning) {
+                    return;
+                }
+                runtimeState.constellationPanX = panStart.panX + (e.clientX - panStart.x);
+                runtimeState.constellationPanY = panStart.panY + (e.clientY - panStart.y);
+                renderConstellationZoomControls();
+            });
+
+            constellationEl.addEventListener("pointerup", () => {
+                if (isPanning) {
+                    isPanning = false;
+                    constellationEl.classList.remove("is-panning");
+                }
+            });
+
+            constellationEl.addEventListener("pointercancel", () => {
+                if (isPanning) {
+                    isPanning = false;
+                    constellationEl.classList.remove("is-panning");
+                }
+            });
+        }());
 
         function addGraphNode(id, type, label, data) {
             if (!id) {
@@ -2824,12 +2898,21 @@
         function semanticLayoutSectors(selectedNode, nodes, relationByTarget, relationBySource) {
             const selectedType = String((selectedNode && selectedNode.type) || "").toLowerCase();
             const sectors = {
-                primary: { start: -150, end: 150, nodes: [], radii: [22, 32, 41, 48] },
-                left: { start: 145, end: 215, nodes: [], radii: [24, 35, 45] },
-                right: { start: -35, end: 35, nodes: [], radii: [24, 35, 45] },
-                top: { start: -130, end: -50, nodes: [], radii: [24, 35, 45] },
-                bottom: { start: 55, end: 125, nodes: [], radii: [24, 34, 43, 49] }
+                primary: { start: -150, end: 150, nodes: [], radii: [22, 32, 41, 47] },
+                left: { start: 145, end: 215, nodes: [], radii: [24, 35, 44] },
+                right: { start: -35, end: 35, nodes: [], radii: [24, 35, 44] },
+                top: { start: -130, end: -50, nodes: [], radii: [24, 35, 44] },
+                bottom: { start: 55, end: 125, nodes: [], radii: [24, 34, 42, 47] }
             };
+
+            // Movements typically have many artists → widen artist arc to full bottom hemisphere
+            // and pull primary sector back so it doesn't also crowd the bottom
+            if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
+                sectors.bottom.start = 18;
+                sectors.bottom.end = 162;
+                sectors.bottom.radii = [22, 31, 40, 46];
+                sectors.primary.end = 14;
+            }
 
             nodes.forEach((node) => {
                 const relation = relationByTarget.get(node.id) || relationBySource.get(node.id) || "";

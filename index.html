@@ -179,26 +179,23 @@
                         </div>
                     </div>
 
+                    <div class="stage-trail-bar" role="status" aria-live="polite">
+                        <strong>Current Trail</strong>
+                        <span id="stage-trail-text">Selection should always produce a visual focus, a GraphQL
+                            document shift, and a language-aware summary.</span>
+                        <span class="collection-status" id="collection-status"></span>
+                        <button type="button" class="pagination-button" id="chronology-load-more" aria-label="Charger plus de mouvements">Charger plus</button>
+                    </div>
+
                     <div class="constellation" role="main" aria-label="Interactive constellation visualization of art movements, artists, and influences">
                         <div class="constellation-grid" aria-hidden="true"></div>
                         <div class="constellation-links" id="constellation-links" aria-hidden="true"></div>
                         <div class="constellation-nodes" id="constellation-nodes" role="group" aria-label="Interactive entity nodes"></div>
                         <div class="constellation-controls" aria-label="Constellation zoom controls">
-                            <button type="button" class="icon-button" id="constellation-zoom-out" aria-label="Zoom out" title="Zoom out">-</button>
+                            <button type="button" class="icon-button" id="constellation-zoom-out" aria-label="Zoom out" title="Zoom out (scroll down)">−</button>
                             <span class="zoom-readout" id="constellation-zoom-readout" aria-live="polite">100%</span>
-                            <button type="button" class="icon-button" id="constellation-zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
-                            <button type="button" class="icon-button" id="constellation-zoom-reset" aria-label="Reset zoom" title="Reset zoom">1:1</button>
-                        </div>
-
-                        <div class="stage-overlay">
-                            <div class="stage-caption">
-                                <strong>Current Trail</strong>
-                                <span id="stage-trail-text">Selection should always produce a visual focus, a GraphQL
-                                    document shift, and a language-aware summary. This overlay is where we can narrate
-                                    those transitions.</span>
-                                <span class="collection-status" id="collection-status"></span>
-                                <button type="button" class="pagination-button" id="chronology-load-more" aria-label="Charger plus de mouvements">Charger plus</button>
-                            </div>
+                            <button type="button" class="icon-button" id="constellation-zoom-in" aria-label="Zoom in" title="Zoom in (scroll up)">+</button>
+                            <button type="button" class="icon-button" id="constellation-zoom-reset" aria-label="Reset zoom and pan" title="Reset view">1:1</button>
                         </div>
                     </div>
 

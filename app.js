@@ -1830,7 +1830,7 @@
             }
             const constellationEl = document.querySelector(".constellation");
             if (constellationEl) {
-                constellationEl.classList.toggle("can-pan", zoom > 1.01);
+                constellationEl.classList.add("can-pan");
             }
             renderConstellationMinimap();
         }
@@ -2622,9 +2622,6 @@
                 if (e.target.closest(".node") || e.target.closest(".constellation-controls")) {
                     return;
                 }
-                if ((runtimeState.constellationZoom || 1) <= 1.01) {
-                    return;
-                }
                 isPanning = true;
                 panStart = {
                     x: e.clientX,
@@ -2641,8 +2638,10 @@
                 if (!isPanning) {
                     return;
                 }
-                runtimeState.constellationPanX = panStart.panX + (e.clientX - panStart.x);
-                runtimeState.constellationPanY = panStart.panY + (e.clientY - panStart.y);
+                const rect = constellationEl.getBoundingClientRect();
+                const maxPan = Math.max(rect.width, rect.height) * 0.6;
+                runtimeState.constellationPanX = Math.max(-maxPan, Math.min(maxPan, panStart.panX + (e.clientX - panStart.x)));
+                runtimeState.constellationPanY = Math.max(-maxPan, Math.min(maxPan, panStart.panY + (e.clientY - panStart.y)));
                 renderConstellationZoomControls();
             });
 
@@ -3374,15 +3373,24 @@
                 constellationLinksEl.appendChild(link);
             });
 
+            // Nodes with a direct relation to the selected entity get is-context-detail
+            // so their labels stay readable in dense mode without requiring hover/zoom.
+            const directRelationIds = new Set();
+            (((snapshot.graphe || {}).relations) || []).forEach((rel) => {
+                if (rel.source === selectedId && visibleNodeIds.has(rel.target)) directRelationIds.add(rel.target);
+                if (rel.target === selectedId && visibleNodeIds.has(rel.source)) directRelationIds.add(rel.source);
+            });
+
             nodes.forEach((node) => {
                 const position = positions.get(node.id) || { x: 50, y: 50 };
                 const isTemporalFocus = temporalFocus && temporalFocus.activeIds.has(node.id);
                 const isMutedTemporally = temporalFocus && !temporalFocus.activeIds.has(node.id);
                 const isFilterFocus = nodeMatchesShellFilter(node, snapshot);
+                const isContextDetail = directRelationIds.has(node.id);
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
                 nodeEl.dataset.nodeId = node.id;
-                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (runtimeState.shellFilter && runtimeState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
+                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (isContextDetail ? " is-context-detail" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (runtimeState.shellFilter && runtimeState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
                 const degree = nodeDegree.get(node.id) || 0;

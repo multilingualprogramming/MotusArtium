@@ -17,7 +17,7 @@ It combines a browser shell, a Multilingual runtime, and dedicated Wikidata quer
 - Dedicated entity loading for movements, artists, artworks, museums, and subjects.
 - Query-aware UI with visible active document, variables, response shape, and status.
 - Footer context for selected entity, exploration trail, temporal rail, and live query preview.
-- URL deep-linking such as `?entity=Q40415&type=movement` and `?entity=Q160112&type=museum`.
+- URL deep-linking such as `?entity=Q40415&type=movement`, `?entity=Q160112&type=museum`, and mode-aware links like `?entity=Q878985&type=movement&mode=temporal-river`.
 - Multilingual-oriented shell and runtime integration built around the French-first Multilingual language source.
 
 ## How It Works

@@ -354,6 +354,9 @@
                     }
 
                     syncShellFromSnapshot(readRuntimeSnapshot());
+                    if (typeof applyModeFromUrl === "function") {
+                        await applyModeFromUrl();
+                    }
                     renderConstellation();
                     renderRuntimeState();
                     await refreshMultilingualEntityLabels();
@@ -501,7 +504,10 @@
                             : (entityType === "subject" ? "sujet" : "mouvement")));
 
                 if (window.history && typeof window.history.replaceState === "function") {
-                    window.history.replaceState({}, "", `?entity=${encodeURIComponent(entityId)}&type=${encodeURIComponent(entityType)}`);
+                    const params = new URLSearchParams(window.location.search);
+                    params.set("entity", entityId);
+                    params.set("type", entityType);
+                    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
                 }
 
                 if (window.ui && window.ui.etat && typeof window.ui.etat.reinitialiser_graphe === "function") {

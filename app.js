@@ -3426,6 +3426,14 @@
                 if (visibleNodeIds.has(rel.target)) nodeDegree.set(rel.target, (nodeDegree.get(rel.target) || 0) + 1);
             });
 
+            // Direct context should stay readable in Temporal River even when it falls
+            // outside the active date window.
+            const directRelationIds = new Set();
+            (((snapshot.graphe || {}).relations) || []).forEach((rel) => {
+                if (rel.source === selectedId && visibleNodeIds.has(rel.target)) directRelationIds.add(rel.target);
+                if (rel.target === selectedId && visibleNodeIds.has(rel.source)) directRelationIds.add(rel.source);
+            });
+
             function updateHoverState(activeNodeId) {
                 const nodeEls = constellationNodesEl.querySelectorAll(".node");
                 const linkEls = constellationLinksEl.querySelectorAll(".link");
@@ -3483,7 +3491,13 @@
                     return;
                 }
 
-                const isMutedTemporally = temporalFocus && (!temporalFocus.activeIds.has(relation.source) || !temporalFocus.activeIds.has(relation.target));
+                const hasTemporalContext = temporalFocus && (
+                    temporalFocus.activeIds.has(relation.source) ||
+                    temporalFocus.activeIds.has(relation.target) ||
+                    relation.source === selectedId ||
+                    relation.target === selectedId
+                );
+                const isMutedTemporally = temporalFocus && !hasTemporalContext;
                 const link = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 link.setAttribute("class", "link" + (isMutedTemporally ? " is-muted-temporal" : ""));
                 link.dataset.source = relation.source;
@@ -3501,20 +3515,12 @@
                 constellationLinksEl.appendChild(link);
             });
 
-            // Nodes with a direct relation to the selected entity get is-context-detail
-            // so their labels stay readable in dense mode without requiring hover/zoom.
-            const directRelationIds = new Set();
-            (((snapshot.graphe || {}).relations) || []).forEach((rel) => {
-                if (rel.source === selectedId && visibleNodeIds.has(rel.target)) directRelationIds.add(rel.target);
-                if (rel.target === selectedId && visibleNodeIds.has(rel.source)) directRelationIds.add(rel.source);
-            });
-
             nodes.forEach((node) => {
                 const position = positions.get(node.id) || { x: 50, y: 50 };
                 const isTemporalFocus = temporalFocus && temporalFocus.activeIds.has(node.id);
-                const isMutedTemporally = temporalFocus && !temporalFocus.activeIds.has(node.id);
                 const isFilterFocus = nodeMatchesShellFilter(node, snapshot);
                 const isContextDetail = directRelationIds.has(node.id);
+                const isMutedTemporally = temporalFocus && !isTemporalFocus && node.id !== selectedId && !isContextDetail;
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
                 nodeEl.dataset.nodeId = node.id;
@@ -4207,29 +4213,81 @@
             "temporal-river": "riviere"
         };
 
+        function normaliseUrlMode(mode) {
+            const value = String(mode || "").toLowerCase();
+            const aliases = {
+                "observatory": "observatory",
+                "query-theater": "query-theater",
+                "query": "query-theater",
+                "polyglot-studio": "polyglot-studio",
+                "polyglot": "polyglot-studio",
+                "temporal-river": "temporal-river",
+                "temporal": "temporal-river",
+                "river": "temporal-river",
+                "graphe": "observatory",
+                "riviere": "temporal-river"
+            };
+            return aliases[value] || "";
+        }
+
+        function updateModeInUrl(mode) {
+            if (!window.history || typeof window.history.replaceState !== "function") {
+                return;
+            }
+            const normalisedMode = normaliseUrlMode(mode);
+            if (!normalisedMode) {
+                return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            params.set("mode", normalisedMode);
+            const query = params.toString();
+            window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
+        }
+
+        async function applyShellMode(htmlMode, options = {}) {
+            const normalisedMode = normaliseUrlMode(htmlMode) || "observatory";
+            const button = modeButtons.find((candidate) => candidate.dataset.mode === normalisedMode);
+            const multilingualMode = modeMapping[normalisedMode] || normalisedMode;
+
+            if (button) {
+                setActiveButton(modeButtons, button);
+            }
+            runtimeState.currentMode = normalisedMode;
+
+            const config = modeSummaries[normalisedMode];
+            if (config) {
+                queryExplanationEl.textContent = config.explanation;
+                lensSummaryEl.textContent = config.lens;
+            }
+
+            try {
+                if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_visualisation === "function") {
+                    await window.ui.etat.basculer_visualisation(multilingualMode);
+                }
+            } catch (error) {
+                runtimeState.lastError = "Visualization switch warning: " + error.message;
+            }
+
+            if (options.updateUrl !== false) {
+                updateModeInUrl(normalisedMode);
+            }
+            renderRuntimeState();
+            updatePolyglotStudioVisibility();
+        }
+
+        async function applyModeFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const mode = normaliseUrlMode(params.get("mode"));
+            if (!mode) {
+                return false;
+            }
+            await applyShellMode(mode, { updateUrl: false });
+            return true;
+        }
+
         modeButtons.forEach((button) => {
             button.addEventListener("click", async () => {
-                const htmlMode = button.dataset.mode;
-                const multilingualMode = modeMapping[htmlMode] || htmlMode;
-
-                setActiveButton(modeButtons, button);
-                runtimeState.currentMode = htmlMode;
-
-                const config = modeSummaries[htmlMode];
-                if (config) {
-                    queryExplanationEl.textContent = config.explanation;
-                    lensSummaryEl.textContent = config.lens;
-                }
-
-                try {
-                    if (typeof window.ui.etat.basculer_visualisation === "function") {
-                        await window.ui.etat.basculer_visualisation(multilingualMode);
-                    }
-                } catch (error) {
-                    runtimeState.lastError = "Visualization switch warning: " + error.message;
-                }
-
-                renderRuntimeState();
+                await applyShellMode(button.dataset.mode);
             });
         });
 

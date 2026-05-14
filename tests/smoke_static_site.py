@@ -33,6 +33,7 @@ DEEP_LINKS = [
     "/?entity=Q42934&type=movement",
     "/?entity=Q5593&type=artist",
     "/?entity=Q19675&type=museum",
+    "/?entity=Q878985&type=movement&mode=temporal-river",
 ]
 
 PAGINATED_QUERIES = [

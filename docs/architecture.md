@@ -29,7 +29,7 @@ MotusArtium is a layered application with a static browser shell, a Multilingual
 ### `bootstrap.js`
 
 - initializes the app
-- reads deep-link URLs such as `?entity=...&type=...`
+- reads deep-link URLs such as `?entity=...&type=...&mode=...`
 - uses REST search for discovery
 - resolves search-result type before loading
 - wires search results into the correct runtime loader
@@ -65,6 +65,7 @@ The app supports URL-based loading using the query string:
 - `?entity=Q12418&type=artwork`
 - `?entity=Q160112&type=museum`
 - `?entity=Q146&type=subject`
+- `?entity=Q878985&type=movement&mode=temporal-river`
 
 ## Notes
 

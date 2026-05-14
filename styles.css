@@ -2220,6 +2220,64 @@
             padding-left: 10px;
         }
 
+        body[data-mode="temporal-river"] .constellation {
+            border-color: rgba(77, 182, 172, 0.32);
+            background:
+                radial-gradient(circle at center, rgba(77, 182, 172, 0.1), transparent 46%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+        }
+
+        html.theme-light body[data-mode="temporal-river"] .constellation {
+            border-color: rgba(43, 143, 134, 0.34) !important;
+            background:
+                radial-gradient(circle at center, rgba(43, 143, 134, 0.08), transparent 46%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42));
+        }
+
+        body[data-mode="temporal-river"] .constellation-links line.link {
+            stroke: rgba(214, 164, 88, 0.62);
+            stroke-width: 1;
+            opacity: 0.78;
+        }
+
+        body[data-mode="temporal-river"] .constellation-links line.link.is-muted-temporal {
+            opacity: 0.34;
+            stroke-width: 0.7;
+        }
+
+        body[data-mode="temporal-river"] .node.is-muted-temporal {
+            opacity: 0.48;
+            filter: saturate(0.86);
+        }
+
+        body[data-mode="temporal-river"] .node.is-temporal-focus,
+        body[data-mode="temporal-river"] .node.is-selected,
+        body[data-mode="temporal-river"] .node.is-context-detail {
+            opacity: 1;
+            border-color: rgba(139, 233, 253, 0.7);
+            box-shadow: 0 0 36px rgba(77, 182, 172, 0.38), 0 0 12px rgba(214, 164, 88, 0.18);
+        }
+
+        body[data-mode="temporal-river"] .node-label {
+            color: var(--text-main);
+            opacity: 0.92;
+            text-shadow: 0 0 12px rgba(6, 10, 16, 0.42);
+        }
+
+        body[data-mode="temporal-river"] .constellation-nodes.is-dense .node-label {
+            opacity: 0.62;
+        }
+
+        body[data-mode="temporal-river"] .constellation-nodes.is-dense .node.is-selected .node-label,
+        body[data-mode="temporal-river"] .constellation-nodes.is-dense .node.is-context-detail .node-label,
+        body[data-mode="temporal-river"] .constellation-nodes.is-dense .node.is-temporal-focus .node-label {
+            opacity: 1;
+        }
+
+        html.theme-light body[data-mode="temporal-river"] .node-label {
+            text-shadow: 0 1px 8px rgba(255, 255, 255, 0.86);
+        }
+
         .mobile-only {
             display: none;
         }

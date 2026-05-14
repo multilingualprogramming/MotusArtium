@@ -1,9 +1,8 @@
 query MovementsCatalog($languageCode: LanguageCode!) {
   searchItems(
     query: {
-      and: [
-        { property: "P31", value: "Q968159" }
-      ]
+      property: "P31"
+      value: "Q968159"
     }
   ) {
     edges {

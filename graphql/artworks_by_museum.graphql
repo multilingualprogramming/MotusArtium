@@ -1,17 +1,21 @@
-query ArtworksByMuseum($museumId: String!, $languageCode: LanguageCode!) {
+query ArtworksByMuseum($museumId: String!, $languageCode: LanguageCode!, $first: Int = 24, $after: String) {
   searchItems(
     query: {
-      and: [
-        { property: "P31", value: "Q3305213" }
-        { property: "P195", value: $museumId }
-      ]
+      property: "P195"
+      value: $museumId
     }
+    first: $first
+    after: $after
   ) {
     edges {
       node {
         id
         artworkLabel: label(languageCode: $languageCode)
       }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
     }
   }
 }

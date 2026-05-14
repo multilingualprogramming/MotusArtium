@@ -1665,6 +1665,9 @@
             } else if (paginationKind === "artistWorks") {
                 chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'oeuvres" : "Load more works";
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
+            } else if (paginationKind === "museumWorks") {
+                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'oeuvres" : "Load more works";
+                chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             } else {
                 chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus de mouvements" : "Load more movements";
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
@@ -1724,6 +1727,17 @@
                 return "artistWorks";
             }
 
+            const isMuseumSelection = type.includes("museum") || type.includes("musee");
+            if (
+                isMuseumSelection &&
+                selectedEntityId &&
+                browserAdapterState.expandedMuseumId === selectedEntityId &&
+                browserAdapterState.museumWorksSourceId === selectedEntityId &&
+                browserAdapterState.museumWorksHasNextPage
+            ) {
+                return "museumWorks";
+            }
+
             return "";
         }
 
@@ -1773,6 +1787,41 @@
                     addGraphRelation(artistId, node.id, "created");
                 }
             });
+
+            return data;
+        }
+
+        async function fetchMuseumWorksPage(museumId, afterCursor) {
+            const data = await executeGraphQLDocument("artworks_by_museum.graphql", {
+                museumId: museumId,
+                languageCode: runtimeState.currentLanguage,
+                first: browserAdapterState.museumWorksPageSize,
+                after: afterCursor || null
+            });
+
+            const searchItems = (data.searchItems || {});
+            const edges = searchItems.edges || [];
+            const pageInfo = searchItems.pageInfo || {};
+            browserAdapterState.museumWorksCursor = pageInfo.endCursor || null;
+            browserAdapterState.museumWorksHasNextPage = !!pageInfo.hasNextPage;
+            browserAdapterState.museumWorksSourceId = museumId;
+
+            edges.forEach((edge) => {
+                const node = edge && edge.node ? edge.node : {};
+                if (node.id) {
+                    browserAdapterState.cache_entites[node.id] = {
+                        ...node
+                    };
+                    addGraphNode(node.id, "work", node.artworkLabel || node.label || node.id, node);
+                    addGraphRelation(museumId, node.id, "houses_work");
+                }
+            });
+
+            const museumRecord = browserAdapterState.cache_entites[museumId] || {};
+            browserAdapterState.cache_entites[museumId] = {
+                ...museumRecord,
+                artworkCount: relatedTargets(museumId, "houses_work").length
+            };
 
             return data;
         }
@@ -2237,6 +2286,10 @@
             artistWorksCursor: null,
             artistWorksHasNextPage: false,
             artistWorksSourceId: "",
+            museumWorksPageSize: 24,
+            museumWorksCursor: null,
+            museumWorksHasNextPage: false,
+            museumWorksSourceId: "",
             graphe: {
                 noeuds: new Map(),
                 relations: []
@@ -2256,6 +2309,8 @@
                         await window.ui.etat.charger_mouvement_artistes_page_suivante();
                     } else if (paginationKind === "artistWorks") {
                         await window.ui.etat.charger_artiste_oeuvres_page_suivante();
+                    } else if (paginationKind === "museumWorks") {
+                        await window.ui.etat.charger_musee_oeuvres_page_suivante();
                     } else {
                         await window.ui.etat.charger_chronologie_page_suivante();
                     }
@@ -2334,6 +2389,9 @@
             browserAdapterState.artistWorksCursor = null;
             browserAdapterState.artistWorksHasNextPage = false;
             browserAdapterState.artistWorksSourceId = "";
+            browserAdapterState.museumWorksCursor = null;
+            browserAdapterState.museumWorksHasNextPage = false;
+            browserAdapterState.museumWorksSourceId = "";
         }
 
         function removeGraphNodes(nodeIds) {
@@ -2400,6 +2458,11 @@
             removeGraphNodes(workIds);
             if (browserAdapterState.expandedMuseumId === museumId) {
                 browserAdapterState.expandedMuseumId = "";
+            }
+            if (browserAdapterState.museumWorksSourceId === museumId) {
+                browserAdapterState.museumWorksCursor = null;
+                browserAdapterState.museumWorksHasNextPage = false;
+                browserAdapterState.museumWorksSourceId = "";
             }
             browserAdapterState.focusedArtworkId = "";
         }
@@ -3138,7 +3201,11 @@
                 browserAdapterState.entite_selectionnee_type = "Museum";
 
                 const museumRecord = browserAdapterState.cache_entites[museeId] || {};
-                const museumLabel = fieldValue(museumRecord, "museumLabel") || fieldValue(museumRecord, "label") || runtimeState.selectedEntity.name || museeId;
+                let museumLabel = fieldValue(museumRecord, "museumLabel") || fieldValue(museumRecord, "label");
+                if (!museumLabel) {
+                    museumLabel = await fetchEntityLabelInLanguage(museeId, runtimeState.currentLanguage);
+                }
+                museumLabel = museumLabel || museeId;
                 browserAdapterState.cache_entites[museeId] = {
                     ...museumRecord,
                     id: museeId,
@@ -3146,24 +3213,11 @@
                 };
                 addGraphNode(museeId, "museum", museumLabel, browserAdapterState.cache_entites[museeId]);
 
-                const artworks = await executeGraphQLDocument("artworks_by_museum.graphql", {
-                    museumId: museeId,
-                    languageCode: runtimeState.currentLanguage
-                });
+                browserAdapterState.museumWorksCursor = null;
+                browserAdapterState.museumWorksHasNextPage = false;
+                browserAdapterState.museumWorksSourceId = museeId;
+                await fetchMuseumWorksPage(museeId, browserAdapterState.museumWorksCursor);
 
-                const edges = ((artworks.searchItems || {}).edges) || [];
-                edges.slice(0, 24).forEach((edge) => {
-                    const node = edge && edge.node ? edge.node : {};
-                    if (node.id) {
-                        browserAdapterState.cache_entites[node.id] = {
-                            ...node
-                        };
-                        addGraphNode(node.id, "work", node.artworkLabel || node.label || node.id, node);
-                        addGraphRelation(museeId, node.id, "houses_work");
-                    }
-                });
-
-                browserAdapterState.cache_entites[museeId].artworkCount = edges.length;
                 browserAdapterState.expandedMuseumId = museeId;
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();
@@ -3276,6 +3330,21 @@
                 browserAdapterState.affichage_chargement = true;
 
                 const data = await fetchArtistWorksPage(artisteId, browserAdapterState.artistWorksCursor);
+
+                browserAdapterState.affichage_chargement = false;
+                applyAdapterStateToShell();
+                return data;
+            },
+
+            async charger_musee_oeuvres_page_suivante() {
+                const museeId = browserAdapterState.museumWorksSourceId || browserAdapterState.expandedMuseumId || browserAdapterState.entite_selectionnee_id;
+                if (!museeId || !browserAdapterState.museumWorksHasNextPage) {
+                    return null;
+                }
+                runtimeState.lastRequestedEntityId = museeId;
+                browserAdapterState.affichage_chargement = true;
+
+                const data = await fetchMuseumWorksPage(museeId, browserAdapterState.museumWorksCursor);
 
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();

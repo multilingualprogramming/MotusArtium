@@ -1112,10 +1112,74 @@
         .constellation-links {
             z-index: 1;
             pointer-events: none;
+            transform-origin: 50% 50%;
+            transition: transform var(--transition-normal);
         }
 
         .constellation-nodes {
             z-index: 2;
+            transform-origin: 50% 50%;
+            transition: transform var(--transition-normal);
+        }
+
+        .constellation-controls {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 5;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(6, 10, 16, 0.72);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+        }
+
+        html.theme-light .constellation-controls {
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(0, 0, 0, 0.16);
+        }
+
+        .icon-button {
+            width: 34px;
+            height: 34px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            line-height: 1;
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+        }
+
+        .icon-button:hover,
+        .icon-button:focus-visible {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.32);
+            transform: translateY(-1px);
+        }
+
+        .icon-button:disabled {
+            opacity: 0.42;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .zoom-readout {
+            min-width: 46px;
+            text-align: center;
+            color: var(--text-soft);
+            font-size: 0.8rem;
+            font-weight: 700;
         }
 
         .pagination-button {
@@ -1272,6 +1336,18 @@
             opacity: 1;
             transform: translateX(-50%) translateY(0);
             color: var(--text-main);
+        }
+
+        .constellation-nodes.is-dense .node-label {
+            opacity: 0;
+        }
+
+        .constellation-nodes.is-dense .node:hover .node-label,
+        .constellation-nodes.is-dense .node:focus-visible .node-label,
+        .constellation-nodes.is-dense .node.is-selected .node-label,
+        .constellation-nodes.is-dense .node.is-connected .node-label,
+        .constellation-nodes.is-dense .node.is-hovered .node-label {
+            opacity: 1;
         }
 
         .node.is-selected .node-label {

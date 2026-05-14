@@ -24,6 +24,10 @@
         const selectedEntityActionEl = document.getElementById("selected-entity-action");
         const constellationNodesEl = document.getElementById("constellation-nodes");
         const constellationLinksEl = document.getElementById("constellation-links");
+        const constellationZoomOutEl = document.getElementById("constellation-zoom-out");
+        const constellationZoomInEl = document.getElementById("constellation-zoom-in");
+        const constellationZoomResetEl = document.getElementById("constellation-zoom-reset");
+        const constellationZoomReadoutEl = document.getElementById("constellation-zoom-readout");
         const chronologyLoadMoreEl = document.getElementById("chronology-load-more");
         const timelineTrackEl = document.querySelector(".timeline-track");
         const timelineWindowEl = document.querySelector(".timeline-window");
@@ -140,6 +144,7 @@
             activeLensPreset: "",
             shellFilter: null,
             shellFilterEnabled: false,
+            constellationZoom: 1,
             replayingSessionId: 0
         };
 
@@ -741,8 +746,10 @@
             runtimeState.activeCompassLens = "movement";
             runtimeState.shellFilterEnabled = false;
             runtimeState.multilingualEntityLabels = {};
+            runtimeState.constellationZoom = 1;
             buildShellFilter();
             setActiveButton(modeButtons, modeButtons.find((button) => button.dataset.mode === "observatory"));
+            renderConstellationZoomControls();
         }
 
         async function clearSessionHistory() {
@@ -1661,6 +1668,30 @@
             }
         }
 
+        function renderConstellationZoomControls() {
+            const zoom = runtimeState.constellationZoom || 1;
+            if (constellationLinksEl) {
+                constellationLinksEl.style.transform = "scale(" + zoom + ")";
+            }
+            if (constellationNodesEl) {
+                constellationNodesEl.style.transform = "scale(" + zoom + ")";
+            }
+            if (constellationZoomReadoutEl) {
+                constellationZoomReadoutEl.textContent = Math.round(zoom * 100) + "%";
+            }
+            if (constellationZoomOutEl) {
+                constellationZoomOutEl.disabled = zoom <= 0.7;
+            }
+            if (constellationZoomInEl) {
+                constellationZoomInEl.disabled = zoom >= 1.6;
+            }
+        }
+
+        function setConstellationZoom(nextZoom) {
+            runtimeState.constellationZoom = clamp(nextZoom, 0.7, 1.6);
+            renderConstellationZoomControls();
+        }
+
         function activePaginationKind() {
             if (browserAdapterState.mode_visualisation === "chronologie" && browserAdapterState.chronologyHasNextPage) {
                 return "chronology";
@@ -2191,6 +2222,24 @@
             });
         }
 
+        if (constellationZoomOutEl) {
+            constellationZoomOutEl.addEventListener("click", () => {
+                setConstellationZoom((runtimeState.constellationZoom || 1) - 0.15);
+            });
+        }
+
+        if (constellationZoomInEl) {
+            constellationZoomInEl.addEventListener("click", () => {
+                setConstellationZoom((runtimeState.constellationZoom || 1) + 0.15);
+            });
+        }
+
+        if (constellationZoomResetEl) {
+            constellationZoomResetEl.addEventListener("click", () => {
+                setConstellationZoom(1);
+            });
+        }
+
         function addGraphNode(id, type, label, data) {
             if (!id) {
                 return;
@@ -2568,18 +2617,37 @@
                 return leftType.localeCompare(rightType);
             });
 
+            const ringRadii = [22, 32, 41, 48];
+            const ringCapacities = [9, 15, 22, 30];
+            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+            let ringIndex = 0;
+            let ringSlot = 0;
+            let placed = 0;
+
             remaining.forEach((node, index) => {
-                const total = Math.max(remaining.length, 1);
-                const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
+                while (ringIndex < ringCapacities.length - 1 && ringSlot >= ringCapacities[ringIndex]) {
+                    ringIndex += 1;
+                    ringSlot = 0;
+                }
+
                 const nodeClass = constellationClassForType(node.type);
-                const ring = nodeClass === "node--movement" ? 34 : (nodeClass === "node--artist" ? 26 : 18);
-                const jitter = ((index % 2 === 0 ? 1 : -1) * 0.9) + ((index % 3) - 1) * 0.4;
-                const x = 50 + Math.cos(angle) * ring + Math.sin(angle) * (ring * 0.08) * jitter;
-                const y = 50 + Math.sin(angle) * ring * 0.92 + Math.cos(angle) * (ring * 0.06) * jitter;
+                const typeNudge = nodeClass === "node--movement" ? 4 : (nodeClass === "node--work" ? -3 : 0);
+                const currentCapacity = ringCapacities[ringIndex];
+                const ring = Math.min(49, ringRadii[ringIndex] + typeNudge + Math.floor(placed / 76) * 4);
+                const angleStep = (Math.PI * 2) / Math.max(currentCapacity, 1);
+                const angleOffset = ringIndex % 2 === 0 ? -Math.PI / 2 : -Math.PI / 2 + angleStep / 2;
+                const angle = ringIndex === ringCapacities.length - 1 && ringSlot >= currentCapacity - 1
+                    ? (placed * goldenAngle) - Math.PI / 2
+                    : angleOffset + ringSlot * angleStep;
+                const jitter = ((index % 2 === 0 ? 1 : -1) * 0.8) + ((index % 5) - 2) * 0.18;
+                const x = 50 + Math.cos(angle) * ring + Math.sin(angle) * (ring * 0.035) * jitter;
+                const y = 50 + Math.sin(angle) * ring * 0.78 + Math.cos(angle) * (ring * 0.035) * jitter;
                 positions.set(node.id, {
-                    x: Math.max(12, Math.min(88, x)),
-                    y: Math.max(14, Math.min(84, y))
+                    x: Math.max(7, Math.min(93, x)),
+                    y: Math.max(9, Math.min(91, y))
                 });
+                ringSlot += 1;
+                placed += 1;
             });
 
             return positions;
@@ -2591,12 +2659,14 @@
             const temporalFocus = runtimeState.currentMode === "temporal-river" ? runtimeState.temporalFocus : null;
             constellationNodesEl.innerHTML = "";
             constellationLinksEl.innerHTML = "";
+            constellationNodesEl.classList.toggle("is-dense", nodes.length > 32);
 
             if (!nodes.length) {
                 const empty = document.createElement("div");
                 empty.className = "constellation-empty";
                 empty.textContent = "Awaiting live graph state from Multilingual and Wikidata GraphQL.";
                 constellationNodesEl.appendChild(empty);
+                renderConstellationZoomControls();
                 return;
             }
 
@@ -2713,6 +2783,7 @@
 
                 constellationNodesEl.appendChild(nodeEl);
             });
+            renderConstellationZoomControls();
         }
 
         function syncShellFromSnapshot(snapshot) {

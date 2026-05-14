@@ -24,6 +24,7 @@
         const selectedEntityActionEl = document.getElementById("selected-entity-action");
         const constellationNodesEl = document.getElementById("constellation-nodes");
         const constellationLinksEl = document.getElementById("constellation-links");
+        const chronologyLoadMoreEl = document.getElementById("chronology-load-more");
         const timelineTrackEl = document.querySelector(".timeline-track");
         const timelineWindowEl = document.querySelector(".timeline-window");
         const timelineLabelsEl = document.querySelector(".timeline-labels");
@@ -32,6 +33,7 @@
         const shellEl = document.getElementById("app-shell");
         const compassPoleButtons = Array.from(document.querySelectorAll(".compass-pole[data-lens]"));
         const lensPresetButtons = Array.from(document.querySelectorAll(".preset-button[data-preset]"));
+
         const translatableElements = {
             "brand-eyebrow": {
                 fr: "Multilingual x Wikidata GraphQL",
@@ -1639,6 +1641,96 @@
             renderSelectedEntity();
             renderTrail();
             renderTimeline();
+            renderChronologyPaginationButton();
+        }
+
+        function renderChronologyPaginationButton() {
+            if (!chronologyLoadMoreEl) {
+                return;
+            }
+            const paginationKind = activePaginationKind();
+            const hasMore = paginationKind !== "";
+            chronologyLoadMoreEl.style.display = hasMore ? "inline-flex" : "none";
+            chronologyLoadMoreEl.disabled = !hasMore || browserAdapterState.affichage_chargement;
+            if (paginationKind === "movementArtists") {
+                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'artistes" : "Load more artists";
+                chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
+            } else {
+                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus de mouvements" : "Load more movements";
+                chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
+            }
+        }
+
+        function activePaginationKind() {
+            if (browserAdapterState.mode_visualisation === "chronologie" && browserAdapterState.chronologyHasNextPage) {
+                return "chronology";
+            }
+
+            const type = String(browserAdapterState.entite_selectionnee_type || "").toLowerCase();
+            const selectedMovementId = browserAdapterState.entite_selectionnee_id || "";
+            const isMovementSelection = type.includes("movement") || type.includes("mouvement");
+            if (
+                isMovementSelection &&
+                selectedMovementId &&
+                browserAdapterState.expandedMovementId === selectedMovementId &&
+                browserAdapterState.movementArtistsSourceId === selectedMovementId &&
+                browserAdapterState.movementArtistsHasNextPage
+            ) {
+                return "movementArtists";
+            }
+
+            return "";
+        }
+
+        async function fetchChronologyPage(afterCursor) {
+            const data = await executeGraphQLDocument("movements_catalog.graphql", {
+                languageCode: runtimeState.currentLanguage,
+                first: browserAdapterState.chronologyPageSize,
+                after: afterCursor || null
+            });
+
+            const searchItems = (data.searchItems || {});
+            const edges = searchItems.edges || [];
+            const pageInfo = searchItems.pageInfo || {};
+            browserAdapterState.chronologyCursor = pageInfo.endCursor || null;
+            browserAdapterState.chronologyHasNextPage = !!pageInfo.hasNextPage;
+
+            edges.forEach((edge) => {
+                const node = edge && edge.node ? edge.node : {};
+                if (node.id) {
+                    addGraphNode(node.id, "movement", node.movementLabel || node.label || node.id, node);
+                }
+            });
+
+            return data;
+        }
+
+        async function fetchMovementArtistsPage(movementId, afterCursor) {
+            const data = await executeGraphQLDocument("artists_by_movement.graphql", {
+                movementId: movementId,
+                languageCode: runtimeState.currentLanguage,
+                first: browserAdapterState.movementArtistsPageSize,
+                after: afterCursor || null
+            });
+
+            const searchItems = (data.searchItems || {});
+            const edges = searchItems.edges || [];
+            const pageInfo = searchItems.pageInfo || {};
+            browserAdapterState.movementArtistsCursor = pageInfo.endCursor || null;
+            browserAdapterState.movementArtistsHasNextPage = !!pageInfo.hasNextPage;
+            browserAdapterState.movementArtistsSourceId = movementId;
+
+            const artistRecords = normaliseArtistsByMovement(edges);
+            artistRecords.forEach((artist) => {
+                const artistId = entityIdFromUri(fieldValue(artist, "artist"));
+                if (artistId) {
+                    browserAdapterState.cache_entites[artistId] = artist;
+                    addGraphNode(artistId, "artist", fieldValue(artist, "artistLabel"), artist);
+                    addGraphRelation(movementId, artistId, "contains_artist");
+                }
+            });
+
+            return data;
         }
 
         function inferDisplayLabel(record, fallback) {
@@ -2062,11 +2154,42 @@
             expandedSubjectId: "",
             focusedArtworkId: "",
             cache_entites: {},
+            chronologyPageSize: 28,
+            chronologyCursor: null,
+            chronologyHasNextPage: false,
+            movementArtistsPageSize: 28,
+            movementArtistsCursor: null,
+            movementArtistsHasNextPage: false,
+            movementArtistsSourceId: "",
             graphe: {
                 noeuds: new Map(),
                 relations: []
             }
         };
+
+        if (chronologyLoadMoreEl) {
+            chronologyLoadMoreEl.addEventListener("click", async () => {
+                const paginationKind = activePaginationKind();
+                if (!paginationKind || browserAdapterState.affichage_chargement) {
+                    return;
+                }
+                browserAdapterState.affichage_chargement = true;
+                renderChronologyPaginationButton();
+                try {
+                    if (paginationKind === "movementArtists") {
+                        await window.ui.etat.charger_mouvement_artistes_page_suivante();
+                    } else {
+                        await window.ui.etat.charger_chronologie_page_suivante();
+                    }
+                } catch (error) {
+                    runtimeState.lastError = "Pagination warning: " + error.message;
+                    renderRuntimeState();
+                } finally {
+                    browserAdapterState.affichage_chargement = false;
+                    applyAdapterStateToShell();
+                }
+            });
+        }
 
         function addGraphNode(id, type, label, data) {
             if (!id) {
@@ -2109,6 +2232,9 @@
             browserAdapterState.focusedArtworkId = "";
             browserAdapterState.entite_selectionnee_id = "";
             browserAdapterState.entite_selectionnee_type = "";
+            browserAdapterState.movementArtistsCursor = null;
+            browserAdapterState.movementArtistsHasNextPage = false;
+            browserAdapterState.movementArtistsSourceId = "";
         }
 
         function removeGraphNodes(nodeIds) {
@@ -2610,6 +2736,7 @@
         function applyAdapterStateToShell() {
             syncShellFromSnapshot(browserAdapterSnapshot());
             renderConstellation();
+            renderChronologyPaginationButton();
             renderRuntimeState();
             refreshMultilingualEntityLabels();
             if (typeof window.renderDetailPanel === "function") {
@@ -2689,10 +2816,6 @@
                     id: mouvementId,
                     languageCode: runtimeState.currentLanguage
                 });
-                const artists = await executeGraphQLDocument("artists_by_movement.graphql", {
-                    movementId: mouvementId,
-                    languageCode: runtimeState.currentLanguage
-                });
 
                 const movement = normaliseMovementDetails(details.item || {});
                 browserAdapterState.cache_entites[mouvementId] = movement;
@@ -2733,15 +2856,10 @@
                     addGraphRelation(parentMovement.id, mouvementId, "contains_movement");
                 }
 
-                const artistRecords = normaliseArtistsByMovement((artists.searchItems || {}).edges || []);
-                artistRecords.forEach((artist) => {
-                    const artistId = entityIdFromUri(fieldValue(artist, "artist"));
-                    if (artistId) {
-                        browserAdapterState.cache_entites[artistId] = artist;
-                        addGraphNode(artistId, "artist", fieldValue(artist, "artistLabel"), artist);
-                        addGraphRelation(mouvementId, artistId, "contains_artist");
-                    }
-                });
+                browserAdapterState.movementArtistsCursor = null;
+                browserAdapterState.movementArtistsHasNextPage = false;
+                browserAdapterState.movementArtistsSourceId = mouvementId;
+                await fetchMovementArtistsPage(mouvementId, browserAdapterState.movementArtistsCursor);
 
                 browserAdapterState.expandedMovementId = mouvementId;
                 browserAdapterState.focusedArtworkId = "";
@@ -2990,17 +3108,39 @@
                 browserAdapterState.plage_temporelle_debut = debut;
                 browserAdapterState.plage_temporelle_fin = fin;
                 browserAdapterState.mode_visualisation = "chronologie";
+                browserAdapterState.chronologyCursor = null;
+                browserAdapterState.chronologyHasNextPage = false;
 
-                const data = await executeGraphQLDocument("movements_catalog.graphql", {
-                    languageCode: runtimeState.currentLanguage
-                });
-                const edges = ((data.searchItems || {}).edges) || [];
-                edges.forEach((edge) => {
-                    const node = edge && edge.node ? edge.node : {};
-                    if (node.id) {
-                        addGraphNode(node.id, "movement", node.movementLabel || node.label || node.id, node);
-                    }
-                });
+                const data = await fetchChronologyPage(browserAdapterState.chronologyCursor);
+
+                browserAdapterState.affichage_chargement = false;
+                applyAdapterStateToShell();
+                return data;
+            },
+
+            async charger_chronologie_page_suivante() {
+                if (!browserAdapterState.chronologyHasNextPage) {
+                    return null;
+                }
+                runtimeState.lastRequestedEntityId = "chronology";
+                browserAdapterState.affichage_chargement = true;
+
+                const data = await fetchChronologyPage(browserAdapterState.chronologyCursor);
+
+                browserAdapterState.affichage_chargement = false;
+                applyAdapterStateToShell();
+                return data;
+            },
+
+            async charger_mouvement_artistes_page_suivante() {
+                const mouvementId = browserAdapterState.movementArtistsSourceId || browserAdapterState.expandedMovementId || browserAdapterState.entite_selectionnee_id;
+                if (!mouvementId || !browserAdapterState.movementArtistsHasNextPage) {
+                    return null;
+                }
+                runtimeState.lastRequestedEntityId = mouvementId;
+                browserAdapterState.affichage_chargement = true;
+
+                const data = await fetchMovementArtistsPage(mouvementId, browserAdapterState.movementArtistsCursor);
 
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();

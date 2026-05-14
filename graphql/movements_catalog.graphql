@@ -1,15 +1,21 @@
-query MovementsCatalog($languageCode: LanguageCode!) {
+query MovementsCatalog($languageCode: LanguageCode!, $first: Int = 28, $after: String) {
   searchItems(
     query: {
       property: "P31"
       value: "Q968159"
     }
+    first: $first
+    after: $after
   ) {
     edges {
       node {
         id
         movementLabel: label(languageCode: $languageCode)
       }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
     }
   }
 }

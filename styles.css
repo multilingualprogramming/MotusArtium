@@ -1118,6 +1118,36 @@
             z-index: 2;
         }
 
+        .pagination-button {
+            margin-top: 0.75rem;
+            padding: 0.7rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), color var(--transition-fast);
+            align-self: flex-start;
+            display: inline-flex;
+            gap: 0.4rem;
+            text-transform: none;
+        }
+
+        .pagination-button:hover,
+        .pagination-button:focus-visible {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.34);
+            transform: translateY(-1px);
+        }
+
+        .pagination-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .link {
             position: absolute;
             height: 1px;
@@ -1305,6 +1335,7 @@
             background: rgba(6, 10, 16, 0.72);
             border: 2px solid rgba(255, 255, 255, 0.14);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+            pointer-events: auto;
         }
 
         html.theme-light .stage-caption {

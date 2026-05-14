@@ -1,4 +1,4 @@
-query ArtistsByMovement($movementId: String!, $languageCode: LanguageCode!) {
+query ArtistsByMovement($movementId: String!, $languageCode: LanguageCode!, $first: Int = 28, $after: String) {
   searchItems(
     query: {
       and: [
@@ -6,12 +6,18 @@ query ArtistsByMovement($movementId: String!, $languageCode: LanguageCode!) {
         { property: "P31", value: "Q5" }
       ]
     }
+    first: $first
+    after: $after
   ) {
     edges {
       node {
         id
         artistLabel: label(languageCode: $languageCode)
       }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
     }
   }
 }

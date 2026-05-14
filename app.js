@@ -29,6 +29,7 @@
         const constellationZoomResetEl = document.getElementById("constellation-zoom-reset");
         const constellationZoomReadoutEl = document.getElementById("constellation-zoom-readout");
         const chronologyLoadMoreEl = document.getElementById("chronology-load-more");
+        const collectionStatusEl = document.getElementById("collection-status");
         const timelineTrackEl = document.querySelector(".timeline-track");
         const timelineWindowEl = document.querySelector(".timeline-window");
         const timelineLabelsEl = document.querySelector(".timeline-labels");
@@ -1655,10 +1656,12 @@
             if (!chronologyLoadMoreEl) {
                 return;
             }
-            const paginationKind = activePaginationKind();
+            const collectionKind = activeCollectionKind();
+            const paginationKind = collectionKindHasMore(collectionKind) ? collectionKind : "";
             const hasMore = paginationKind !== "";
             chronologyLoadMoreEl.style.display = hasMore ? "inline-flex" : "none";
             chronologyLoadMoreEl.disabled = !hasMore || browserAdapterState.affichage_chargement;
+            renderCollectionStatus(collectionKind);
             if (paginationKind === "movementArtists") {
                 chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'artistes" : "Load more artists";
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
@@ -1672,6 +1675,16 @@
                 chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus de mouvements" : "Load more movements";
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             }
+        }
+
+        function renderCollectionStatus(collectionKind) {
+            if (!collectionStatusEl) {
+                return;
+            }
+
+            const status = collectionStatus(collectionKind);
+            collectionStatusEl.style.display = status ? "block" : "none";
+            collectionStatusEl.textContent = status;
         }
 
         function renderConstellationZoomControls() {
@@ -1698,8 +1711,8 @@
             renderConstellationZoomControls();
         }
 
-        function activePaginationKind() {
-            if (browserAdapterState.mode_visualisation === "chronologie" && browserAdapterState.chronologyHasNextPage) {
+        function activeCollectionKind() {
+            if (browserAdapterState.mode_visualisation === "chronologie") {
                 return "chronology";
             }
 
@@ -1710,8 +1723,7 @@
                 isMovementSelection &&
                 selectedEntityId &&
                 browserAdapterState.expandedMovementId === selectedEntityId &&
-                browserAdapterState.movementArtistsSourceId === selectedEntityId &&
-                browserAdapterState.movementArtistsHasNextPage
+                browserAdapterState.movementArtistsSourceId === selectedEntityId
             ) {
                 return "movementArtists";
             }
@@ -1721,8 +1733,7 @@
                 isArtistSelection &&
                 selectedEntityId &&
                 browserAdapterState.expandedArtistId === selectedEntityId &&
-                browserAdapterState.artistWorksSourceId === selectedEntityId &&
-                browserAdapterState.artistWorksHasNextPage
+                browserAdapterState.artistWorksSourceId === selectedEntityId
             ) {
                 return "artistWorks";
             }
@@ -1732,13 +1743,69 @@
                 isMuseumSelection &&
                 selectedEntityId &&
                 browserAdapterState.expandedMuseumId === selectedEntityId &&
-                browserAdapterState.museumWorksSourceId === selectedEntityId &&
-                browserAdapterState.museumWorksHasNextPage
+                browserAdapterState.museumWorksSourceId === selectedEntityId
             ) {
                 return "museumWorks";
             }
 
             return "";
+        }
+
+        function collectionKindHasMore(collectionKind) {
+            if (collectionKind === "chronology") {
+                return browserAdapterState.chronologyHasNextPage;
+            }
+            if (collectionKind === "movementArtists") {
+                return browserAdapterState.movementArtistsHasNextPage;
+            }
+            if (collectionKind === "artistWorks") {
+                return browserAdapterState.artistWorksHasNextPage;
+            }
+            if (collectionKind === "museumWorks") {
+                return browserAdapterState.museumWorksHasNextPage;
+            }
+            return false;
+        }
+
+        function collectionStatus(collectionKind) {
+            if (!collectionKind) {
+                return "";
+            }
+
+            const hasMore = collectionKindHasMore(collectionKind);
+            if (collectionKind === "chronology") {
+                const loaded = countNodesByType("movement");
+                return collectionStatusText("Movement catalog", loaded, hasMore);
+            }
+            if (collectionKind === "movementArtists") {
+                const loaded = relatedTargets(browserAdapterState.movementArtistsSourceId, "contains_artist").length;
+                return collectionStatusText("Artists linked to movement", loaded, hasMore);
+            }
+            if (collectionKind === "artistWorks") {
+                const loaded = relatedTargets(browserAdapterState.artistWorksSourceId, "created").length;
+                return collectionStatusText("Works by artist", loaded, hasMore);
+            }
+            if (collectionKind === "museumWorks") {
+                const loaded = relatedTargets(browserAdapterState.museumWorksSourceId, "houses_work").length;
+                return collectionStatusText("Collection holdings", loaded, hasMore);
+            }
+            return "";
+        }
+
+        function collectionStatusText(label, loaded, hasMore) {
+            const suffix = hasMore ? "more available" : "complete page set";
+            return label + " · " + loaded + " loaded · " + suffix;
+        }
+
+        function countNodesByType(typeName) {
+            const target = String(typeName || "").toLowerCase();
+            const nodes = Array.from(browserAdapterState.graphe.noeuds.values());
+            return nodes.filter((node) => String(node.type || "").toLowerCase().includes(target)).length;
+        }
+
+        function activePaginationKind() {
+            const collectionKind = activeCollectionKind();
+            return collectionKindHasMore(collectionKind) ? collectionKind : "";
         }
 
         async function fetchChronologyPage(afterCursor) {
@@ -2721,7 +2788,8 @@
                 return positions;
             }
 
-            const selectedId = currentSnapshot().entite_selectionnee_id;
+            const snapshot = currentSnapshot();
+            const selectedId = snapshot.entite_selectionnee_id;
             const selectedNode = nodes.find((node) => node.id === selectedId) || nodes[0];
             positions.set(selectedNode.id, { x: 50, y: 50 });
 
@@ -2735,40 +2803,102 @@
                 return leftType.localeCompare(rightType);
             });
 
-            const ringRadii = [22, 32, 41, 48];
-            const ringCapacities = [9, 15, 22, 30];
-            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-            let ringIndex = 0;
-            let ringSlot = 0;
-            let placed = 0;
-
-            remaining.forEach((node, index) => {
-                while (ringIndex < ringCapacities.length - 1 && ringSlot >= ringCapacities[ringIndex]) {
-                    ringIndex += 1;
-                    ringSlot = 0;
+            const relationByTarget = new Map();
+            const relationBySource = new Map();
+            (((snapshot.graphe || {}).relations) || []).forEach((relation) => {
+                if (relation.source === selectedNode.id) {
+                    relationByTarget.set(relation.target, relation.type);
                 }
+                if (relation.target === selectedNode.id) {
+                    relationBySource.set(relation.source, relation.type);
+                }
+            });
 
+            const sectors = semanticLayoutSectors(selectedNode, remaining, relationByTarget, relationBySource);
+            Object.values(sectors).forEach((sector) => {
+                placeNodesInSector(positions, sector.nodes, sector.start, sector.end, sector.radii || [23, 34, 43, 49]);
+            });
+            return positions;
+        }
+
+        function semanticLayoutSectors(selectedNode, nodes, relationByTarget, relationBySource) {
+            const selectedType = String((selectedNode && selectedNode.type) || "").toLowerCase();
+            const sectors = {
+                primary: { start: -150, end: 150, nodes: [], radii: [22, 32, 41, 48] },
+                left: { start: 145, end: 215, nodes: [], radii: [24, 35, 45] },
+                right: { start: -35, end: 35, nodes: [], radii: [24, 35, 45] },
+                top: { start: -130, end: -50, nodes: [], radii: [24, 35, 45] },
+                bottom: { start: 55, end: 125, nodes: [], radii: [24, 34, 43, 49] }
+            };
+
+            nodes.forEach((node) => {
+                const relation = relationByTarget.get(node.id) || relationBySource.get(node.id) || "";
+                if (selectedType.includes("artist") || selectedType.includes("artiste")) {
+                    if (relation === "influenced_by") {
+                        sectors.left.nodes.push(node);
+                    } else if (relation === "influenced") {
+                        sectors.right.nodes.push(node);
+                    } else if (relation === "created") {
+                        sectors.bottom.nodes.push(node);
+                    } else {
+                        sectors.primary.nodes.push(node);
+                    }
+                } else if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
+                    if (relation === "follows" || relation === "followed_by" || relation === "contains_movement") {
+                        sectors.top.nodes.push(node);
+                    } else if (relation === "contains_artist") {
+                        sectors.bottom.nodes.push(node);
+                    } else {
+                        sectors.primary.nodes.push(node);
+                    }
+                } else if (selectedType.includes("museum") || selectedType.includes("musee")) {
+                    if (relation === "houses_work") {
+                        sectors.primary.nodes.push(node);
+                    } else {
+                        sectors.top.nodes.push(node);
+                    }
+                } else if (selectedType.includes("work") || selectedType.includes("oeuvre")) {
+                    if (relation === "displayed_at") {
+                        sectors.top.nodes.push(node);
+                    } else if (relation === "depicts") {
+                        sectors.left.nodes.push(node);
+                    } else if (relation === "made_of") {
+                        sectors.right.nodes.push(node);
+                    } else {
+                        sectors.primary.nodes.push(node);
+                    }
+                } else {
+                    sectors.primary.nodes.push(node);
+                }
+            });
+
+            return sectors;
+        }
+
+        function placeNodesInSector(positions, nodes, startDegrees, endDegrees, radii) {
+            if (!nodes || !nodes.length) {
+                return;
+            }
+
+            const capacityPerRing = Math.max(5, Math.ceil((endDegrees - startDegrees) / 13));
+            nodes.forEach((node, index) => {
+                const ringIndex = Math.min(radii.length - 1, Math.floor(index / capacityPerRing));
+                const slot = index % capacityPerRing;
+                const nodesInRing = Math.min(capacityPerRing, nodes.length - ringIndex * capacityPerRing);
+                const fraction = nodesInRing <= 1 ? 0.5 : slot / (nodesInRing - 1);
+                const angleDegrees = startDegrees + (endDegrees - startDegrees) * fraction;
+                const angle = angleDegrees * Math.PI / 180;
                 const nodeClass = constellationClassForType(node.type);
-                const typeNudge = nodeClass === "node--movement" ? 4 : (nodeClass === "node--work" ? -3 : 0);
-                const currentCapacity = ringCapacities[ringIndex];
-                const ring = Math.min(49, ringRadii[ringIndex] + typeNudge + Math.floor(placed / 76) * 4);
-                const angleStep = (Math.PI * 2) / Math.max(currentCapacity, 1);
-                const angleOffset = ringIndex % 2 === 0 ? -Math.PI / 2 : -Math.PI / 2 + angleStep / 2;
-                const angle = ringIndex === ringCapacities.length - 1 && ringSlot >= currentCapacity - 1
-                    ? (placed * goldenAngle) - Math.PI / 2
-                    : angleOffset + ringSlot * angleStep;
-                const jitter = ((index % 2 === 0 ? 1 : -1) * 0.8) + ((index % 5) - 2) * 0.18;
-                const x = 50 + Math.cos(angle) * ring + Math.sin(angle) * (ring * 0.035) * jitter;
-                const y = 50 + Math.sin(angle) * ring * 0.78 + Math.cos(angle) * (ring * 0.035) * jitter;
+                const typeNudge = nodeClass === "node--movement" ? 3 : (nodeClass === "node--work" ? -2 : 0);
+                const ring = Math.min(49, (radii[ringIndex] || radii[radii.length - 1]) + typeNudge + Math.floor(index / (capacityPerRing * radii.length)) * 4);
+                const jitter = ((index % 2 === 0 ? 1 : -1) * 0.6) + ((index % 5) - 2) * 0.14;
+                const x = 50 + Math.cos(angle) * ring + Math.sin(angle) * (ring * 0.03) * jitter;
+                const y = 50 + Math.sin(angle) * ring * 0.78 + Math.cos(angle) * (ring * 0.03) * jitter;
                 positions.set(node.id, {
                     x: Math.max(7, Math.min(93, x)),
                     y: Math.max(9, Math.min(91, y))
                 });
-                ringSlot += 1;
-                placed += 1;
             });
-
-            return positions;
         }
 
         function renderConstellation() {

@@ -1182,6 +1182,22 @@
             font-weight: 700;
         }
 
+        .collection-status {
+            display: none;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-soft);
+            font-size: 0.82rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        html.theme-light .collection-status {
+            border-top-color: rgba(0, 0, 0, 0.12);
+            color: #4a4a48;
+        }
+
         .pagination-button {
             margin-top: 0.75rem;
             padding: 0.7rem 1rem;

@@ -130,7 +130,7 @@ déf _extraire_coordonnees(entrees: liste) -> dictionnaire:
         latitude = valeur.obtenir("latitude", nul)
         longitude = valeur.obtenir("longitude", nul)
 
-        si latitude n'est pas nul et longitude n'est pas nul:
+        si latitude != nul et longitude != nul:
             retour {
                 "latitude": latitude,
                 "longitude": longitude
@@ -247,9 +247,9 @@ déf _annee_depuis_temps(temps: chaine) -> nombre:
     si texte[0] == "+":
         texte = texte[1:]
 
-    chercher:
+    essayer:
         retour nombre(texte[0:4])
-    exception:
+    sauf erreur:
         retour 0
 
 

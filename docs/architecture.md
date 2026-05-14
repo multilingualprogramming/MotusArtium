@@ -6,18 +6,16 @@ MotusArtium is a layered application with a static browser shell, a Multilingual
 
 - `index.html` and `styles.css` define the shell layout and presentation.
 - `bundle.js` is the generated Multilingual browser bundle.
-- `app.js` bridges the shell to live data, graph state, and runtime loading functions.
+- `src/ui/etat.multi` owns live data, graph state, and runtime loading functions.
+- `app.js` bridges the static shell to DOM rendering and keeps a temporary `ui.etat` fallback for older generated bundles.
 - `bootstrap.js` handles startup, URL deep links, REST search, and detail-panel fallback behavior.
 - `src/` contains the source application written in Multilingual.
 - `graphql/` contains the GraphQL documents sent to Wikidata.
 
 ## Current Runtime Responsibilities
 
-### `app.js`
+### `src/ui/etat.multi`
 
-- tracks active GraphQL documents and variables
-- renders query status, response shape, and selection context
-- manages the in-browser constellation graph state
 - exposes loaders for:
   - movements
   - artists
@@ -25,6 +23,12 @@ MotusArtium is a layered application with a static browser shell, a Multilingual
   - museums
   - subjects
 - expands nodes into related entities using dedicated GraphQL documents
+
+### `app.js`
+
+- tracks active GraphQL documents and variables for the visible query mirror
+- renders query status, response shape, selection context, and the static-shell constellation
+- provides `window.ui.etat` only when the generated Multilingual bundle has not provided it yet
 
 ### `bootstrap.js`
 
@@ -69,5 +73,5 @@ The app supports URL-based loading using the query string:
 
 ## Notes
 
-- The browser shell is not replacing the Multilingual runtime; it is wrapping it and making query behavior more visible.
-- The current architecture is intentionally hybrid: Multilingual remains central, while the JavaScript shell handles instrumentation, search UX, and graph orchestration around it.
+- The browser shell is not replacing the Multilingual runtime; it wraps it and makes query behavior visible.
+- Multilingual is the owner of application state. JavaScript is allowed to handle DOM instrumentation, search UX, and compatibility while lowering support continues to improve.

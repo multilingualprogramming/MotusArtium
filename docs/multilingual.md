@@ -24,17 +24,16 @@ Multilingual is not just a build curiosity in this project. It shapes:
 
 ## Current Relationship Between Multilingual and JavaScript
 
-The project currently uses a hybrid model:
+The project uses a Multilingual-first hybrid model:
 
-- Multilingual provides the core application source and runtime concepts.
+- Multilingual provides the core application source, reactive state, entity loaders, and runtime concepts.
 - The browser shell in `app.js` and `bootstrap.js` adds:
   - search integration
   - GraphQL instrumentation
   - URL bootstrapping
-  - graph orchestration
   - shell-level UI behavior
 
-This means the JavaScript layer is an adapter around a Multilingual-centered application, not a separate replacement for it.
+`app.js` still carries a compatibility implementation of `window.ui.etat` for bundles produced before the full state module is lowered. It must stay a fallback: new stateful behavior belongs in `src/ui/etat.multi` or nearby `.multi` modules.
 
 ## Build Model
 

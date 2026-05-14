@@ -1,7 +1,7 @@
 importer asyncio
 importer math
 importer utilitaires.mathematiques
-# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.etat
 importer ui.visualisations.utilitaires_rendu
 
 # ============================================================================
@@ -69,7 +69,7 @@ classe VueGrapheForce:
         """Animer la simulation"""
         observer self.animating = vrai
 
-        tandis que self.animating:
+        tantque self.animating:
             # Une itération de simulation
             attendre self.disposition.simuler_iteration()
 

@@ -55,7 +55,7 @@ classe Graphe:
         # Vérifier si la relation existe déjà
         pour rel dans self.relations:
             si rel.source_id == source_id et rel.target_id == target_id et rel.type_noeud == type_noeud:
-    rel.poids = poids
+                rel.poids = poids
                 retour
 
         # Ajouter la nouvelle relation
@@ -133,7 +133,7 @@ classe Graphe:
         visites = {noeud_depart_id}
         queue = [[noeud_depart_id]]
 
-        tandis que queue:
+        tantque len(queue) > 0:
             chemin = queue.pop(0)
             noeud_actuel = chemin[-1]
 
@@ -193,7 +193,7 @@ classe Graphe:
                 composante = []
                 queue = [noeud_id]
 
-                tandis que queue:
+                tantque len(queue) > 0:
                     courant = queue.pop(0)
 
                     si courant non dans visites:

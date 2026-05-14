@@ -1,4 +1,4 @@
-# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.etat
 
 
 enum Lentille:

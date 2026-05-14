@@ -4,10 +4,11 @@ importer ui.composants.barre_recherche
 importer ui.composants.panneau_detail
 importer ui.interactions.recherche
 importer ui.interactions.navigation
+importer ui.etat
 
-# Note: ui.etat is NOT imported to avoid duplicate function definitions in the bundle
-# ui.etat.* functions are provided by the HTML implementation instead
-# Note: ui.visualisations.polyglot_studio_vue is not bundled - it's loaded dynamically
+# ui.etat is intentionally owned by Multilingual. The browser shell may keep a
+# temporary compatibility fallback, but new application state belongs here.
+# Note: ui.visualisations.polyglot_studio_vue is not bundled; the shell renders it directly.
 
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retour l'entité sélectionnée"""
@@ -130,13 +131,3 @@ asynchrone déf charger_artiste_oeuvres_page_suivante():
 asynchrone déf charger_musee_oeuvres_page_suivante():
     """Charger la page suivante d'œuvres pour le musée courant"""
     retour attendre ui.etat.charger_musee_oeuvres_page_suivante()
-
-
-# ============================================================================
-# Polyglot studio
-# ============================================================================
-
-asynchrone déf creer_vue_polyglot_studio(conteneur, entite_id):
-    """Créer et initialiser la visualisation polyglot studio (stub - implementation in HTML)"""
-    # Cette fonction est appelée depuis app.js qui va directement rendre le composant
-    passe

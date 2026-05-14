@@ -1,7 +1,7 @@
 importer asyncio
 importer math
 importer utilitaires.mathematiques
-# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.etat
 importer ui.visualisations.utilitaires_rendu
 
 

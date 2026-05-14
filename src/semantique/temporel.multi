@@ -1,5 +1,5 @@
 importer math
-# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.etat
 
 
 # ============================================================================
@@ -92,7 +92,7 @@ classe Chronologie:
 
         # Trouver les mouvements précédents
         mouvement_actuel = mouvement_initial
-        tandis que vrai:
+        tantque vrai:
             precedent = nul
             for evt in self.evenements:
                 si evt.entite_type == "mouvement" and \
@@ -108,7 +108,7 @@ classe Chronologie:
 
         # Trouver les mouvements suivants
         mouvement_actuel = mouvement_initial
-        tandis que vrai:
+        tantque vrai:
             suivant = nul
             for evt in self.evenements:
                 si evt.entite_type == "mouvement" and \

@@ -1,5 +1,5 @@
 importer ui.interactions.recherche
-# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.etat
 
 
 asynchrone déf ouvrir_barre_recherche():

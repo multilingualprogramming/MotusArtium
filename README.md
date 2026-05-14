@@ -35,8 +35,8 @@ That means GraphQL remains the core retrieval model for expansion, relationships
 ## Main Entry Points
 
 - [`src/principal.multi`](src/principal.multi): Multilingual application entrypoint
-- [`src/ui/etat.multi`](src/ui/etat.multi): reactive state and loading logic in Multilingual
-- [`app.js`](app.js): browser-side shell adapter, live GraphQL instrumentation, graph state, and loaders
+- [`src/ui/etat.multi`](src/ui/etat.multi): application state, entity loaders, graph cache, and pagination logic in Multilingual
+- [`app.js`](app.js): browser-side shell adapter and temporary `ui.etat` fallback while the generated bundle catches up
 - [`bootstrap.js`](bootstrap.js): startup, URL bootstrapping, REST search wiring, and detail-panel fallback logic
 - [`index.html`](index.html): static shell layout
 - [`styles.css`](styles.css): shell styling
@@ -85,13 +85,22 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+To reproduce the GitHub Pages staging flow from this repository, use:
+
+```bash
+python3 scripts/build_static_site.py
+python3 tests/smoke_static_site.py _site
+```
+
+The build script also reports whether the generated Multilingual bundle provides `ui.etat`; until it does, `app.js` keeps the compatibility fallback.
+
 ## Repository Layout
 
 - [`src/`](src): Multilingual source tree
 - [`graphql/`](graphql): shipped GraphQL documents
 - [`index.html`](index.html): HTML shell
 - [`styles.css`](styles.css): shell styles
-- [`app.js`](app.js): shell runtime adapter
+- [`app.js`](app.js): shell DOM adapter and compatibility fallback
 - [`bootstrap.js`](bootstrap.js): startup and search integration
 - [`bundle.js`](bundle.js): generated browser bundle
 

@@ -115,17 +115,18 @@ def validate_files(site_root: pathlib.Path) -> None:
             raise AssertionError(f"Missing required file: {relative_path}")
 
     index_html = (site_root / "index.html").read_text(encoding="utf-8")
-    for asset in ["app.js", "bootstrap.js", "bundle.js"]:
+    for asset in ["bundle.js", "app.js", "bootstrap.js"]:
         assert_contains(index_html, asset, "index.html")
+    if not index_html.index("bundle.js") < index_html.index("app.js") < index_html.index("bootstrap.js"):
+        raise AssertionError("index.html must load bundle.js before the JS shell fallback")
 
     app_js = (site_root / "app.js").read_text(encoding="utf-8")
-    for expected in [
-        "activeCollectionKind",
-        "charger_mouvement_artistes_page_suivante",
-        "charger_artiste_oeuvres_page_suivante",
-        "charger_musee_oeuvres_page_suivante",
-    ]:
-        assert_contains(app_js, expected, "app.js")
+    assert_contains(app_js, "if (!window.ui.etat)", "app.js")
+
+    principal_path = site_root / "src/principal.multi"
+    if principal_path.exists():
+        principal_multi = principal_path.read_text(encoding="utf-8")
+        assert_contains(principal_multi, "importer ui.etat", "src/principal.multi")
 
     for query_path in PAGINATED_QUERIES:
         query = (site_root / query_path).read_text(encoding="utf-8")
@@ -142,6 +143,8 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
         assert_contains(bundle_js, name, "bundle.js")
     for marker in BUNDLE_DELEGATION_MARKERS:
         assert_contains(bundle_js, marker, "bundle.js delegation")
+    if "unsupported" in bundle_js:
+        raise AssertionError("bundle.js contains unsupported lowering output")
 
 
 def validate_http(site_root: pathlib.Path) -> None:

@@ -1,6 +1,6 @@
 importer ui.interactions.navigation
 importer donnees.requetes
-# ui.etat is provided by the HTML (not imported to avoid duplicate definitions)
+importer ui.etat
 
 
 asynchrone déf lancer_recherche(requete: chaine):

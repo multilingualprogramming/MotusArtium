@@ -105,6 +105,124 @@ function intervalle(...args) {
 const _engine = new ReactiveEngine();
 const __ml_signals = _engine.signals;
 
+async function ouvrir_barre_recherche() {
+  'Ouvrir la barre de recherche';
+  await ui.interactions.recherche.ouvrir_barre_recherche();
+}
+
+async function fermer_barre_recherche() {
+  'Fermer la barre de recherche';
+  await ui.interactions.recherche.fermer_barre_recherche();
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.barre_recherche = window.ui.composants.barre_recherche || {};
+Object.assign(window.ui.composants.barre_recherche, {ouvrir_barre_recherche: ouvrir_barre_recherche, fermer_barre_recherche: fermer_barre_recherche});
+
+async function lancer_recherche(requete) {
+  'Lancer une recherche: cache + Wikidata, fusionner et afficher';
+  if (((!requete) || ((requete).length < 2))) {
+    ui.etat.resultats_recherche = [];
+    return;
+  }
+  resultats_cache = _rechercher_cache(requete);
+  resultats_wikidata = await donnees.requetes.rechercher_entites_wikidata(requete);
+  entites_vues = {};
+  resultats_fusionnes = [];
+  for (const resultat of resultats_cache) {
+    cle = ((resultat)?.['id'] ?? '');
+    if ((cle || (cle not in entites_vues))) {
+      _engine.get('entites_vues').setIndex(cle, true);
+      resultats_fusionnes.push(resultat);
+    }
+  }
+  for (const resultat of resultats_wikidata) {
+    cle = ((resultat)?.['id'] ?? '');
+    if ((cle || (cle not in entites_vues))) {
+      _engine.get('entites_vues').setIndex(cle, true);
+      resultats_fusionnes.push(resultat);
+    }
+  }
+  ui.etat.resultats_recherche = resultats_fusionnes;
+}
+
+async function resoudre_type_entite(entite_id, type_par_defaut) {
+  "Résoudre le type d'une entité via les claims Wikidata (P31/P279)";
+  try {
+    url = (('https://www.wikidata.org/w/api.php?action=wbgetentities&ids=' + encodeURIComponent(entite_id)) + '&props=claims&format=json&origin=*');
+    reponse = await fetch(url);
+    corps = await reponse.json();
+    entite = ((((corps)?.['entities'] ?? {}))?.[entite_id] ?? {});
+    reclamations = ((entite)?.['claims'] ?? {});
+    ids_rec = [];
+    for (const prop of ['P31', 'P279']) {
+      for (const rec of ((reclamations)?.[prop] ?? [])) {
+        val = ((((((rec)?.['mainsnak'] ?? {}))?.['datavalue'] ?? {}))?.['value'] ?? {});
+        id_val = ((val)?.['id'] ?? '');
+        if (id_val) {
+          ids_rec.push(id_val);
+        }
+      }
+    }
+    if ((('Q33506' in ids_rec) || ('Q207694' in ids_rec) || ('Q11635' in ids_rec))) {
+      return 'museum';
+    }
+    if (('Q5' in ids_rec)) {
+      return 'artist';
+    }
+    if (('Q968159' in ids_rec)) {
+      return 'movement';
+    }
+    if ((('Q3305213' in ids_rec) || ('Q838948' in ids_rec))) {
+      return 'artwork';
+    }
+    if ((('Q82550' in ids_rec) || ('Q157957' in ids_rec) || ('Q1790144' in ids_rec))) {
+      return 'subject';
+    }
+    return type_par_defaut;
+  } catch (error) {
+    return type_par_defaut;
+  }
+}
+
+async function selectionner_resultat_recherche(entite_id, entite_type) {
+  "Sélectionner un résultat: naviguer vers l'entité et fermer la barre";
+  await ui.interactions.navigation.naviguer_vers_entite(entite_id, entite_type);
+  await fermer_barre_recherche();
+}
+
+async function ouvrir_barre_recherche() {
+  'Ouvrir la barre de recherche';
+  ui.etat.barre_recherche_active = true;
+}
+
+async function fermer_barre_recherche() {
+  'Fermer la barre de recherche et nettoyer les résultats';
+  ui.etat.barre_recherche_active = false;
+  ui.etat.resultats_recherche = [];
+}
+
+window.ui = window.ui || {};
+window.ui.interactions = window.ui.interactions || {};
+window.ui.interactions.recherche = window.ui.interactions.recherche || {};
+Object.assign(window.ui.interactions.recherche, {lancer_recherche: lancer_recherche, resoudre_type_entite: resoudre_type_entite, selectionner_resultat_recherche: selectionner_resultat_recherche, ouvrir_barre_recherche: ouvrir_barre_recherche, fermer_barre_recherche: fermer_barre_recherche});
+
+async function ouvrir_panneau_detail() {
+  'Ouvrir le panneau de détails';
+  ui.etat.panneau_detail_visible = true;
+}
+
+async function fermer_panneau_detail() {
+  'Fermer le panneau de détails';
+  ui.etat.panneau_detail_visible = false;
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.panneau_detail = window.ui.composants.panneau_detail || {};
+Object.assign(window.ui.composants.panneau_detail, {ouvrir_panneau_detail: ouvrir_panneau_detail, fermer_panneau_detail: fermer_panneau_detail});
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);
@@ -199,9 +317,4 @@ async function charger_artiste_oeuvres_page_suivante() {
 async function charger_musee_oeuvres_page_suivante() {
   "Charger la page suivante d'œuvres pour le musée courant";
   return await ui.etat.charger_musee_oeuvres_page_suivante();
-}
-
-async function creer_vue_polyglot_studio(conteneur, entite_id) {
-  'Créer et initialiser la visualisation polyglot studio (stub - implementation in HTML)';
-  // unsupported IRPassStatement
 }

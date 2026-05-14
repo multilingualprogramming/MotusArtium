@@ -1528,6 +1528,18 @@
             opacity: 1;
         }
 
+        /* Work labels always shown — a work's title is its primary identity */
+        .constellation-nodes.is-dense .node--work .node-label {
+            opacity: 0.72;
+            font-size: 0.7rem;
+        }
+        .constellation-nodes.is-dense .node--work:hover .node-label,
+        .constellation-nodes.is-dense .node--work.is-connected .node-label,
+        .constellation-nodes.is-dense .node--work.is-selected .node-label {
+            opacity: 1;
+            font-size: 0.78rem;
+        }
+
         .node.is-selected .node-label {
             font-weight: 600;
             font-size: 0.84rem;

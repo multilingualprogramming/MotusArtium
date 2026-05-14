@@ -3093,6 +3093,24 @@
                 sectors.primary.end = 14;
             }
 
+            // For artist-type selected nodes: sibling artists from the same movement have
+            // no direct relation and fall into primary, which spans -150°→150° and includes
+            // the bottom sector (55°→125°) where works live, causing them to cover works.
+            // Fix: trim primary to end at 50° (5° gap before works), route the parent
+            // movement to top, and pack sibling artists into a dedicated upper-right zone.
+            if (selectedType.includes("artist") || selectedType.includes("artiste")) {
+                sectors.primary.end = 50;
+                sectors.siblings = { start: -50, end: 28, nodes: [], radii: [38, 44, 48] };
+            }
+
+            // Work context: route creator to bottom, dedicate upper-left to sibling works,
+            // trim primary so it never reaches the creator zone or sibling zone.
+            if (selectedType.includes("work") || selectedType.includes("oeuvre")) {
+                sectors.primary.start = -115;
+                sectors.primary.end = 42;
+                sectors.siblings = { start: -175, end: -135, nodes: [], radii: [34, 42, 48] };
+            }
+
             // Lens-driven sector overrides: map relation types to compass directions
             const lensSectorRules = {
                 influence: {
@@ -3163,8 +3181,18 @@
                         sectors.right.nodes.push(node);
                     } else if (relation === "created") {
                         sectors.bottom.nodes.push(node);
+                    } else if (relation === "contains_artist") {
+                        // Parent movement(s) — place at top as context anchor
+                        sectors.top.nodes.push(node);
                     } else {
-                        sectors.primary.nodes.push(node);
+                        // Sibling artists (same movement, no direct relation) go to the
+                        // far upper-right cluster so they never cover the artist's works
+                        const nodeType = String(node.type || "").toLowerCase();
+                        if ((nodeType.includes("artist") || nodeType.includes("artiste")) && sectors.siblings) {
+                            sectors.siblings.nodes.push(node);
+                        } else {
+                            sectors.primary.nodes.push(node);
+                        }
                     }
                 } else if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
                     if (relation === "follows" || relation === "followed_by" || relation === "contains_movement") {
@@ -3187,8 +3215,15 @@
                         sectors.left.nodes.push(node);
                     } else if (relation === "made_of") {
                         sectors.right.nodes.push(node);
+                    } else if (relation === "created") {
+                        sectors.bottom.nodes.push(node);  // Artist who created this work, anchored below
                     } else {
-                        sectors.primary.nodes.push(node);
+                        const nodeType = String(node.type || "").toLowerCase();
+                        if ((nodeType.includes("work") || nodeType.includes("oeuvre")) && sectors.siblings) {
+                            sectors.siblings.nodes.push(node);  // Sibling works, far upper-left
+                        } else {
+                            sectors.primary.nodes.push(node);
+                        }
                     }
                 } else {
                     sectors.primary.nodes.push(node);

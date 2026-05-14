@@ -141,13 +141,6 @@
             temporalInsights: [],
             temporalFocus: null,
             nextSessionId: 1,
-            activeCompassLens: "movement",
-            activeLensPreset: "",
-            shellFilter: null,
-            shellFilterEnabled: false,
-            constellationZoom: 1,
-            constellationPanX: 0,
-            constellationPanY: 0,
             replayingSessionId: 0
         };
 
@@ -745,13 +738,13 @@
             runtimeState.queryNarrative = "Session cleared. Restoring the default Impressionism opening scene.";
             runtimeState.temporalInsights = [];
             runtimeState.temporalFocus = null;
-            runtimeState.activeLensPreset = "";
-            runtimeState.activeCompassLens = "movement";
-            runtimeState.shellFilterEnabled = false;
+            browserAdapterState.activeLensPreset = "";
+            browserAdapterState.activeCompassLens = "movement";
+            browserAdapterState.shellFilterEnabled = false;
             runtimeState.multilingualEntityLabels = {};
-            runtimeState.constellationZoom = 1;
-            runtimeState.constellationPanX = 0;
-            runtimeState.constellationPanY = 0;
+            browserAdapterState.constellationZoom = 1;
+            browserAdapterState.constellationPanX = 0;
+            browserAdapterState.constellationPanY = 0;
             buildShellFilter();
             setActiveButton(modeButtons, modeButtons.find((button) => button.dataset.mode === "observatory"));
             renderConstellationZoomControls();
@@ -1438,11 +1431,11 @@
         }
 
         function selectedLensConfig(languageCode) {
-            const activePreset = runtimeState.activeLensPreset;
+            const activePreset = browserAdapterState.activeLensPreset;
             if (activePreset && lensPresetContent[activePreset]) {
                 return lensPresetContent[activePreset][languageCode] || lensPresetContent[activePreset].en;
             }
-            const activeLens = runtimeState.activeCompassLens || "movement";
+            const activeLens = browserAdapterState.activeCompassLens || "movement";
             return (compassLensContent[activeLens] && (compassLensContent[activeLens][languageCode] || compassLensContent[activeLens].en)) || null;
         }
 
@@ -1484,7 +1477,7 @@
         }
 
         function getEffectiveLensKey() {
-            const preset = runtimeState.activeLensPreset;
+            const preset = browserAdapterState.activeLensPreset;
             if (preset === "lineage") {
                 return "influence";
             }
@@ -1497,24 +1490,24 @@
             if (preset === "cross-language") {
                 return "";
             }
-            if (!runtimeState.shellFilterEnabled) {
+            if (!browserAdapterState.shellFilterEnabled) {
                 return "";
             }
-            return runtimeState.activeCompassLens || "movement";
+            return browserAdapterState.activeCompassLens || "movement";
         }
 
         function buildShellFilter() {
-            const preset = runtimeState.activeLensPreset || "";
+            const preset = browserAdapterState.activeLensPreset || "";
             const effectiveLens = getEffectiveLensKey();
-            runtimeState.shellFilter = {
-                lens: runtimeState.activeCompassLens || "",
+            browserAdapterState.shellFilter = {
+                lens: browserAdapterState.activeCompassLens || "",
                 preset,
                 effectiveLens
             };
         }
 
         function nodeMatchesShellFilter(node, snapshot) {
-            const filter = runtimeState.shellFilter;
+            const filter = browserAdapterState.shellFilter;
             if (!filter || (!filter.effectiveLens && !filter.preset)) {
                 return true;
             }
@@ -1531,7 +1524,7 @@
         }
 
         function relationMatchesShellFilter(relation, visibleNodeIds) {
-            const filter = runtimeState.shellFilter;
+            const filter = browserAdapterState.shellFilter;
             if (!filter || (!filter.effectiveLens && !filter.preset)) {
                 return true;
             }
@@ -1607,7 +1600,7 @@
             const legendEl = document.getElementById("constellation-legend");
             if (!legendEl) return;
             const selectedType = String((runtimeState.selectedEntity && runtimeState.selectedEntity.type) || "").toLowerCase();
-            const lens = runtimeState.activeCompassLens || "movement";
+            const lens = browserAdapterState.activeCompassLens || "movement";
             const labels = getLegendLabels(selectedType, lens);
             const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text || ""; };
             set("legend-top", labels.top);
@@ -1626,7 +1619,7 @@
         function updateCompassCore() {
             const coreEl = document.querySelector(".compass-core");
             if (!coreEl) return;
-            const activeLens = runtimeState.activeCompassLens || "movement";
+            const activeLens = browserAdapterState.activeCompassLens || "movement";
             const entity = runtimeState.selectedEntity;
 
             const labelEl = coreEl.querySelector(".compass-core-label");
@@ -1653,9 +1646,9 @@
         }
 
         function renderLensControls() {
-            const hasPreset = Boolean(runtimeState.activeLensPreset);
+            const hasPreset = Boolean(browserAdapterState.activeLensPreset);
             compassPoleButtons.forEach((button) => {
-                const isActive = !hasPreset && button.dataset.lens === runtimeState.activeCompassLens;
+                const isActive = !hasPreset && button.dataset.lens === browserAdapterState.activeCompassLens;
                 button.classList.toggle("is-active", isActive);
                 button.classList.toggle("is-muted", hasPreset);
                 button.classList.toggle("is-primary", isActive);
@@ -1668,7 +1661,7 @@
                 }
             });
             lensPresetButtons.forEach((button) => {
-                const isActive = button.dataset.preset === runtimeState.activeLensPreset;
+                const isActive = button.dataset.preset === browserAdapterState.activeLensPreset;
                 button.classList.toggle("is-active", isActive);
                 button.classList.toggle("is-muted", !isActive && hasPreset);
             });
@@ -1687,9 +1680,9 @@
         }
 
         async function applyShellLens(lens, preset = "", enableFilter = true) {
-            runtimeState.activeCompassLens = lens || runtimeState.activeCompassLens || "movement";
-            runtimeState.activeLensPreset = preset;
-            runtimeState.shellFilterEnabled = enableFilter;
+            browserAdapterState.activeCompassLens = lens || browserAdapterState.activeCompassLens || "movement";
+            browserAdapterState.activeLensPreset = preset;
+            browserAdapterState.shellFilterEnabled = enableFilter;
             buildShellFilter();
             renderLensControls();
             updateLensNarrative();
@@ -1887,9 +1880,9 @@
         }
 
         function renderConstellationZoomControls() {
-            const zoom = runtimeState.constellationZoom || 1;
-            const panX = runtimeState.constellationPanX || 0;
-            const panY = runtimeState.constellationPanY || 0;
+            const zoom = browserAdapterState.constellationZoom || 1;
+            const panX = browserAdapterState.constellationPanX || 0;
+            const panY = browserAdapterState.constellationPanY || 0;
             const transform = "translate(" + panX + "px, " + panY + "px) scale(" + zoom + ")";
             if (constellationLinksEl) {
                 constellationLinksEl.style.transform = transform;
@@ -1917,7 +1910,7 @@
         function renderConstellationMinimap() {
             const canvas = document.getElementById("constellation-minimap");
             if (!canvas) return;
-            const zoom = runtimeState.constellationZoom || 1;
+            const zoom = browserAdapterState.constellationZoom || 1;
             const isVisible = zoom > 1.05;
             canvas.classList.toggle("is-visible", isVisible);
             if (!isVisible) return;
@@ -1961,8 +1954,8 @@
             const constellationEl = document.querySelector(".constellation");
             if (constellationEl) {
                 const cRect = constellationEl.getBoundingClientRect();
-                const panX = runtimeState.constellationPanX || 0;
-                const panY = runtimeState.constellationPanY || 0;
+                const panX = browserAdapterState.constellationPanX || 0;
+                const panY = browserAdapterState.constellationPanY || 0;
                 const panXPct = panX / cRect.width * 100;
                 const panYPct = panY / cRect.height * 100;
                 const xMin = Math.max(0, 50 + (-50 - panXPct) / zoom);
@@ -1976,7 +1969,7 @@
         }
 
         function setConstellationZoom(nextZoom) {
-            runtimeState.constellationZoom = clamp(nextZoom, 0.3, 2.5);
+            browserAdapterState.constellationZoom = clamp(nextZoom, 0.3, 2.5);
             renderConstellationZoomControls();
         }
 
@@ -2678,7 +2671,14 @@
             graphe: {
                 noeuds: new Map(),
                 relations: []
-            }
+            },
+            activeCompassLens: "movement",
+            activeLensPreset: "",
+            shellFilterEnabled: false,
+            shellFilter: null,
+            constellationZoom: 1,
+            constellationPanX: 0,
+            constellationPanY: 0
         };
 
         if (chronologyLoadMoreEl) {
@@ -2711,20 +2711,20 @@
 
         if (constellationZoomOutEl) {
             constellationZoomOutEl.addEventListener("click", () => {
-                setConstellationZoom((runtimeState.constellationZoom || 1) - 0.2);
+                setConstellationZoom((browserAdapterState.constellationZoom || 1) - 0.2);
             });
         }
 
         if (constellationZoomInEl) {
             constellationZoomInEl.addEventListener("click", () => {
-                setConstellationZoom((runtimeState.constellationZoom || 1) + 0.2);
+                setConstellationZoom((browserAdapterState.constellationZoom || 1) + 0.2);
             });
         }
 
         if (constellationZoomResetEl) {
             constellationZoomResetEl.addEventListener("click", () => {
-                runtimeState.constellationPanX = 0;
-                runtimeState.constellationPanY = 0;
+                browserAdapterState.constellationPanX = 0;
+                browserAdapterState.constellationPanY = 0;
                 setConstellationZoom(1);
             });
         }
@@ -2740,7 +2740,7 @@
                 e.preventDefault();
                 const step = 0.15;
                 const delta = e.deltaY > 0 ? -step : step;
-                setConstellationZoom((runtimeState.constellationZoom || 1) + delta);
+                setConstellationZoom((browserAdapterState.constellationZoom || 1) + delta);
             }, { passive: false });
 
             let isPanning = false;
@@ -2754,8 +2754,8 @@
                 panStart = {
                     x: e.clientX,
                     y: e.clientY,
-                    panX: runtimeState.constellationPanX || 0,
-                    panY: runtimeState.constellationPanY || 0
+                    panX: browserAdapterState.constellationPanX || 0,
+                    panY: browserAdapterState.constellationPanY || 0
                 };
                 constellationEl.setPointerCapture(e.pointerId);
                 constellationEl.classList.add("is-panning");
@@ -2768,8 +2768,8 @@
                 }
                 const rect = constellationEl.getBoundingClientRect();
                 const maxPan = Math.max(rect.width, rect.height) * 0.6;
-                runtimeState.constellationPanX = Math.max(-maxPan, Math.min(maxPan, panStart.panX + (e.clientX - panStart.x)));
-                runtimeState.constellationPanY = Math.max(-maxPan, Math.min(maxPan, panStart.panY + (e.clientY - panStart.y)));
+                browserAdapterState.constellationPanX = Math.max(-maxPan, Math.min(maxPan, panStart.panX + (e.clientX - panStart.x)));
+                browserAdapterState.constellationPanY = Math.max(-maxPan, Math.min(maxPan, panStart.panY + (e.clientY - panStart.y)));
                 renderConstellationZoomControls();
             });
 
@@ -2981,7 +2981,13 @@
                         total_noeuds: browserAdapterState.graphe.noeuds.size,
                         total_relations: browserAdapterState.graphe.relations.length
                     }
-                }
+                },
+                lentille_compas: browserAdapterState.activeCompassLens,
+                preset_lentille: browserAdapterState.activeLensPreset,
+                filtre_actif: browserAdapterState.shellFilterEnabled,
+                zoom_constellation: browserAdapterState.constellationZoom,
+                pan_constellation_x: browserAdapterState.constellationPanX,
+                pan_constellation_y: browserAdapterState.constellationPanY
             };
         }
 
@@ -3202,7 +3208,7 @@
 
         function semanticLayoutSectors(selectedNode, nodes, relationByTarget, relationBySource) {
             const selectedType = String((selectedNode && selectedNode.type) || "").toLowerCase();
-            const activeLens = runtimeState.activeCompassLens || "movement";
+            const activeLens = browserAdapterState.activeCompassLens || "movement";
 
             const sectors = {
                 primary: { start: -150, end: 150, nodes: [], radii: [22, 32, 41, 47] },
@@ -3524,7 +3530,7 @@
                 const nodeEl = document.createElement("button");
                 nodeEl.type = "button";
                 nodeEl.dataset.nodeId = node.id;
-                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (isContextDetail ? " is-context-detail" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (runtimeState.shellFilter && runtimeState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
+                nodeEl.className = "node " + constellationClassForType(node.type) + (node.id === selectedId ? " is-selected" : "") + (isContextDetail ? " is-context-detail" : "") + (snapshot.affichage_chargement && node.id === runtimeState.lastRequestedEntityId ? " is-loading" : "") + (isTemporalFocus ? " is-temporal-focus" : "") + (isMutedTemporally ? " is-muted-temporal" : "") + (browserAdapterState.shellFilter && browserAdapterState.shellFilter.effectiveLens && isFilterFocus ? " is-filter-focus" : "");
                 nodeEl.style.left = position.x + "%";
                 nodeEl.style.top = position.y + "%";
                 const degree = nodeDegree.get(node.id) || 0;
@@ -4318,11 +4324,11 @@
         lensPresetButtons.forEach((button) => {
             button.addEventListener("click", async () => {
                 const preset = button.dataset.preset || "";
-                if (runtimeState.activeLensPreset === preset) {
-                    await applyShellLens(runtimeState.activeCompassLens || "movement", "", false);
+                if (browserAdapterState.activeLensPreset === preset) {
+                    await applyShellLens(browserAdapterState.activeCompassLens || "movement", "", false);
                     return;
                 }
-                await applyShellLens(runtimeState.activeCompassLens || "movement", preset, true);
+                await applyShellLens(browserAdapterState.activeCompassLens || "movement", preset, true);
             });
         });
 

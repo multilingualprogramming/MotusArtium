@@ -34,6 +34,14 @@ observer var mode_langue_actif = "fr"  # "fr" ou "en"
 observer var afficher_surfaces_paralleles = vrai  # afficher cote a cote ou par onglets
 observer var entite_multilingue_focus = ""  # id de l'entite en focus pour polyglot-studio
 
+# Etat de la visualisation constellation (compas, zoom, panoramique)
+observer var lentille_compas = "movement"
+observer var preset_lentille = ""
+observer var filtre_actif = faux
+observer var zoom_constellation = 1
+observer var pan_constellation_x = 0
+observer var pan_constellation_y = 0
+
 # Etat de pagination curseur pour le chargement progressif
 observer var curseur_artistes_mouvement = ""
 observer var a_page_suivante_artistes_mouvement = faux

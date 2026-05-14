@@ -166,6 +166,16 @@ async function fermer_barre_recherche() {
   await ui.interactions.recherche.fermer_barre_recherche();
 }
 
+async function resoudre_type_entite(entite_id, type_par_defaut) {
+  "Résoudre le type d'une entité via les claims Wikidata";
+  return await ui.interactions.recherche.resoudre_type_entite(entite_id, type_par_defaut);
+}
+
+async function charger_selection(entite_id, type_en, etiquette) {
+  'Charger une sélection de recherche et naviguer';
+  await ui.interactions.navigation.charger_selection(entite_id, type_en, etiquette);
+}
+
 async function ouvrir_panneau_detail() {
   'Ouvrir le panneau de détails';
   await ui.composants.panneau_detail.ouvrir_panneau_detail();
@@ -193,5 +203,5 @@ async function charger_musee_oeuvres_page_suivante() {
 
 async function creer_vue_polyglot_studio(conteneur, entite_id) {
   'Créer et initialiser la visualisation polyglot studio (stub - implementation in HTML)';
-  passe;
+  // unsupported IRPassStatement
 }

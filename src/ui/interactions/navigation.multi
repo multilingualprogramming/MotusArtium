@@ -17,6 +17,34 @@ asynchrone déf naviguer_vers_entite(entite_id: chaine, entite_type: chaine):
     sinon si entite_type == "oeuvre":
         attendre ui.etat.charger_oeuvre(entite_id)
 
+    sinon si entite_type == "musee":
+        attendre ui.etat.charger_musee(entite_id)
+
+    sinon si entite_type == "sujet":
+        attendre ui.etat.charger_sujet(entite_id)
+
+
+asynchrone déf charger_selection(entite_id: chaine, type_en: chaine, etiquette: chaine):
+    """Charger une sélection de recherche: normaliser le type anglais→français et naviguer"""
+    si type_en == "artist":
+        type_fr = "artiste"
+    sinon si type_en == "artwork":
+        type_fr = "oeuvre"
+    sinon si type_en == "museum":
+        type_fr = "musee"
+    sinon si type_en == "subject":
+        type_fr = "sujet"
+    sinon:
+        type_fr = "mouvement"
+
+    ui.etat.reinitialiser_graphe()
+    si etiquette:
+        ui.etat.amorcer_entite(entite_id, type_fr, etiquette)
+    ui.etat.entite_selectionnee_id = entite_id
+    ui.etat.entite_selectionnee_type = type_fr
+
+    attendre naviguer_vers_entite(entite_id, type_fr)
+
 
 asynchrone déf explorer_voisinage(entite_id: chaine, profondeur: nombre = 2):
     """Explorer le voisinage d'une entité"""

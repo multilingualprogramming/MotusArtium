@@ -214,153 +214,16 @@
                 return 5;
             }
 
-            function inferTypeFromClaims(claimIds, fallbackType) {
-                const ids = new Set(claimIds || []);
-                if (ids.has("Q33506") || ids.has("Q207694") || ids.has("Q11635")) {
-                    return "museum";
-                }
-                if (ids.has("Q5")) {
-                    return "artist";
-                }
-                if (ids.has("Q968159")) {
-                    return "movement";
-                }
-                if (ids.has("Q3305213") || ids.has("Q838948")) {
-                    return "artwork";
-                }
-                if (ids.has("Q82550") || ids.has("Q157957") || ids.has("Q1790144")) {
-                    return "subject";
-                }
-                return fallbackType;
-            }
-
-            async function resolveSearchResultType(entityId, fallbackType) {
-                try {
-                    const response = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(entityId)}&props=claims&format=json&origin=*`);
-                    const body = await response.json();
-                    const entity = ((body.entities || {})[entityId]) || {};
-                    const claims = entity.claims || {};
-                    const claimIds = [];
-
-                    ["P31", "P279"].forEach((propertyId) => {
-                        (claims[propertyId] || []).forEach((claim) => {
-                            const id = (((claim || {}).mainsnak || {}).datavalue || {}).value?.id;
-                            if (id) {
-                                claimIds.push(id);
-                            }
-                        });
-                    });
-
-                    return inferTypeFromClaims(claimIds, fallbackType);
-                } catch (error) {
-                    console.warn("Could not resolve entity claims for", entityId, error);
-                    return fallbackType;
-                }
-            }
-
-            async function searchEntities(query) {
-                const response = await fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&origin=*`);
-                const body = await response.json();
-                if (body.error) {
-                    throw new Error(body.error.info || "Search failed");
-                }
-                return (body.search || [])
-                    .map((item) => ({
-                        id: item.id,
-                        label: item.label,
-                        description: item.description || "",
-                        entityType: inferSearchResultType(item)
-                    }))
-                    .filter((item) => item.id)
-                    .sort((left, right) => {
-                        const rankDifference = rankSearchResultType(left.entityType) - rankSearchResultType(right.entityType);
-                        if (rankDifference !== 0) {
-                            return rankDifference;
-                        }
-                        return String(left.label || "").localeCompare(String(right.label || ""));
-                    });
-            }
-
             async function loadSearchSelection(entityId, entityType, displayLabel) {
-                const canonicalType = entityType === "artwork"
-                    ? "oeuvre"
-                    : (entityType === "artist"
-                        ? "artiste"
-                        : (entityType === "museum"
-                            ? "musee"
-                            : (entityType === "subject" ? "sujet" : "mouvement")));
-
                 if (window.history && typeof window.history.replaceState === "function") {
                     const params = new URLSearchParams(window.location.search);
                     params.set("entity", entityId);
                     params.set("type", entityType);
                     window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
                 }
-
-                if (window.ui && window.ui.etat && typeof window.ui.etat.reinitialiser_graphe === "function") {
-                    window.ui.etat.reinitialiser_graphe();
-                }
-
-                if (window.ui && window.ui.etat) {
-                    if (typeof window.ui.etat.amorcer_entite === "function") {
-                        window.ui.etat.amorcer_entite(entityId, canonicalType, displayLabel);
-                    }
-                    window.ui.etat.entite_selectionnee_id = entityId;
-                    window.ui.etat.entite_selectionnee_type = canonicalType;
-                }
-
-                if (entityType === "artist") {
-                    if (typeof charger_artiste === "function") {
-                        await charger_artiste(entityId);
-                        return;
-                    }
-                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_artiste === "function") {
-                        await window.ui.etat.charger_artiste(entityId);
-                        return;
-                    }
-                }
-
-                if (entityType === "artwork") {
-                    if (typeof charger_oeuvre === "function") {
-                        await charger_oeuvre(entityId);
-                        return;
-                    }
-                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_oeuvre === "function") {
-                        await window.ui.etat.charger_oeuvre(entityId);
-                        return;
-                    }
-                }
-
-                if (entityType === "museum") {
-                    if (typeof charger_musee === "function") {
-                        await charger_musee(entityId);
-                        return;
-                    }
-                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_musee === "function") {
-                        await window.ui.etat.charger_musee(entityId);
-                        return;
-                    }
-                }
-
-                if (entityType === "subject") {
-                    if (typeof charger_sujet === "function") {
-                        await charger_sujet(entityId);
-                        return;
-                    }
-                    if (window.ui && window.ui.etat && typeof window.ui.etat.charger_sujet === "function") {
-                        await window.ui.etat.charger_sujet(entityId);
-                        return;
-                    }
-                }
-
-                if (typeof charger_mouvement === "function") {
-                    await charger_mouvement(entityId);
-                    return;
-                }
-                if (window.ui && window.ui.etat && typeof window.ui.etat.charger_mouvement === "function") {
-                    await window.ui.etat.charger_mouvement(entityId);
-                }
+                await charger_selection(entityId, entityType, displayLabel);
             }
+
 
             function positionDropdown() {
                 const rect = searchInput.getBoundingClientRect();
@@ -404,7 +267,7 @@
                                         const entityId = this.getAttribute("data-entity-id");
                                         const hintedType = this.getAttribute("data-entity-type") || "movement";
                                         const label = this.querySelector("strong").textContent;
-                                        const entityType = await resolveSearchResultType(entityId, hintedType);
+                                        const entityType = await resoudre_type_entite(entityId, hintedType);
                                         searchInput.value = label;
                                         searchDropdown.classList.remove("is-active");
                                         try {
@@ -489,64 +352,4 @@
                 return;
             }
 
-            if (false && detailContainer && detailRoot && typeof rendre_panneau_detail === "function") {
-                let renderCount = 0;
-                setInterval(() => {
-                    try {
-                        // Ensure UI state is accessible
-                        if (window.ui && window.ui.etat) {
-                            // Set visibility to true to show panel
-                            window.ui.etat.panneau_detail_visible = true;
-
-                            // If no entity selected, try to use the default
-                            if (!window.ui.etat.entite_selectionnee_id) {
-                                window.ui.etat.entite_selectionnee_id = "Q40415";
-                                window.ui.etat.entite_selectionnee_type = "mouvement";
-                            }
-                        }
-
-                        // Render the detail panel HTML
-                        let html = "";
-
-                        // Try multilingual function first
-                        if (typeof rendre_panneau_detail === "function") {
-                            try {
-                                html = rendre_panneau_detail();
-                            } catch (e) {
-                                console.warn("Error in rendre_panneau_detail:", e);
-                            }
-                        }
-
-                        // Fallback: render directly if multilingual didn't work
-                        if (!html || html.length === 0) {
-                            if (window.ui && window.ui.etat) {
-                                const entityId = window.ui.etat.entite_selectionnee_id;
-                                const entityType = window.ui.etat.entite_selectionnee_type;
-
-                                if (entityId && entityType) {
-                                    html = `<div class="detail-section">
-                                        <h3>${entityId}</h3>
-                                        <p class="detail-row">Type: ${entityType}</p>
-                                        <p class="detail-row" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 12px;">Loading detailed information...</p>
-                                    </div>`;
-
-                                }
-                            }
-                        }
-
-                        renderCount++;
-
-                        if (html && typeof html === "string" && html.length > 0) {
-                            detailRoot.innerHTML = html;
-                            detailContainer.classList.add("is-active");
-                        } else {
-                            detailContainer.classList.remove("is-active");
-                        }
-                    } catch (e) {
-                        console.error("Error rendering detail panel:", e);
-                    }
-                }, 300);
-            } else {
-                console.error("Detail panel containers not found or rendre_panneau_detail not available!");
-            }
         }

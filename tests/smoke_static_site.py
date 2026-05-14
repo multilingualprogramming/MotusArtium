@@ -67,6 +67,9 @@ BUNDLE_EXPORTS = [
     "charger_mouvement_artistes_page_suivante",
     "charger_artiste_oeuvres_page_suivante",
     "charger_musee_oeuvres_page_suivante",
+    # Search dispatch (Phase 4 addition)
+    "resoudre_type_entite",
+    "charger_selection",
 ]
 
 # Every entity-loader in bundle.js must delegate to ui.etat, not re-implement.

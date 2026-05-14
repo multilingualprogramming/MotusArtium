@@ -3,6 +3,7 @@
 importer ui.composants.barre_recherche
 importer ui.composants.panneau_detail
 importer ui.interactions.recherche
+importer ui.interactions.navigation
 
 # Note: ui.etat is NOT imported to avoid duplicate function definitions in the bundle
 # ui.etat.* functions are provided by the HTML implementation instead
@@ -76,6 +77,16 @@ asynchrone déf ouvrir_barre_recherche():
 asynchrone déf fermer_barre_recherche():
     """Fermer la barre de recherche"""
     attendre ui.interactions.recherche.fermer_barre_recherche()
+
+
+asynchrone déf resoudre_type_entite(entite_id, type_par_defaut):
+    """Résoudre le type d'une entité via les claims Wikidata"""
+    retour attendre ui.interactions.recherche.resoudre_type_entite(entite_id, type_par_defaut)
+
+
+asynchrone déf charger_selection(entite_id, type_en, etiquette):
+    """Charger une sélection de recherche et naviguer"""
+    attendre ui.interactions.navigation.charger_selection(entite_id, type_en, etiquette)
 
 
 # ============================================================================

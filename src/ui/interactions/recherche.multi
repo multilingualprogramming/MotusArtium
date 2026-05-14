@@ -56,6 +56,38 @@ déf _rechercher_cache(requete: chaine) -> liste:
     retour resultats
 
 
+asynchrone déf resoudre_type_entite(entite_id: chaine, type_par_defaut: chaine) -> chaine:
+    """Résoudre le type d'une entité via les claims Wikidata (P31/P279)"""
+    essayer:
+        url = "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=" + encodeURIComponent(entite_id) + "&props=claims&format=json&origin=*"
+        reponse = attendre fetch(url)
+        corps = attendre reponse.json()
+        entite = corps.obtenir("entities", {}).obtenir(entite_id, {})
+        reclamations = entite.obtenir("claims", {})
+
+        ids_rec = []
+        pour prop dans ["P31", "P279"]:
+            pour rec dans reclamations.obtenir(prop, []):
+                val = rec.obtenir("mainsnak", {}).obtenir("datavalue", {}).obtenir("value", {})
+                id_val = val.obtenir("id", "")
+                si id_val:
+                    ids_rec.ajouter(id_val)
+
+        si "Q33506" dans ids_rec ou "Q207694" dans ids_rec ou "Q11635" dans ids_rec:
+            retour "museum"
+        si "Q5" dans ids_rec:
+            retour "artist"
+        si "Q968159" dans ids_rec:
+            retour "movement"
+        si "Q3305213" dans ids_rec ou "Q838948" dans ids_rec:
+            retour "artwork"
+        si "Q82550" dans ids_rec ou "Q157957" dans ids_rec ou "Q1790144" dans ids_rec:
+            retour "subject"
+        retour type_par_defaut
+    sauf erreur:
+        retour type_par_defaut
+
+
 asynchrone déf selectionner_resultat_recherche(entite_id: chaine, entite_type: chaine):
     """Sélectionner un résultat: naviguer vers l'entité et fermer la barre"""
     attendre ui.interactions.navigation.naviguer_vers_entite(entite_id, entite_type)

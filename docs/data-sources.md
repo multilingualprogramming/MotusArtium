@@ -65,6 +65,7 @@ Used to inspect entity claims for search-result type resolution, so the app can 
 - `artist_influences.graphql`
 - `artworks_by_artist.graphql`
 - `artwork_details.graphql`
+- `museum_details.graphql`
 - `artworks_by_museum.graphql`
 - `artworks_by_subject.graphql`
 - `movements_catalog.graphql`

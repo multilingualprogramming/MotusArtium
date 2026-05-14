@@ -24,6 +24,7 @@ REQUIRED_FILES = [
     "graphql/artists_by_movement.graphql",
     "graphql/artworks_by_artist.graphql",
     "graphql/artworks_by_museum.graphql",
+    "graphql/museum_details.graphql",
     "graphql/movements_catalog.graphql",
 ]
 

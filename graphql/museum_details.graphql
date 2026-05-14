@@ -1,0 +1,32 @@
+query MuseumDetails($id: ItemId!, $languageCode: LanguageCode!) {
+  item(id: $id) {
+    id
+    museumLabel: label(languageCode: $languageCode)
+    inceptionDate: statements(propertyId: "P571") {
+      value {
+        ... on TimeValue { time }
+      }
+    }
+    country: statements(propertyId: "P17") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    location: statements(propertyId: "P276") {
+      value {
+        ... on ItemValue {
+          id
+          label(languageCode: $languageCode)
+        }
+      }
+    }
+    officialWebsite: statements(propertyId: "P856") {
+      value {
+        ... on StringValue { content }
+      }
+    }
+  }
+}

@@ -94,7 +94,12 @@ classe VuePolyglotStudio:
         contenu = "<div class='polyglot-surface " + classe + "' lang='" + langue + "' role='region' aria-label='" + langue.upper() + " surface for " + entite_id + "'>"
 
         label_dict = labels.obtenir(langue, {})
-        etiquette = label_dict.obtenir("label", "") ou entite.obtenir("label", "") ou "Entite"
+        si type(label_dict) == chaine:
+            etiquette = label_dict
+            label_dict = {}
+        sinon:
+            etiquette = label_dict.obtenir("label", "")
+        etiquette = etiquette ou entite.obtenir("label", "") ou "Entite"
 
         contenu += "<div class='entity-header'>"
         contenu += "<h3 class='entity-label'>" + etiquette + "</h3>"
@@ -125,6 +130,8 @@ classe VuePolyglotStudio:
             contenu += self._rendre_proprietes_artiste(entite, label_dict, langue)
         sinon si type_entite == "oeuvre" ou "artworkLabel" dans entite:
             contenu += self._rendre_proprietes_oeuvre(entite, label_dict, langue)
+        sinon si type_entite == "musee" ou "museumLabel" dans entite:
+            contenu += self._rendre_proprietes_musee(entite, label_dict, langue)
 
         contenu += "</div>"
         retour contenu
@@ -133,12 +140,27 @@ classe VuePolyglotStudio:
         """Rendre les proprietes specifiques aux mouvements"""
         contenu = ""
 
-        debut = entite.obtenir("debut", "")
-        fin = entite.obtenir("fin", "")
+        debut = entite.obtenir("debut", "") ou entite.obtenir("startTime", {}).obtenir("value", "")
+        fin = entite.obtenir("fin", "") ou entite.obtenir("endTime", {}).obtenir("value", "")
         si debut ou fin:
             contenu += "<div class='property-group'>"
             contenu += "<span class='property-label'>" + ("Periode" si langue == "fr" sinon "Period") + "</span>"
             contenu += "<span class='property-value'>" + chaine(debut) + " - " + chaine(fin) + "</span>"
+            contenu += "</div>"
+
+        pays = entite.obtenir("countryLabel", "")
+        si pays:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Pays" si langue == "fr" sinon "Country") + "</span>"
+            contenu += "<span class='property-value'>" + pays + "</span>"
+            contenu += "</div>"
+
+        precedent = entite.obtenir("followsLabel", "")
+        suivant = entite.obtenir("followedByLabel", "")
+        si precedent ou suivant:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Contexte historique" si langue == "fr" sinon "Historical context") + "</span>"
+            contenu += "<span class='property-value'>" + " | ".joindre([valeur pour valeur dans [precedent, suivant] si valeur]) + "</span>"
             contenu += "</div>"
 
         retour contenu
@@ -147,19 +169,33 @@ classe VuePolyglotStudio:
         """Rendre les proprietes specifiques aux artistes"""
         contenu = ""
 
-        naissance = entite.obtenir("naissance", "")
-        mort = entite.obtenir("mort", "")
+        naissance = entite.obtenir("naissance", "") ou entite.obtenir("birthDate", {}).obtenir("value", "")
+        mort = entite.obtenir("mort", "") ou entite.obtenir("deathDate", {}).obtenir("value", "")
         si naissance ou mort:
             contenu += "<div class='property-group'>"
             contenu += "<span class='property-label'>" + ("Dates" si langue == "fr" sinon "Dates") + "</span>"
             contenu += "<span class='property-value'>" + chaine(naissance) + " - " + chaine(mort) + "</span>"
             contenu += "</div>"
 
-        lieu_naissance = entite.obtenir("lieu_naissance", "")
+        lieu_naissance = entite.obtenir("lieu_naissance", "") ou entite.obtenir("birthplaceLabel", "")
         si lieu_naissance:
             contenu += "<div class='property-group'>"
             contenu += "<span class='property-label'>" + ("Lieu de naissance" si langue == "fr" sinon "Birthplace") + "</span>"
             contenu += "<span class='property-value'>" + lieu_naissance + "</span>"
+            contenu += "</div>"
+
+        lieu_deces = entite.obtenir("deathplaceLabel", "")
+        si lieu_deces:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Lieu de deces" si langue == "fr" sinon "Deathplace") + "</span>"
+            contenu += "<span class='property-value'>" + lieu_deces + "</span>"
+            contenu += "</div>"
+
+        mouvement = entite.obtenir("movementLabel", "")
+        si mouvement:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Mouvements artistiques" si langue == "fr" sinon "Artistic movements") + "</span>"
+            contenu += "<span class='property-value'>" + mouvement + "</span>"
             contenu += "</div>"
 
         retour contenu
@@ -168,18 +204,61 @@ classe VuePolyglotStudio:
         """Rendre les proprietes specifiques aux oeuvres"""
         contenu = ""
 
-        date_creation = entite.obtenir("date_creation", "")
+        date_creation = entite.obtenir("date_creation", "") ou entite.obtenir("inceptionDate", {}).obtenir("value", "")
         si date_creation:
             contenu += "<div class='property-group'>"
             contenu += "<span class='property-label'>" + ("Date de creation" si langue == "fr" sinon "Date Created") + "</span>"
             contenu += "<span class='property-value'>" + chaine(date_creation) + "</span>"
             contenu += "</div>"
 
-        createur = entite.obtenir("createur", "")
+        createur = entite.obtenir("createur", "") ou entite.obtenir("creatorLabel", "")
         si createur:
             contenu += "<div class='property-group'>"
             contenu += "<span class='property-label'>" + ("Createur" si langue == "fr" sinon "Creator") + "</span>"
             contenu += "<span class='property-value'>" + createur + "</span>"
+            contenu += "</div>"
+
+        musee = entite.obtenir("museumLabel", "")
+        si musee:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Localisation" si langue == "fr" sinon "Location") + "</span>"
+            contenu += "<span class='property-value'>" + musee + "</span>"
+            contenu += "</div>"
+
+        materiau = entite.obtenir("materialLabel", "")
+        sujet = entite.obtenir("depictsLabel", "")
+        si materiau ou sujet:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Caracteristiques" si langue == "fr" sinon "Characteristics") + "</span>"
+            contenu += "<span class='property-value'>" + " | ".joindre([valeur pour valeur dans [materiau, sujet] si valeur]) + "</span>"
+            contenu += "</div>"
+
+        retour contenu
+
+    déf _rendre_proprietes_musee(entite, label_dict, langue)
+        """Rendre les proprietes specifiques aux musees"""
+        contenu = ""
+
+        fondation = entite.obtenir("inceptionDate", {}).obtenir("value", "")
+        si fondation:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Fondation" si langue == "fr" sinon "Founded") + "</span>"
+            contenu += "<span class='property-value'>" + chaine(fondation) + "</span>"
+            contenu += "</div>"
+
+        pays = entite.obtenir("countryLabel", "")
+        lieu = entite.obtenir("locationLabel", "")
+        si pays ou lieu:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Lieu" si langue == "fr" sinon "Place") + "</span>"
+            contenu += "<span class='property-value'>" + " | ".joindre([valeur pour valeur dans [pays, lieu] si valeur]) + "</span>"
+            contenu += "</div>"
+
+        site = entite.obtenir("officialWebsite", {}).obtenir("value", "")
+        si site:
+            contenu += "<div class='property-group'>"
+            contenu += "<span class='property-label'>" + ("Site web" si langue == "fr" sinon "Website") + "</span>"
+            contenu += "<span class='property-value'>" + site + "</span>"
             contenu += "</div>"
 
         retour contenu

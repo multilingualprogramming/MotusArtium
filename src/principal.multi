@@ -2,10 +2,13 @@
 
 importer ui.composants.barre_recherche
 importer ui.composants.panneau_detail
+importer ui.composants.recit
+importer ui.composants.panneau_comparaison
 importer ui.interactions.recherche
 importer ui.interactions.navigation
 importer ui.etat
 importer donnees.requetes
+importer semantique.intersections
 
 # ui.etat is intentionally owned by Multilingual. The browser shell may keep a
 # temporary compatibility fallback, but new application state belongs here.
@@ -156,3 +159,38 @@ asynchrone déf charger_artiste_oeuvres_page_suivante():
 asynchrone déf charger_musee_oeuvres_page_suivante():
     """Charger la page suivante d'œuvres pour le musée courant"""
     retour attendre ui.etat.charger_musee_oeuvres_page_suivante()
+
+
+# ============================================================================
+# Récit Mode — re-exports depuis ui.composants.recit
+# ============================================================================
+
+déf rendre_recit():
+    """Rendre le récit narratif de l'entité sélectionnée"""
+    retour ui.composants.recit.rendre_recit()
+
+
+asynchrone déf basculer_mode_recit():
+    """Basculer le mode récit dans la visualisation"""
+    attendre ui.etat.basculer_visualisation("recit")
+    retour ui.etat.obtenir_instantane_etat()
+
+
+# ============================================================================
+# Comparaison — re-exports depuis ui.etat et ui.composants.panneau_comparaison
+# ============================================================================
+
+déf rendre_panneau_comparaison():
+    """Rendre le panneau de comparaison entre entités"""
+    retour ui.composants.panneau_comparaison.rendre_panneau_comparaison()
+
+
+asynchrone déf basculer_comparaison(entite_id: chaine, type_entite: chaine, etiquette: chaine):
+    """Ajouter ou retirer une entité du panneau de comparaison, puis charger ses données"""
+    ui.etat.basculer_comparaison(entite_id, type_entite, etiquette)
+    attendre ui.etat.charger_donnees_comparaison(entite_id, type_entite)
+
+
+déf effacer_comparaison():
+    """Vider le panneau de comparaison"""
+    ui.etat.effacer_comparaison()

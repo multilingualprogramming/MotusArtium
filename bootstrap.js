@@ -13,6 +13,20 @@
             return "";
         };
 
+        window.renderComparisonPanel = function() {
+            const container = document.getElementById("comparison-panel-container");
+            const root = document.getElementById("__ml_comparison_root");
+            if (!container || !root) return;
+            try {
+                const render = window.ui?.rendre_panneau_comparaison;
+                const html = typeof render === "function" ? render() || "" : "";
+                root.innerHTML = html;
+                container.hidden = !html;
+            } catch (e) {
+                console.warn("comparison panel render error:", e);
+            }
+        };
+
         window.renderDetailPanel = function() {
             const detailContainer = document.getElementById("detail-panel-container");
             const detailRoot = document.getElementById("__ml_detail_root");
@@ -148,6 +162,7 @@
                     renderRuntimeState();
                     await refreshMultilingualEntityLabels();
                     window.renderDetailPanel();
+                    window.renderComparisonPanel();
 
                     wireupSearchBar();
                 } catch (error) {
@@ -257,13 +272,27 @@
                                     return `<div class="search-result-item" data-entity-id="${item.id}" data-entity-type="${entityType}">
                                         <strong>${item.label || item.id}</strong>
                                         <small>${item.description || entityType}</small>
+                                        <button class="compare-btn" data-action="comparer" data-compare-id="${item.id}" data-compare-type="${entityType}" aria-label="Comparer ${item.label || item.id}">+ Comparer</button>
                                     </div>`
                                 }).join('');
                                 searchDropdown.innerHTML = markup;
 
                                 // Add click handlers to results
                                 searchDropdown.querySelectorAll(".search-result-item").forEach((item) => {
-                                    item.addEventListener("click", async function() {
+                                    item.addEventListener("click", async function(evt) {
+                                        // Intercept compare button clicks before entity load
+                                        const compareBtn = evt.target.closest("[data-action='comparer']");
+                                        if (compareBtn) {
+                                            evt.stopPropagation();
+                                            const compareId = compareBtn.dataset.compareId;
+                                            const compareType = compareBtn.dataset.compareType || "mouvement";
+                                            const compareLabel = this.querySelector("strong")?.textContent || compareId;
+                                            if (window.ui && typeof window.ui.basculer_comparaison === "function") {
+                                                await window.ui.basculer_comparaison(compareId, compareType, compareLabel);
+                                                window.renderComparisonPanel();
+                                            }
+                                            return;
+                                        }
                                         const entityId = this.getAttribute("data-entity-id");
                                         const hintedType = this.getAttribute("data-entity-type") || "movement";
                                         const label = this.querySelector("strong").textContent;
@@ -349,6 +378,7 @@
 
             if (detailContainer && detailRoot) {
                 window.renderDetailPanel();
+                window.renderComparisonPanel();
                 return;
             }
 

@@ -1,0 +1,138 @@
+importer ui.etat
+importer semantique.intersections
+
+
+déf rendre_panneau_comparaison() -> chaine:
+    """Rendre le panneau de comparaison entre entités sélectionnées"""
+    entites = ui.etat.entites_comparaison
+
+    si non entites:
+        retour ""
+
+    html = '<div class="comparaison-panel">'
+    html = html + '<header class="comparaison-header">'
+    html = html + '<h3 class="comparaison-titre">Comparaison</h3>'
+    html = html + '<button class="comparaison-effacer" onclick="window.ui&&window.ui.effacer_comparaison&&window.ui.effacer_comparaison()" aria-label="Effacer la comparaison">Effacer</button>'
+    html = html + '</header>'
+
+    # Pastilles des entités sélectionnées
+    html = html + _rendre_pastilles(entites)
+
+    si len(entites) < 2:
+        # Attente d'une deuxième entité
+        label = entites[0].obtenir("label", "")
+        html = html + '<div class="comparaison-attente">'
+        html = html + '<p>Sélectionnez une autre entité à comparer avec <strong>' + label + '</strong>.</p>'
+        html = html + '<p class="comparaison-conseil">Utilisez le bouton <em>+ Comparer</em> dans les résultats de recherche.</p>'
+        html = html + '</div>'
+        html = html + '</div>'
+        retour html
+
+    # Calcul des intersections
+    ids_entites = []
+    pour entite dans entites:
+        ids_entites.ajouter(entite.obtenir("id", ""))
+
+    artistes_communs = semantique.intersections.calculer_intersection_artistes(ids_entites)
+    artistes_uniques = semantique.intersections.calculer_artistes_uniques(ids_entites)
+    stats = semantique.intersections.obtenir_statistiques(ids_entites)
+
+    # Vérifier si les données sont chargées
+    toutes_chargees = vrai
+    pour entite_id dans ids_entites:
+        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        si non donnees.obtenir("artistes_ids", nul) est nul:
+            toutes_chargees = faux
+
+    si non toutes_chargees:
+        html = html + '<div class="comparaison-chargement">'
+        html = html + '<p>Chargement des données de comparaison...</p>'
+        html = html + '</div>'
+        html = html + '</div>'
+        retour html
+
+    # Résumé global
+    nb_communs = stats.obtenir("artistes_communs_count", 0)
+    html = html + '<div class="comparaison-resume">'
+    si nb_communs > 0:
+        html = html + '<p class="comparaison-resume-texte"><strong>' + chaine(nb_communs) + '</strong> artiste'
+        si nb_communs > 1:
+            html = html + 's'
+        html = html + ' en commun</p>'
+    sinon:
+        html = html + '<p class="comparaison-resume-texte">Aucun artiste en commun</p>'
+    html = html + '</div>'
+
+    # Grille: colonnes entités + colonne centrale commune
+    html = html + '<div class="comparaison-grille" style="grid-template-columns: ' + _generer_colonnes(len(entites)) + '">'
+
+    # Colonnes entités (artistes uniques)
+    pour entite dans entites:
+        entite_id = entite.obtenir("id", "")
+        entite_label = entite.obtenir("label", "")
+        uniques = artistes_uniques.obtenir(entite_id, [])
+        total = stats.obtenir("total_par_entite", {}).obtenir(entite_id, 0)
+
+        html = html + '<div class="comparaison-colonne">'
+        html = html + '<h4 class="comparaison-col-titre">' + entite_label + '</h4>'
+        html = html + '<span class="comparaison-col-meta">' + chaine(total) + ' artistes • ' + chaine(len(uniques)) + ' uniques</span>'
+
+        si uniques:
+            html = html + '<ul class="comparaison-liste">'
+            pour artiste_id dans uniques[0:8]:
+                nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites)
+                html = html + '<li class="comparaison-item comparaison-unique">' + nom + '</li>'
+            si len(uniques) > 8:
+                html = html + '<li class="comparaison-item comparaison-plus">+ ' + chaine(len(uniques) - 8) + ' autres</li>'
+            html = html + '</ul>'
+        sinon:
+            html = html + '<p class="comparaison-vide">Aucun artiste unique</p>'
+
+        html = html + '</div>'
+
+    # Colonne centrale — artistes communs
+    html = html + '<div class="comparaison-colonne comparaison-colonne-commun">'
+    html = html + '<h4 class="comparaison-col-titre comparaison-col-titre-commun">En commun</h4>'
+    html = html + '<span class="comparaison-col-meta">' + chaine(nb_communs) + ' artiste'
+    si nb_communs > 1:
+        html = html + 's'
+    html = html + '</span>'
+
+    si artistes_communs:
+        html = html + '<ul class="comparaison-liste">'
+        pour artiste_id dans artistes_communs:
+            nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites)
+            html = html + '<li class="comparaison-item comparaison-commun">' + nom + '</li>'
+        html = html + '</ul>'
+    sinon:
+        html = html + '<p class="comparaison-vide">Aucun artiste partagé</p>'
+
+    html = html + '</div>'
+    html = html + '</div>'
+    html = html + '</div>'
+
+    retour html
+
+
+déf _rendre_pastilles(entites: liste) -> chaine:
+    """Rendre les pastilles des entités sélectionnées avec bouton de retrait"""
+    html = '<div class="comparaison-pastilles">'
+    pour entite dans entites:
+        entite_id = entite.obtenir("id", "")
+        entite_label = entite.obtenir("label", "")
+        entite_type = entite.obtenir("type", "")
+        html = html + '<span class="comparaison-pastille">'
+        html = html + entite_label
+        html = html + '<button class="comparaison-pastille-retirer"'
+        html = html + ' onclick="window.ui&&window.ui.basculer_comparaison&&window.ui.basculer_comparaison(\'' + entite_id + '\',\'' + entite_type + '\',\'' + entite_label + '\')"'
+        html = html + ' aria-label="Retirer ' + entite_label + '">×</button>'
+        html = html + '</span>'
+    html = html + '</div>'
+    retour html
+
+
+déf _generer_colonnes(nb_entites: nombre) -> chaine:
+    """Générer la valeur grid-template-columns selon le nombre d'entités"""
+    # Entity columns + 1 shared column in the middle
+    total = nb_entites + 1
+    retour " ".joindre(["1fr"] * total)

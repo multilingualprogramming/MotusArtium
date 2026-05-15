@@ -160,6 +160,10 @@
             "temporal-river": {
                 explanation: "Temporal River will privilege chronology, succession, and influence flow while reusing the same GraphQL backbone.",
                 lens: "Time-weighted, succession-focused, river narrative surface"
+            },
+            "recit": {
+                explanation: "Récit mode presents the selected entity as a readable narrative — no graph required, designed for all audiences.",
+                lens: "Story-first, prose-driven, accessible narrative surface"
             }
         };
 
@@ -936,14 +940,31 @@
 
         function updatePolyglotStudioVisibility() {
             const isPolyglotMode = runtimeState.currentMode === "polyglot-studio";
+            const isRecitMode = runtimeState.currentMode === "recit";
             polyglotStudioPanelEl.classList.toggle("is-visible", isPolyglotMode);
 
             // Show/hide visualizations based on mode
             const constellationEl = document.querySelector(".constellation");
             const polyglotVizEl = document.getElementById("polyglot-studio-visualization");
+            const recitVizEl = document.getElementById("recit-visualization");
 
             if (constellationEl) {
-                constellationEl.style.display = isPolyglotMode ? "none" : "block";
+                constellationEl.style.display = (isPolyglotMode || isRecitMode) ? "none" : "block";
+            }
+
+            if (recitVizEl) {
+                recitVizEl.classList.toggle("is-active", isRecitMode);
+                if (isRecitMode) {
+                    try {
+                        const recitRoot = document.getElementById("__ml_recit_root");
+                        const renderRecit = window.ui?.rendre_recit;
+                        if (recitRoot && typeof renderRecit === "function") {
+                            recitRoot.innerHTML = renderRecit() || "";
+                        }
+                    } catch (e) {
+                        console.warn("recit render error:", e);
+                    }
+                }
             }
 
             if (polyglotVizEl) {
@@ -4217,7 +4238,8 @@
             "observatory": "graphe",
             "query-theater": "graphe",
             "polyglot-studio": "polyglot-studio",
-            "temporal-river": "riviere"
+            "temporal-river": "riviere",
+            "recit": "recit"
         };
 
         function normaliseUrlMode(mode) {
@@ -4232,7 +4254,8 @@
                 "temporal": "temporal-river",
                 "river": "temporal-river",
                 "graphe": "observatory",
-                "riviere": "temporal-river"
+                "riviere": "temporal-river",
+                "recit": "recit"
             };
             return aliases[value] || "";
         }

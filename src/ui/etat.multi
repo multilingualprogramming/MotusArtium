@@ -42,6 +42,11 @@ observer var zoom_constellation = 1
 observer var pan_constellation_x = 0
 observer var pan_constellation_y = 0
 
+# Etat du mode recit et de la comparaison
+observer var mode_recit = faux
+observer var entites_comparaison = []   # [{id, type, label}, ...]
+observer var donnees_comparaison = {}   # id -> {label, artistes_ids, artistes_labels}
+
 # Etat de pagination curseur pour le chargement progressif
 observer var curseur_artistes_mouvement = ""
 observer var a_page_suivante_artistes_mouvement = faux
@@ -414,6 +419,9 @@ asynchrone déf basculer_visualisation(mode: chaine):
         sinon si mode == "graphe":
             # Graphe fonctionne avec les données actuelles du graphe
             passe
+        sinon si mode == "recit":
+            # Récit fonctionne avec les données déjà en cache
+            passe
 
         mode_visualisation = mode
         affichage_chargement = faux
@@ -561,6 +569,87 @@ déf basculer_affichage_surfaces():
     """Basculer entre l'affichage cote a cote et par onglets."""
     afficher_surfaces_paralleles = non afficher_surfaces_paralleles
     retour obtenir_instantane_etat()
+
+
+déf obtenir_artistes_mouvement(mouvement_id: chaine) -> liste:
+    """Extraire les IDs d'artistes d'un mouvement depuis le cache de relations"""
+    contrat = cache_relations.obtenir(mouvement_id, {})
+    artistes_bruts = contrat.obtenir("artistes", [])
+    ids = []
+    pour artiste dans artistes_bruts:
+        uri = artiste.obtenir("artist", {}).obtenir("value", "")
+        si uri:
+            artiste_id = uri.remplacer("http://www.wikidata.org/entity/", "")
+            si artiste_id:
+                ids.ajouter(artiste_id)
+    retour ids
+
+
+déf basculer_comparaison(entite_id: chaine, type_entite: chaine, etiquette: chaine) -> booleen:
+    """Ajouter ou retirer une entité du panneau de comparaison. Retourne vrai si ajoutée."""
+    pour entite dans entites_comparaison:
+        si entite.obtenir("id", "") == entite_id:
+            entites_comparaison.retirer(entite)
+            si entite_id dans donnees_comparaison:
+                supprimer donnees_comparaison[entite_id]
+            retour faux
+
+    si len(entites_comparaison) >= 4:
+        retour faux
+
+    entites_comparaison.ajouter({"id": entite_id, "type": type_entite, "label": etiquette})
+
+    # Pré-remplir depuis le cache de relations si déjà chargé
+    artistes_ids = []
+    artistes_labels = {}
+    si type_entite == "mouvement":
+        artistes_ids = obtenir_artistes_mouvement(entite_id)
+        pour artiste_id dans artistes_ids:
+            noeud = graphe.obtenir_noeud(artiste_id)
+            si noeud:
+                artistes_labels[artiste_id] = noeud.etiquette
+
+    donnees_comparaison[entite_id] = {
+        "label": etiquette,
+        "artistes_ids": artistes_ids,
+        "artistes_labels": artistes_labels
+    }
+    retour vrai
+
+
+asynchrone déf charger_donnees_comparaison(entite_id: chaine, type_entite: chaine):
+    """Charger les données d'une entité pour la comparaison sans modifier le graphe principal"""
+    existantes = donnees_comparaison.obtenir(entite_id, {})
+    si existantes.obtenir("artistes_ids", []):
+        retour  # Déjà chargé
+
+    si type_entite == "mouvement":
+        essayer:
+            contrat = attendre donnees.requetes.obtenir_graphe_mouvement(entite_id)
+            artistes_bruts = contrat.obtenir("artistes", [])
+            ids = []
+            labels = {}
+            pour artiste dans artistes_bruts:
+                uri = artiste.obtenir("artist", {}).obtenir("value", "")
+                label_art = artiste.obtenir("artistLabel", {}).obtenir("value", "")
+                si uri:
+                    artiste_id = uri.remplacer("http://www.wikidata.org/entity/", "")
+                    si artiste_id:
+                        ids.ajouter(artiste_id)
+                        si label_art:
+                            labels[artiste_id] = label_art
+            donnees_courantes = donnees_comparaison.obtenir(entite_id, {})
+            donnees_courantes["artistes_ids"] = ids
+            donnees_courantes["artistes_labels"] = labels
+            donnees_comparaison[entite_id] = donnees_courantes
+        sauf erreur:
+            passe
+
+
+déf effacer_comparaison():
+    """Vider entièrement le panneau de comparaison"""
+    entites_comparaison = []
+    donnees_comparaison = {}
 
 
 déf obtenir_entite_selectionnee() -> dictionnaire:

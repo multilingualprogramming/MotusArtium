@@ -39,6 +39,8 @@
                         title="Polyglot Studio - Multilingual entity surfaces" role="tab" aria-selected="false">Polyglot Studio</button>
                     <button type="button" class="mode-button" data-mode="temporal-river"
                         title="Temporal River - Timeline and chronological analysis" role="tab" aria-selected="false">Temporal River</button>
+                    <button type="button" class="mode-button" data-mode="recit"
+                        title="Récit - Narrative story view for all users" role="tab" aria-selected="false">Récit</button>
                 </nav>
 
                 <div class="search-bar-inline" role="search">
@@ -218,6 +220,10 @@
                     <div class="polyglot-studio-visualization" id="polyglot-studio-visualization">
                     </div>
 
+                    <div class="recit-visualization" id="recit-visualization" aria-label="Récit — vue narrative de l'entité sélectionnée">
+                        <div id="__ml_recit_root"></div>
+                    </div>
+
                     <div class="app-root">
                         <p class="app-root-hint" id="app-root-hint"><strong>Multilingual mount:</strong> this panel is
                             reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect
@@ -301,6 +307,11 @@
                 <!-- Detail Panel Container - appears when entity is selected -->
                 <div id="detail-panel-container" class="detail-panel-overlay">
                     <div id="__ml_detail_root"></div>
+                </div>
+
+                <!-- Comparison Panel - appears when 1+ entities are queued for comparison -->
+                <div id="comparison-panel-container" class="comparison-panel-overlay" hidden>
+                    <div id="__ml_comparison_root"></div>
                 </div>
             </main>
 

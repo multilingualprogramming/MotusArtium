@@ -1,0 +1,83 @@
+importer ui.etat
+
+
+déf calculer_intersection_artistes(ids_entites: liste) -> liste:
+    """Calculer les artistes communs à toutes les entités données"""
+    si len(ids_entites) < 2:
+        retour []
+
+    ensemble_courant = nul
+    pour entite_id dans ids_entites:
+        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        artistes = ensemble(donnees.obtenir("artistes_ids", []))
+
+        si ensemble_courant est nul:
+            ensemble_courant = artistes
+        sinon:
+            ensemble_courant = ensemble_courant.intersection(artistes)
+
+    si ensemble_courant est nul:
+        retour []
+    retour liste(ensemble_courant)
+
+
+déf calculer_artistes_uniques(ids_entites: liste) -> dictionnaire:
+    """
+    Pour chaque entité, calculer les artistes qui lui sont exclusifs
+    (présents dans cette entité mais dans aucune autre).
+    Retourne {entite_id: [artiste_ids_uniques]}
+    """
+    si len(ids_entites) < 2:
+        retour {}
+
+    ensembles = {}
+    pour entite_id dans ids_entites:
+        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        ensembles[entite_id] = ensemble(donnees.obtenir("artistes_ids", []))
+
+    resultats = {}
+    pour entite_id dans ids_entites:
+        union_autres = ensemble()
+        pour autre_id, autre_ensemble dans ensembles.items():
+            si autre_id != entite_id:
+                union_autres = union_autres.union(autre_ensemble)
+        resultats[entite_id] = liste(ensembles[entite_id].difference(union_autres))
+
+    retour resultats
+
+
+déf obtenir_etiquette_artiste(artiste_id: chaine, ids_entites: liste) -> chaine:
+    """Chercher l'étiquette d'un artiste dans les données de comparaison chargées"""
+    pour entite_id dans ids_entites:
+        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        labels = donnees.obtenir("artistes_labels", {})
+        label = labels.obtenir(artiste_id, "")
+        si label:
+            retour label
+
+    # Fallback: chercher dans le graphe principal
+    noeud = ui.etat.graphe.obtenir_noeud(artiste_id)
+    si noeud:
+        retour noeud.etiquette
+
+    retour artiste_id
+
+
+déf obtenir_statistiques(ids_entites: liste) -> dictionnaire:
+    """Calculer un résumé statistique pour le panneau de comparaison"""
+    si len(ids_entites) < 2:
+        retour {}
+
+    artistes_communs = calculer_intersection_artistes(ids_entites)
+    artistes_uniques = calculer_artistes_uniques(ids_entites)
+
+    total_par_entite = {}
+    pour entite_id dans ids_entites:
+        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        total_par_entite[entite_id] = len(donnees.obtenir("artistes_ids", []))
+
+    retour {
+        "artistes_communs_count": len(artistes_communs),
+        "total_par_entite": total_par_entite,
+        "uniques_par_entite": {eid: len(u) pour eid, u dans artistes_uniques.items()}
+    }

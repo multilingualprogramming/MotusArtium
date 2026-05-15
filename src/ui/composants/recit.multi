@@ -1,0 +1,274 @@
+importer ui.etat
+
+
+déf _extraire_annee(temps: chaine) -> chaine:
+    """Extraire l'année depuis une chaîne de temps Wikidata (ex: +1860-00-00T00:00:00Z)"""
+    si non temps ou len(temps) < 4:
+        retour ""
+    debut = 0
+    si temps[0] == "+" ou temps[0] == "-":
+        debut = 1
+    annee = temps[debut:debut + 4]
+    si annee == "0000":
+        retour ""
+    retour annee
+
+
+déf rendre_recit() -> chaine:
+    """Rendre le récit narratif de l'entité sélectionnée"""
+    entite = ui.etat.obtenir_entite_selectionnee()
+
+    si non entite ou non entite.obtenir("id", ""):
+        retour '<div class="recit-vide"><p>Sélectionnez un mouvement, un artiste ou une œuvre pour lire son récit.</p></div>'
+
+    type_entite = entite.obtenir("type", "")
+
+    si type_entite == "mouvement":
+        retour _rendre_recit_mouvement(entite)
+    sinon si type_entite == "artiste":
+        retour _rendre_recit_artiste(entite)
+    sinon si type_entite == "oeuvre":
+        retour _rendre_recit_oeuvre(entite)
+    sinon:
+        retour _rendre_recit_generique(entite)
+
+
+déf _rendre_recit_mouvement(entite: dictionnaire) -> chaine:
+    """Générer le récit narratif d'un mouvement artistique"""
+    donnees = entite.obtenir("donnees", {})
+    entite_id = entite.obtenir("id", "")
+
+    label = donnees.obtenir("movementLabel", {}).obtenir("value", "Ce mouvement")
+    debut = _extraire_annee(donnees.obtenir("startTime", {}).obtenir("value", ""))
+    fin = _extraire_annee(donnees.obtenir("endTime", {}).obtenir("value", ""))
+    pays_label = donnees.obtenir("countryLabel", {}).obtenir("value", "")
+    suit_label = donnees.obtenir("followsLabel", {}).obtenir("value", "")
+    suivi_par_label = donnees.obtenir("followedByLabel", {}).obtenir("value", "")
+
+    # Artistes depuis le graphe
+    artistes_ids = ui.etat._obtenir_cibles_relations(entite_id, "contient_artiste")
+    noms_artistes = []
+    pour artiste_id dans artistes_ids[0:5]:
+        noeud = ui.etat.graphe.obtenir_noeud(artiste_id)
+        si noeud:
+            noms_artistes.ajouter(noeud.etiquette)
+
+    html = '<article class="recit-card recit-mouvement">'
+
+    # En-tête
+    html = html + '<header class="recit-header">'
+    html = html + '<span class="recit-badge">Mouvement artistique</span>'
+    html = html + '<h2 class="recit-titre">' + label + '</h2>'
+
+    si debut ou fin:
+        periode = ""
+        si debut et fin:
+            periode = debut + "–" + fin
+        sinon si debut:
+            periode = "à partir de " + debut
+        sinon:
+            periode = "jusqu'en " + fin
+        html = html + '<p class="recit-periode">' + periode + '</p>'
+
+    html = html + '</header>'
+    html = html + '<div class="recit-corps">'
+
+    # Phrase d'introduction
+    phrase = label
+    si debut et pays_label:
+        phrase = phrase + " prend forme en " + pays_label + " vers " + debut + "."
+    sinon si debut:
+        phrase = phrase + " émerge vers " + debut + "."
+    sinon si pays_label:
+        phrase = phrase + " est un mouvement artistique né en " + pays_label + "."
+    sinon:
+        phrase = phrase + " est un mouvement artistique majeur de l'histoire de l'art."
+    html = html + '<p class="recit-intro">' + phrase + '</p>'
+
+    # Filiation
+    si suit_label ou suivi_par_label:
+        html = html + '<section class="recit-section">'
+        html = html + '<h3 class="recit-section-titre">Filiation</h3>'
+        si suit_label:
+            html = html + '<p class="recit-relation">← Succède à <strong>' + suit_label + '</strong></p>'
+        si suivi_par_label:
+            html = html + '<p class="recit-relation">→ Prépare <strong>' + suivi_par_label + '</strong></p>'
+        html = html + '</section>'
+
+    # Artistes représentatifs
+    si noms_artistes:
+        html = html + '<section class="recit-section">'
+        html = html + '<h3 class="recit-section-titre">Artistes représentatifs</h3>'
+        html = html + '<p class="recit-artistes">'
+        html = html + ", ".joindre(noms_artistes)
+        si len(artistes_ids) > 5:
+            html = html + " et " + chaine(len(artistes_ids) - 5) + " autres."
+        sinon:
+            html = html + "."
+        html = html + '</p>'
+        html = html + '</section>'
+
+    html = html + '</div>'
+
+    # Pied — invitation à explorer la constellation
+    html = html + '<footer class="recit-footer">'
+    html = html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>'
+    html = html + '</footer>'
+    html = html + '</article>'
+
+    retour html
+
+
+déf _rendre_recit_artiste(entite: dictionnaire) -> chaine:
+    """Générer le récit narratif d'un artiste"""
+    donnees = entite.obtenir("donnees", {})
+    entite_id = entite.obtenir("id", "")
+
+    label = donnees.obtenir("artistLabel", {}).obtenir("value", "Cet artiste")
+    naissance = _extraire_annee(donnees.obtenir("birthDate", {}).obtenir("value", ""))
+    deces = _extraire_annee(donnees.obtenir("deathDate", {}).obtenir("value", ""))
+    lieu_label = donnees.obtenir("birthplaceLabel", {}).obtenir("value", "")
+    mouvement_label = donnees.obtenir("movementLabel", {}).obtenir("value", "")
+
+    # Œuvres depuis le graphe
+    oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, "a_cree")
+    noms_oeuvres = []
+    pour oeuvre_id dans oeuvres_ids[0:4]:
+        noeud = ui.etat.graphe.obtenir_noeud(oeuvre_id)
+        si noeud:
+            noms_oeuvres.ajouter(noeud.etiquette)
+
+    html = '<article class="recit-card recit-artiste">'
+
+    # En-tête
+    html = html + '<header class="recit-header">'
+    html = html + '<span class="recit-badge">Artiste</span>'
+    html = html + '<h2 class="recit-titre">' + label + '</h2>'
+
+    si naissance ou deces:
+        vie = ""
+        si naissance et deces:
+            vie = naissance + "–" + deces
+        sinon si naissance:
+            vie = "né(e) en " + naissance
+        sinon:
+            vie = "décédé(e) en " + deces
+        html = html + '<p class="recit-periode">' + vie + '</p>'
+
+    html = html + '</header>'
+    html = html + '<div class="recit-corps">'
+
+    # Phrase d'introduction
+    phrase = label
+    si naissance et lieu_label:
+        phrase = phrase + ", né(e) en " + naissance + " à " + lieu_label + "."
+    sinon si lieu_label:
+        phrase = phrase + " est originaire de " + lieu_label + "."
+    sinon si naissance:
+        phrase = phrase + " naît en " + naissance + "."
+    sinon:
+        phrase = phrase + " est un artiste majeur de l'histoire de l'art."
+    html = html + '<p class="recit-intro">' + phrase + '</p>'
+
+    # Mouvement
+    si mouvement_label:
+        html = html + '<section class="recit-section">'
+        html = html + '<h3 class="recit-section-titre">Mouvement</h3>'
+        html = html + '<p class="recit-relation">Associé au <strong>' + mouvement_label + '</strong></p>'
+        html = html + '</section>'
+
+    # Œuvres
+    si noms_oeuvres:
+        html = html + '<section class="recit-section">'
+        html = html + '<h3 class="recit-section-titre">Œuvres chargées</h3>'
+        html = html + '<ul class="recit-liste">'
+        pour nom_oeuvre dans noms_oeuvres:
+            html = html + '<li>' + nom_oeuvre + '</li>'
+        si len(oeuvres_ids) > 4:
+            html = html + '<li class="recit-plus">+ ' + chaine(len(oeuvres_ids) - 4) + ' autres</li>'
+        html = html + '</ul>'
+        html = html + '</section>'
+
+    html = html + '</div>'
+    html = html + '<footer class="recit-footer">'
+    html = html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>'
+    html = html + '</footer>'
+    html = html + '</article>'
+
+    retour html
+
+
+déf _rendre_recit_oeuvre(entite: dictionnaire) -> chaine:
+    """Générer le récit narratif d'une œuvre"""
+    donnees = entite.obtenir("donnees", {})
+
+    label = donnees.obtenir("artworkLabel", {}).obtenir("value", "Cette œuvre")
+    createur_label = donnees.obtenir("creatorLabel", {}).obtenir("value", "")
+    date_brute = donnees.obtenir("inceptionDate", {}).obtenir("value", "")
+    date = _extraire_annee(date_brute)
+    musee_label = donnees.obtenir("museumLabel", {}).obtenir("value", "")
+    sujet_label = donnees.obtenir("depictsLabel", {}).obtenir("value", "")
+    materiau_label = donnees.obtenir("materialLabel", {}).obtenir("value", "")
+
+    html = '<article class="recit-card recit-oeuvre">'
+
+    # En-tête
+    html = html + '<header class="recit-header">'
+    html = html + '<span class="recit-badge">Œuvre</span>'
+    html = html + '<h2 class="recit-titre">' + label + '</h2>'
+
+    si date:
+        html = html + '<p class="recit-periode">' + date + '</p>'
+
+    html = html + '</header>'
+    html = html + '<div class="recit-corps">'
+
+    # Phrase d'introduction
+    phrase = label
+    si createur_label et date:
+        phrase = phrase + " est une œuvre de " + createur_label + ", réalisée en " + date + "."
+    sinon si createur_label:
+        phrase = phrase + " est une œuvre de " + createur_label + "."
+    sinon si date:
+        phrase = phrase + " date de " + date + "."
+    sinon:
+        phrase = phrase + " est une œuvre remarquable de l'histoire de l'art."
+    html = html + '<p class="recit-intro">' + phrase + '</p>'
+
+    # Détails
+    si musee_label ou sujet_label ou materiau_label:
+        html = html + '<section class="recit-section">'
+        html = html + '<h3 class="recit-section-titre">Détails</h3>'
+        si musee_label:
+            html = html + '<p class="recit-relation">\U0001f3db Conservée au <strong>' + musee_label + '</strong></p>'
+        si sujet_label:
+            html = html + '<p class="recit-relation">\U0001f3a8 Représente <strong>' + sujet_label + '</strong></p>'
+        si materiau_label:
+            html = html + '<p class="recit-relation">\U0001f58c Réalisée en <strong>' + materiau_label + '</strong></p>'
+        html = html + '</section>'
+
+    html = html + '</div>'
+    html = html + '<footer class="recit-footer">'
+    html = html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>'
+    html = html + '</footer>'
+    html = html + '</article>'
+
+    retour html
+
+
+déf _rendre_recit_generique(entite: dictionnaire) -> chaine:
+    """Récit générique pour les entités sans type connu"""
+    entite_id = entite.obtenir("id", "")
+    type_entite = entite.obtenir("type", "entité")
+
+    html = '<article class="recit-card">'
+    html = html + '<header class="recit-header">'
+    html = html + '<span class="recit-badge">' + type_entite + '</span>'
+    html = html + '<h2 class="recit-titre">' + entite_id + '</h2>'
+    html = html + '</header>'
+    html = html + '<div class="recit-corps">'
+    html = html + '<p class="recit-intro">Sélectionnez une entité pour lire son récit.</p>'
+    html = html + '</div>'
+    html = html + '</article>'
+
+    retour html

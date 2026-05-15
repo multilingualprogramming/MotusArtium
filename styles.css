@@ -2759,3 +2759,336 @@
                 margin-left: 0;
             }
         }
+
+        /* ====================================================================
+           Récit Mode — narrative story view
+           ==================================================================== */
+
+        .recit-visualization {
+            display: none;
+            padding: 24px;
+            overflow-y: auto;
+            height: 100%;
+            background: var(--bg-panel, #0d1a26);
+        }
+
+        .recit-visualization.is-active {
+            display: block;
+        }
+
+        .recit-vide {
+            color: var(--text-muted, #8a9ab5);
+            font-style: italic;
+            padding: 32px 0;
+            text-align: center;
+        }
+
+        .recit-card {
+            max-width: 640px;
+            margin: 0 auto;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            overflow: hidden;
+        }
+
+        .recit-header {
+            padding: 24px 28px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .recit-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent-cyan, #36c2b4);
+            margin-bottom: 8px;
+        }
+
+        .recit-titre {
+            margin: 0 0 6px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main, #e8edf5);
+            line-height: 1.25;
+        }
+
+        .recit-periode {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted, #8a9ab5);
+        }
+
+        .recit-corps {
+            padding: 20px 28px;
+        }
+
+        .recit-intro {
+            font-size: 1.05rem;
+            line-height: 1.65;
+            color: var(--text-main, #e8edf5);
+            margin: 0 0 20px;
+        }
+
+        .recit-section {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .recit-section-titre {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--accent-gold, #f4d35e);
+            margin: 0 0 10px;
+        }
+
+        .recit-relation {
+            margin: 6px 0;
+            font-size: 0.95rem;
+            color: var(--text-secondary, #b8c5d8);
+        }
+
+        .recit-artistes {
+            font-size: 0.95rem;
+            color: var(--text-secondary, #b8c5d8);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .recit-liste {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--text-secondary, #b8c5d8);
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .recit-plus {
+            color: var(--text-muted, #8a9ab5);
+            font-style: italic;
+        }
+
+        .recit-footer {
+            padding: 16px 28px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .recit-btn-explorer {
+            background: none;
+            border: 1px solid var(--accent-cyan, #36c2b4);
+            color: var(--accent-cyan, #36c2b4);
+            border-radius: 6px;
+            padding: 7px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 160ms ease, color 160ms ease;
+        }
+
+        .recit-btn-explorer:hover {
+            background: var(--accent-cyan, #36c2b4);
+            color: var(--bg-base, #081019);
+        }
+
+        /* ====================================================================
+           Compare Button — inside search result items
+           ==================================================================== */
+
+        .compare-btn {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid var(--accent-gold, #f4d35e);
+            border-radius: 4px;
+            background: none;
+            color: var(--accent-gold, #f4d35e);
+            cursor: pointer;
+            transition: background 140ms ease, color 140ms ease;
+        }
+
+        .compare-btn:hover {
+            background: var(--accent-gold, #f4d35e);
+            color: var(--bg-base, #081019);
+        }
+
+        /* ====================================================================
+           Comparison Panel Overlay
+           ==================================================================== */
+
+        .comparison-panel-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 50vh;
+            overflow-y: auto;
+            background: var(--bg-panel, #0d1a26);
+            border-top: 2px solid var(--accent-gold, #f4d35e);
+            z-index: 200;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .comparaison-panel {
+            padding: 16px 24px 20px;
+        }
+
+        .comparaison-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .comparaison-titre {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--accent-gold, #f4d35e);
+        }
+
+        .comparaison-effacer {
+            background: none;
+            border: none;
+            color: var(--text-muted, #8a9ab5);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .comparaison-pastilles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .comparaison-pastille {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(244, 211, 94, 0.12);
+            border: 1px solid rgba(244, 211, 94, 0.35);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.82rem;
+            color: var(--accent-gold, #f4d35e);
+        }
+
+        .comparaison-pastille-retirer {
+            background: none;
+            border: none;
+            color: var(--accent-gold, #f4d35e);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0;
+            opacity: 0.7;
+        }
+
+        .comparaison-pastille-retirer:hover {
+            opacity: 1;
+        }
+
+        .comparaison-attente {
+            font-size: 0.9rem;
+            color: var(--text-muted, #8a9ab5);
+            font-style: italic;
+        }
+
+        .comparaison-conseil {
+            font-size: 0.82rem;
+            color: var(--text-muted, #8a9ab5);
+        }
+
+        .comparaison-resume {
+            margin-bottom: 16px;
+        }
+
+        .comparaison-resume-texte {
+            font-size: 0.9rem;
+            color: var(--text-secondary, #b8c5d8);
+            margin: 0;
+        }
+
+        .comparaison-grille {
+            display: grid;
+            gap: 16px;
+        }
+
+        .comparaison-colonne {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+
+        .comparaison-colonne-commun {
+            border-color: rgba(54, 194, 180, 0.3);
+            background: rgba(54, 194, 180, 0.05);
+        }
+
+        .comparaison-col-titre {
+            margin: 0 0 4px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-main, #e8edf5);
+        }
+
+        .comparaison-col-titre-commun {
+            color: var(--accent-cyan, #36c2b4);
+        }
+
+        .comparaison-col-meta {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted, #8a9ab5);
+            margin-bottom: 10px;
+        }
+
+        .comparaison-liste {
+            margin: 0;
+            padding-left: 16px;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: var(--text-secondary, #b8c5d8);
+        }
+
+        .comparaison-unique {
+            color: var(--text-secondary, #b8c5d8);
+        }
+
+        .comparaison-commun {
+            color: var(--accent-cyan, #36c2b4);
+            font-weight: 500;
+        }
+
+        .comparaison-plus {
+            color: var(--text-muted, #8a9ab5);
+            font-style: italic;
+            list-style: none;
+            margin-left: -16px;
+        }
+
+        .comparaison-vide {
+            font-size: 0.82rem;
+            color: var(--text-muted, #8a9ab5);
+            font-style: italic;
+            margin: 4px 0 0;
+        }
+
+        .comparaison-chargement {
+            font-size: 0.9rem;
+            color: var(--text-muted, #8a9ab5);
+            font-style: italic;
+            padding: 12px 0;
+        }
+        }

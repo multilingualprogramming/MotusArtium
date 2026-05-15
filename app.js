@@ -800,11 +800,11 @@
             const count = Number(subject.selectedRecord.artworkCount || relatedWorks.length || 0);
             let html = '<article class="recit-card recit-sujet story-subject-result">';
             html += '<header class="recit-header">';
-            html += '<span class="recit-badge">Theme</span>';
+            html += '<span class="recit-badge">' + escapeHtml(traduireInterface("recit.badge.theme")) + '</span>';
             html += '<h2 class="recit-titre">' + escapeHtml(subject.label || subject.selectedId) + '</h2>';
             html += '</header>';
             html += '<div class="recit-corps">';
-            html += '<p class="recit-intro">' + (count ? escapeHtml(count + " artworks found for this theme.") : "Loading artworks for this theme...") + '</p>';
+            html += '<p class="recit-intro">' + (count ? escapeHtml(traduireInterface("explorer.theme.artworksFound", { count })) : escapeHtml(traduireInterface("explorer.theme.loadingArtworks"))) + '</p>';
             if (relatedWorks.length) {
                 html += '<ul class="recit-liste-oeuvres">';
                 relatedWorks.slice(0, 10).forEach((work) => {
@@ -814,7 +814,7 @@
             }
             html += '</div>';
             html += '<footer class="recit-footer">';
-            html += '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>Explore in constellation</button>';
+            html += '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>' + escapeHtml(traduireInterface("explorer.action.openConstellation")) + '</button>';
             html += '</footer>';
             html += '</article>';
             root.innerHTML = html;
@@ -836,8 +836,8 @@
             if (!selectedId) {
                 root.innerHTML = [
                     '<div class="explorer-empty">',
-                    '<strong>Choose a theme or search result</strong>',
-                    '<span>Explorer will show the selected entity and its first useful connections here.</span>',
+                    '<strong>' + escapeHtml(traduireInterface("explorer.empty.title")) + '</strong>',
+                    '<span>' + escapeHtml(traduireInterface("explorer.empty.detail")) + '</span>',
                     '</div>'
                 ].join("");
                 return;
@@ -847,30 +847,30 @@
             const count = Number(selectedRecord.artworkCount || relatedWorks.length || 0);
             let html = '<article class="explorer-focus-card">';
             html += '<header class="explorer-focus-header">';
-            html += '<div><span class="eyebrow">Current selection</span>';
+            html += '<div><span class="eyebrow">' + escapeHtml(traduireInterface("explorer.currentSelection")) + '</span>';
             html += '<h3>' + escapeHtml(label || selectedId) + '</h3></div>';
             html += '<span class="chip">' + escapeHtml(selectedType || "entity") + '</span>';
             html += '</header>';
 
             if (selectedType === "sujet" || selectedType === "subject") {
-                html += '<p class="explorer-focus-summary">' + (count ? escapeHtml(count + " artworks found for this theme.") : "Theme loaded. Try another theme if Wikidata has no direct artwork matches.") + '</p>';
+                html += '<p class="explorer-focus-summary">' + (count ? escapeHtml(traduireInterface("explorer.theme.artworksFound", { count })) : escapeHtml(traduireInterface("explorer.theme.loadedEmpty"))) + '</p>';
             } else {
-                html += '<p class="explorer-focus-summary">' + escapeHtml(runtimeState.selectedEntity.meta || "Selection loaded.") + '</p>';
+                html += '<p class="explorer-focus-summary">' + escapeHtml(runtimeState.selectedEntity.meta || traduireInterface("explorer.selectionLoaded")) + '</p>';
             }
 
             if (relatedWorks.length) {
-                html += '<div class="explorer-work-list" aria-label="Related artworks">';
+                html += '<div class="explorer-work-list" aria-label="' + escapeHtml(traduireInterface("explorer.relatedArtworks")) + '">';
                 relatedWorks.forEach((work) => {
                     html += '<button type="button" class="explorer-work-item" data-explorer-entity-id="' + escapeHtml(work.id) + '" data-explorer-entity-type="artwork">';
                     html += '<strong>' + escapeHtml(work.etiquette || work.label || work.id) + '</strong>';
-                    html += '<small>artwork</small>';
+                    html += '<small>' + escapeHtml(traduireInterface("explorer.type.artwork")) + '</small>';
                     html += '</button>';
                 });
                 html += '</div>';
             }
 
             html += '<div class="explorer-focus-actions">';
-            html += '<button type="button" class="ghost-button" data-explorer-open-observatory>See constellation</button>';
+            html += '<button type="button" class="ghost-button" data-explorer-open-observatory>' + escapeHtml(traduireInterface("explorer.action.seeConstellation")) + '</button>';
             html += '</div>';
             html += '</article>';
             root.innerHTML = html;
@@ -955,18 +955,18 @@ function setActiveTier(tier, options = {}) {
                 const displaySideBySide = snapshot.afficher_surfaces_paralleles !== false;
 
                 // Render polyglot studio HTML directly
-                let html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>";
+                let html = "<div class='polyglot-studio-container' role='main' aria-label='" + escapeHtml(traduireInterface("polyglot.aria")) + "'>";
 
                 // Header
                 html += "<div class='polyglot-header' role='banner'>";
                 html += "<div class='polyglot-title-section'>";
-                html += "<h2>Polyglot Studio</h2>";
-                html += "<span class='polyglot-hint'>Explore language variations • Ctrl+L to toggle • Ctrl+V for view</span>";
+                html += "<h2>" + escapeHtml(traduireInterface("polyglot.title")) + "</h2>";
+                html += "<span class='polyglot-hint'>" + escapeHtml(traduireInterface("polyglot.hint")) + "</span>";
                 html += "</div>";
-                html += "<div class='polyglot-controls' role='toolbar' aria-label='Language and view controls'>";
-                html += "<button class='language-toggle " + (currentLang === "fr" ? "is-active" : "") + "' data-lang='fr' title='French surface (Ctrl+L)' aria-pressed='" + (currentLang === "fr" ? "true" : "false") + "'>Francais</button>";
-                html += "<button class='language-toggle " + (currentLang === "en" ? "is-active" : "") + "' data-lang='en' title='English surface (Ctrl+L)' aria-pressed='" + (currentLang === "en" ? "true" : "false") + "'>English</button>";
-                html += "<button class='view-toggle' id='polyglot-toggle-view' title='Toggle between side-by-side and tab view (Ctrl+V)' aria-label='View mode toggle'>Changer vue</button>";
+                html += "<div class='polyglot-controls' role='toolbar' aria-label='" + escapeHtml(traduireInterface("polyglot.controlsAria")) + "'>";
+                html += "<button class='language-toggle " + (currentLang === "fr" ? "is-active" : "") + "' data-lang='fr' title='" + escapeHtml(traduireInterface("polyglot.surface.fr.title")) + "' aria-pressed='" + (currentLang === "fr" ? "true" : "false") + "'>" + escapeHtml(traduireInterface("polyglot.surface.fr.label")) + "</button>";
+                html += "<button class='language-toggle " + (currentLang === "en" ? "is-active" : "") + "' data-lang='en' title='" + escapeHtml(traduireInterface("polyglot.surface.en.title")) + "' aria-pressed='" + (currentLang === "en" ? "true" : "false") + "'>" + escapeHtml(traduireInterface("polyglot.surface.en.label")) + "</button>";
+                html += "<button class='view-toggle' id='polyglot-toggle-view' title='" + escapeHtml(traduireInterface("polyglot.viewToggle.title")) + "' aria-label='" + escapeHtml(traduireInterface("polyglot.viewToggle.aria")) + "'>" + escapeHtml(traduireInterface("polyglot.viewToggle.label")) + "</button>";
                 html += "</div>";
                 html += "</div>";
 
@@ -1022,7 +1022,7 @@ function setActiveTier(tier, options = {}) {
                 }
             }
 
-            let html = "<div class='polyglot-surface surface-" + lang + "' lang='" + lang + "' role='region' aria-label='" + lang.toUpperCase() + " surface'>";
+            let html = "<div class='polyglot-surface surface-" + lang + "' lang='" + lang + "' role='region' aria-label='" + escapeHtml(traduireInterface("polyglot.surface.aria", { lang: lang.toUpperCase() }, lang)) + "'>";
 
             html += "<div class='entity-header'>";
             html += "<div style='flex: 1'>";
@@ -1096,13 +1096,13 @@ function setActiveTier(tier, options = {}) {
 
         function renderMovementProperties(entity, lang) {
             let html = "";
-            const startLabel = lang === "fr" ? "Période" : "Period";
-            const countriesLabel = lang === "fr" ? "Pays d'origine" : "Countries";
-            const precLabel = lang === "fr" ? "Mouvements précurseurs" : "Preceding movements";
-            const succLabel = lang === "fr" ? "Mouvements successeurs" : "Succeeding movements";
+            const startLabel = traduireInterface("polyglot.property.period", {}, lang);
+            const countriesLabel = traduireInterface("polyglot.property.countries", {}, lang);
+            const precLabel = traduireInterface("polyglot.property.precedingMovements", {}, lang);
+            const succLabel = traduireInterface("polyglot.property.succeedingMovements", {}, lang);
 
             html += "<div class='property-section'>";
-            html += "<div class='section-title'>" + (lang === "fr" ? "Informations principales" : "Primary information") + "</div>";
+            html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.primary", {}, lang)) + "</div>";
 
             const debut = extractValue(entity.startTime);
             const fin = extractValue(entity.endTime);
@@ -1137,7 +1137,7 @@ function setActiveTier(tier, options = {}) {
 
             if (precMovements.length > 0 || succMovements.length > 0) {
                 html += "<div class='property-section'>";
-                html += "<div class='section-title'>" + (lang === "fr" ? "Contexte historique" : "Historical context") + "</div>";
+                html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.historical", {}, lang)) + "</div>";
 
                 const precLabels = relatedValues(entity, "follows", "followsLabel").join(", ");
                 if (precLabels) {
@@ -1163,13 +1163,13 @@ function setActiveTier(tier, options = {}) {
 
         function renderArtistProperties(entity, lang) {
             let html = "";
-            const datesLabel = lang === "fr" ? "Dates de vie" : "Lifespan";
-            const birthplaceLabel = lang === "fr" ? "Lieu de naissance" : "Birthplace";
-            const deathplaceLabel = lang === "fr" ? "Lieu de décès" : "Deathplace";
-            const movementsLabel = lang === "fr" ? "Mouvements artistiques" : "Artistic movements";
+            const datesLabel = traduireInterface("polyglot.property.lifespan", {}, lang);
+            const birthplaceLabel = traduireInterface("polyglot.property.birthplace", {}, lang);
+            const deathplaceLabel = traduireInterface("polyglot.property.deathplace", {}, lang);
+            const movementsLabel = traduireInterface("polyglot.property.artisticMovements", {}, lang);
 
             html += "<div class='property-section'>";
-            html += "<div class='section-title'>" + (lang === "fr" ? "Biographie" : "Biography") + "</div>";
+            html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.biography", {}, lang)) + "</div>";
 
             const birthDate = extractValue(entity.birthDate);
             const deathDate = extractValue(entity.deathDate);
@@ -1207,7 +1207,7 @@ function setActiveTier(tier, options = {}) {
 
             if (movements.length > 0) {
                 html += "<div class='property-section'>";
-                html += "<div class='section-title'>" + (lang === "fr" ? "Affiliations artistiques" : "Artistic affiliations") + "</div>";
+                html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.affiliations", {}, lang)) + "</div>";
 
                 const movementLabels = relatedValues(entity, "movement", "movementLabel").join(", ");
                 if (movementLabels) {
@@ -1237,14 +1237,14 @@ function setActiveTier(tier, options = {}) {
 
         function renderArtworkProperties(entity, lang) {
             let html = "";
-            const creatorLabel = lang === "fr" ? "Créateur" : "Creator";
-            const dateLabel = lang === "fr" ? "Date de création" : "Date created";
-            const museumLabel = lang === "fr" ? "Localisation" : "Location";
-            const materialLabel = lang === "fr" ? "Matériaux" : "Materials";
-            const depictsLabel = lang === "fr" ? "Sujets représentés" : "Subjects depicted";
+            const creatorLabel = traduireInterface("polyglot.property.creator", {}, lang);
+            const dateLabel = traduireInterface("polyglot.property.creationDate", {}, lang);
+            const museumLabel = traduireInterface("polyglot.property.location", {}, lang);
+            const materialLabel = traduireInterface("polyglot.property.materials", {}, lang);
+            const depictsLabel = traduireInterface("polyglot.property.depicts", {}, lang);
 
             html += "<div class='property-section'>";
-            html += "<div class='section-title'>" + (lang === "fr" ? "Informations principales" : "Primary information") + "</div>";
+            html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.primary", {}, lang)) + "</div>";
 
             // Creator
             const creatorVal = relatedValues(entity, "creator", "creatorLabel").join(", ");
@@ -1287,7 +1287,7 @@ function setActiveTier(tier, options = {}) {
 
             if (materials.length > 0 || depicts.length > 0) {
                 html += "<div class='property-section'>";
-                html += "<div class='section-title'>" + (lang === "fr" ? "Caractéristiques physiques" : "Physical characteristics") + "</div>";
+                html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.physical", {}, lang)) + "</div>";
 
                 if (materials.length > 0) {
                     const materialLabels = relatedValues(entity, "material", "materialLabel").join(", ");
@@ -1317,14 +1317,14 @@ function setActiveTier(tier, options = {}) {
 
         function renderMuseumProperties(entity, lang) {
             let html = "";
-            const countryLabel = lang === "fr" ? "Pays" : "Country";
-            const locationLabel = lang === "fr" ? "Lieu" : "Location";
-            const inceptionLabel = lang === "fr" ? "Fondation" : "Founded";
-            const collectionLabel = lang === "fr" ? "Oeuvres chargees" : "Loaded works";
-            const websiteLabel = lang === "fr" ? "Site web" : "Website";
+            const countryLabel = traduireInterface("polyglot.property.country", {}, lang);
+            const locationLabel = traduireInterface("polyglot.property.place", {}, lang);
+            const inceptionLabel = traduireInterface("polyglot.property.founded", {}, lang);
+            const collectionLabel = traduireInterface("polyglot.property.loadedWorks", {}, lang);
+            const websiteLabel = traduireInterface("polyglot.property.website", {}, lang);
 
             html += "<div class='property-section'>";
-            html += "<div class='section-title'>" + (lang === "fr" ? "Informations principales" : "Primary information") + "</div>";
+            html += "<div class='section-title'>" + escapeHtml(traduireInterface("polyglot.section.primary", {}, lang)) + "</div>";
 
             const inception = extractValue(entity.inceptionDate || entity.foundedDate);
             if (inception) {

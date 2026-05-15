@@ -1,4 +1,16 @@
 importer ui.etat
+importer ui.i18n
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
+
+
+déf _ti(cle: chaine, params: dictionnaire) -> chaine:
+    texte = _t(cle)
+    pour nom, valeur dans params.items():
+        texte = texte.remplacer("{" + nom + "}", chaine(valeur))
+    retour texte
 
 asynchrone déf ouvrir_panneau_detail():
     """Ouvrir le panneau de détails"""
@@ -49,13 +61,13 @@ déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
     si debut ou fin:
         periodes = []
         si debut:
-            periodes.ajouter("Début: " + debut)
+            periodes.ajouter(_ti("detail.movement.start", {"value": debut}))
         si fin:
-            periodes.ajouter("Fin: " + fin)
+            periodes.ajouter(_ti("detail.movement.end", {"value": fin}))
         html = html + '<p class="detail-row">' + " | ".joindre(periodes) + '</p>'
 
     si pays_label:
-        html = html + '<p class="detail-row">Pays: ' + pays_label + '</p>'
+        html = html + '<p class="detail-row">' + _ti("detail.country", {"value": pays_label}) + '</p>'
 
     html = html + '</div>'
     retour html
@@ -79,13 +91,13 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     label_esc = label.remplacer("'", "\\'")
 
     si est_depart:
-        traj_label = "Départ trajectoire ✓"
+        traj_label = _t("detail.trajectory.startSelected")
         traj_onclick = "window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())"
     sinon si est_arrivee:
-        traj_label = "Arrivée trajectoire ✓"
+        traj_label = _t("detail.trajectory.endSelected")
         traj_onclick = "window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())"
     sinon:
-        traj_label = "Trajectoire →"
+        traj_label = _t("detail.trajectory.add")
         traj_onclick = "window.ui&&window.ui.etat&&window.ui.etat.basculer_artiste_trajectoire&&window.ui.etat.basculer_artiste_trajectoire('" + entite_id + "','" + label_esc + "').then(()=>window.renderTrajectoirePanel())"
 
     html = '<div class="detail-section">'
@@ -94,13 +106,13 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     si naissance ou deces:
         periodes = []
         si naissance:
-            periodes.ajouter("Né: " + naissance)
+            periodes.ajouter(_ti("detail.artist.born", {"value": naissance}))
         si deces:
-            periodes.ajouter("Décédé: " + deces)
+            periodes.ajouter(_ti("detail.artist.died", {"value": deces}))
         html = html + '<p class="detail-row">' + " | ".joindre(periodes) + '</p>'
 
     si lieu_naissance_label:
-        html = html + '<p class="detail-row">Lieu de naissance: ' + lieu_naissance_label + '</p>'
+        html = html + '<p class="detail-row">' + _ti("detail.artist.birthplace", {"value": lieu_naissance_label}) + '</p>'
 
     html = html + '<div class="detail-actions">'
     html = html + '<button class="detail-traj-btn" onclick="' + traj_onclick + '">' + traj_label + '</button>'
@@ -127,13 +139,13 @@ déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
     html = html + '<h3>' + label + '</h3>'
 
     si createur_label:
-        html = html + '<p class="detail-row">Créateur: ' + createur_label + '</p>'
+        html = html + '<p class="detail-row">' + _ti("detail.artwork.creator", {"value": createur_label}) + '</p>'
 
     si date:
-        html = html + '<p class="detail-row">Date: ' + date + '</p>'
+        html = html + '<p class="detail-row">' + _ti("detail.artwork.date", {"value": date}) + '</p>'
 
     si musee_label:
-        html = html + '<p class="detail-row">Musée: ' + musee_label + '</p>'
+        html = html + '<p class="detail-row">' + _ti("detail.artwork.museum", {"value": musee_label}) + '</p>'
 
     html = html + '</div>'
     retour html
@@ -146,6 +158,6 @@ déf _rendre_detail_generique(entite: dictionnaire) -> chaine:
 
     html = '<div class="detail-section">'
     html = html + '<h3>' + entite_id + '</h3>'
-    html = html + '<p class="detail-row">Type: ' + entite.obtenir("type", "inconnu") + '</p>'
+    html = html + '<p class="detail-row">' + _ti("detail.type", {"value": entite.obtenir("type", _t("detail.unknown"))}) + '</p>'
     html = html + '</div>'
     retour html

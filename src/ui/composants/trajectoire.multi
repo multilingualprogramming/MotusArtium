@@ -1,4 +1,16 @@
 importer ui.etat
+importer ui.i18n
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
+
+
+déf _ti(cle: chaine, params: dictionnaire) -> chaine:
+    texte = _t(cle)
+    pour nom, valeur dans params.items():
+        texte = texte.remplacer("{" + nom + "}", chaine(valeur))
+    retour texte
 
 
 déf rendre_trajectoire() -> chaine:
@@ -14,26 +26,26 @@ déf rendre_trajectoire() -> chaine:
 
     html = '<div class="trajectoire-panel">'
     html = html + '<header class="trajectoire-header">'
-    html = html + "<h3 class='trajectoire-titre'>Trajectoire d'influence</h3>"
-    html = html + '<button class="trajectoire-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_trajectoire&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())" aria-label="Effacer la trajectoire">Effacer</button>'
+    html = html + "<h3 class='trajectoire-titre'>" + _t("trajectory.title") + "</h3>"
+    html = html + '<button class="trajectoire-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_trajectoire&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())" aria-label="' + _t("trajectory.clearAria") + '">' + _t("trajectory.clear") + '</button>'
     html = html + '</header>'
 
     html = html + '<div class="trajectoire-bornes">'
-    html = html + _rendre_borne(depart_id, labels, "depart", "Départ")
+    html = html + _rendre_borne(depart_id, labels, "depart", _t("trajectory.start"))
     si arrivee_id:
         html = html + '<span class="trajectoire-fleche">→</span>'
-        html = html + _rendre_borne(arrivee_id, labels, "arrivee", "Arrivée")
+        html = html + _rendre_borne(arrivee_id, labels, "arrivee", _t("trajectory.end"))
     sinon:
-        html = html + "<span class='trajectoire-attente'>Sélectionnez un artiste d'arrivée via + Trajectoire</span>"
+        html = html + "<span class='trajectoire-attente'>" + _t("trajectory.chooseEnd") + "</span>"
     html = html + '</div>'
 
     si chemin:
         html = html + _rendre_chemin(chemin, labels)
     sinon si arrivee_id:
         si ui.etat.obtenir_affichage_chargement():
-            html = html + '<p class="trajectoire-message">Calcul en cours...</p>'
+            html = html + '<p class="trajectoire-message">' + _t("trajectory.loading") + '</p>'
         sinon:
-            html = html + "<p class='trajectoire-message trajectoire-aucun'>Aucun chemin d'influence trouvé entre ces deux artistes dans le graphe actuel. Chargez d'autres artistes pour enrichir le réseau.</p>"
+            html = html + "<p class='trajectoire-message trajectoire-aucun'>" + _t("trajectory.noPath") + "</p>"
 
     html = html + '</div>'
     retour html
@@ -68,13 +80,13 @@ déf _rendre_chemin(chemin: liste, labels: dictionnaire) -> chaine:
         html = html + '<li class="' + css + '">'
         html = html + '<span class="trajectoire-nom">' + nom + '</span>'
         si non est_dernier:
-            html = html + '<span class="trajectoire-rel">a influencé ↓</span>'
+            html = html + '<span class="trajectoire-rel">' + _t("trajectory.influenced") + '</span>'
         html = html + '</li>'
 
     html = html + '</ol>'
     nb_degres = len(chemin) - 1
-    html = html + '<p class="trajectoire-longueur">' + chaine(nb_degres) + ' degré'
+    cle_degres = "trajectory.degreeSingular"
     si nb_degres > 1:
-        html = html + 's'
-    html = html + ' de séparation</p>'
+        cle_degres = "trajectory.degreePlural"
+    html = html + '<p class="trajectoire-longueur">' + _ti(cle_degres, {"count": nb_degres}) + '</p>'
     retour html

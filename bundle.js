@@ -2266,6 +2266,18 @@ Object.assign(window.ui.composants.barre_recherche, {_t: _t, ouvrir_barre_recher
 })();
 
 (() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function _ti(cle, params) {
+  var texte = _t(cle);
+  for (const [nom, valeur] of __ml_iterate(Object.entries(params))) {
+    texte = texte.replace((("{" + nom) + "}"), String(valeur));
+  }
+  return texte;
+}
+
 async function ouvrir_panneau_detail() {
   "Ouvrir le panneau de détails";
   ui.etat.panneau_detail_visible = true;
@@ -2316,15 +2328,15 @@ function _rendre_detail_mouvement(entite) {
   if ((__ml_truthy(debut) || __ml_truthy(fin))) {
     var periodes = [];
     if (__ml_truthy(debut)) {
-      __ml_add(periodes, ("Début: " + debut));
+      __ml_add(periodes, _ti("detail.movement.start", {["value"]: debut}));
     }
     if (__ml_truthy(fin)) {
-      __ml_add(periodes, ("Fin: " + fin));
+      __ml_add(periodes, _ti("detail.movement.end", {["value"]: fin}));
     }
     html = (((html + "<p class=\"detail-row\">") + (periodes).join(" | ")) + "</p>");
   }
   if (__ml_truthy(pays_label)) {
-    html = (((html + "<p class=\"detail-row\">Pays: ") + pays_label) + "</p>");
+    html = (((html + "<p class=\"detail-row\">") + _ti("detail.country", {["value"]: pays_label})) + "</p>");
   }
   html = (html + "</div>");
   return html;
@@ -2346,15 +2358,15 @@ function _rendre_detail_artiste(entite) {
   var est_arrivee = (ui.etat.obtenir_trajectoire_arrivee_id() == entite_id);
   var label_esc = label.replace("'", "\\'");
   if (__ml_truthy(est_depart)) {
-    var traj_label = "Départ trajectoire ✓";
+    var traj_label = _t("detail.trajectory.startSelected");
     var traj_onclick = "window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())";
   }
   else if (__ml_truthy(est_arrivee)) {
-    traj_label = "Arrivée trajectoire ✓";
+    traj_label = _t("detail.trajectory.endSelected");
     traj_onclick = "window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())";
   }
   else {
-    traj_label = "Trajectoire →";
+    traj_label = _t("detail.trajectory.add");
     traj_onclick = (((("window.ui&&window.ui.etat&&window.ui.etat.basculer_artiste_trajectoire&&window.ui.etat.basculer_artiste_trajectoire('" + entite_id) + "','") + label_esc) + "').then(()=>window.renderTrajectoirePanel())");
   }
   var html = "<div class=\"detail-section\">";
@@ -2362,15 +2374,15 @@ function _rendre_detail_artiste(entite) {
   if ((__ml_truthy(naissance) || __ml_truthy(deces))) {
     var periodes = [];
     if (__ml_truthy(naissance)) {
-      __ml_add(periodes, ("Né: " + naissance));
+      __ml_add(periodes, _ti("detail.artist.born", {["value"]: naissance}));
     }
     if (__ml_truthy(deces)) {
-      __ml_add(periodes, ("Décédé: " + deces));
+      __ml_add(periodes, _ti("detail.artist.died", {["value"]: deces}));
     }
     html = (((html + "<p class=\"detail-row\">") + (periodes).join(" | ")) + "</p>");
   }
   if (__ml_truthy(lieu_naissance_label)) {
-    html = (((html + "<p class=\"detail-row\">Lieu de naissance: ") + lieu_naissance_label) + "</p>");
+    html = (((html + "<p class=\"detail-row\">") + _ti("detail.artist.birthplace", {["value"]: lieu_naissance_label})) + "</p>");
   }
   html = (html + "<div class=\"detail-actions\">");
   html = (((((html + "<button class=\"detail-traj-btn\" onclick=\"") + traj_onclick) + "\">") + traj_label) + "</button>");
@@ -2397,13 +2409,13 @@ function _rendre_detail_oeuvre(entite) {
   var html = "<div class=\"detail-section\">";
   html = (((html + "<h3>") + label) + "</h3>");
   if (__ml_truthy(createur_label)) {
-    html = (((html + "<p class=\"detail-row\">Créateur: ") + createur_label) + "</p>");
+    html = (((html + "<p class=\"detail-row\">") + _ti("detail.artwork.creator", {["value"]: createur_label})) + "</p>");
   }
   if (__ml_truthy(date)) {
-    html = (((html + "<p class=\"detail-row\">Date: ") + date) + "</p>");
+    html = (((html + "<p class=\"detail-row\">") + _ti("detail.artwork.date", {["value"]: date})) + "</p>");
   }
   if (__ml_truthy(musee_label)) {
-    html = (((html + "<p class=\"detail-row\">Musée: ") + musee_label) + "</p>");
+    html = (((html + "<p class=\"detail-row\">") + _ti("detail.artwork.museum", {["value"]: musee_label})) + "</p>");
   }
   html = (html + "</div>");
   return html;
@@ -2415,7 +2427,7 @@ function _rendre_detail_generique(entite) {
   var entite_id = ((entite)?.["id"] ?? "");
   var html = "<div class=\"detail-section\">";
   html = (((html + "<h3>") + entite_id) + "</h3>");
-  html = (((html + "<p class=\"detail-row\">Type: ") + ((entite)?.["type"] ?? "inconnu")) + "</p>");
+  html = (((html + "<p class=\"detail-row\">") + _ti("detail.type", {["value"]: ((entite)?.["type"] ?? _t("detail.unknown"))})) + "</p>");
   html = (html + "</div>");
   return html;
 }
@@ -2423,7 +2435,7 @@ function _rendre_detail_generique(entite) {
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.panneau_detail = window.ui.composants.panneau_detail || {};
-Object.assign(window.ui.composants.panneau_detail, {ouvrir_panneau_detail: ouvrir_panneau_detail, fermer_panneau_detail: fermer_panneau_detail, rendre_panneau_detail: rendre_panneau_detail, _rendre_detail_mouvement: _rendre_detail_mouvement, _rendre_detail_artiste: _rendre_detail_artiste, _rendre_detail_oeuvre: _rendre_detail_oeuvre, _rendre_detail_generique: _rendre_detail_generique});
+Object.assign(window.ui.composants.panneau_detail, {_t: _t, _ti: _ti, ouvrir_panneau_detail: ouvrir_panneau_detail, fermer_panneau_detail: fermer_panneau_detail, rendre_panneau_detail: rendre_panneau_detail, _rendre_detail_mouvement: _rendre_detail_mouvement, _rendre_detail_artiste: _rendre_detail_artiste, _rendre_detail_oeuvre: _rendre_detail_oeuvre, _rendre_detail_generique: _rendre_detail_generique});
 })();
 
 (() => {
@@ -3057,6 +3069,18 @@ Object.assign(window.ui.composants.panneau_comparaison, {_t: _t, _ti: _ti, rendr
 })();
 
 (() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function _ti(cle, params) {
+  var texte = _t(cle);
+  for (const [nom, valeur] of __ml_iterate(Object.entries(params))) {
+    texte = texte.replace((("{" + nom) + "}"), String(valeur));
+  }
+  return texte;
+}
+
 function rendre_trajectoire() {
   "Rendre le panneau de trajectoire d'influence entre deux artistes.";
   var depart_id = ui.etat.obtenir_trajectoire_depart_id();
@@ -3068,17 +3092,17 @@ function rendre_trajectoire() {
   var chemin = ui.etat.obtenir_trajectoire_chemin();
   var html = "<div class=\"trajectoire-panel\">";
   html = (html + "<header class=\"trajectoire-header\">");
-  html = (html + "<h3 class='trajectoire-titre'>Trajectoire d'influence</h3>");
-  html = (html + "<button class=\"trajectoire-effacer\" onclick=\"window.ui&&window.ui.etat&&window.ui.etat.effacer_trajectoire&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())\" aria-label=\"Effacer la trajectoire\">Effacer</button>");
+  html = (((html + "<h3 class='trajectoire-titre'>") + _t("trajectory.title")) + "</h3>");
+  html = (((((html + "<button class=\"trajectoire-effacer\" onclick=\"window.ui&&window.ui.etat&&window.ui.etat.effacer_trajectoire&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())\" aria-label=\"") + _t("trajectory.clearAria")) + "\">") + _t("trajectory.clear")) + "</button>");
   html = (html + "</header>");
   html = (html + "<div class=\"trajectoire-bornes\">");
-  html = (html + _rendre_borne(depart_id, labels, "depart", "Départ"));
+  html = (html + _rendre_borne(depart_id, labels, "depart", _t("trajectory.start")));
   if (__ml_truthy(arrivee_id)) {
     html = (html + "<span class=\"trajectoire-fleche\">→</span>");
-    html = (html + _rendre_borne(arrivee_id, labels, "arrivee", "Arrivée"));
+    html = (html + _rendre_borne(arrivee_id, labels, "arrivee", _t("trajectory.end")));
   }
   else {
-    html = (html + "<span class='trajectoire-attente'>Sélectionnez un artiste d'arrivée via + Trajectoire</span>");
+    html = (((html + "<span class='trajectoire-attente'>") + _t("trajectory.chooseEnd")) + "</span>");
   }
   html = (html + "</div>");
   if (__ml_truthy(chemin)) {
@@ -3086,10 +3110,10 @@ function rendre_trajectoire() {
   }
   else if (__ml_truthy(arrivee_id)) {
     if (__ml_truthy(ui.etat.obtenir_affichage_chargement())) {
-      html = (html + "<p class=\"trajectoire-message\">Calcul en cours...</p>");
+      html = (((html + "<p class=\"trajectoire-message\">") + _t("trajectory.loading")) + "</p>");
     }
     else {
-      html = (html + "<p class='trajectoire-message trajectoire-aucun'>Aucun chemin d'influence trouvé entre ces deux artistes dans le graphe actuel. Chargez d'autres artistes pour enrichir le réseau.</p>");
+      html = (((html + "<p class='trajectoire-message trajectoire-aucun'>") + _t("trajectory.noPath")) + "</p>");
     }
   }
   html = (html + "</div>");
@@ -3124,24 +3148,24 @@ function _rendre_chemin(chemin, labels) {
     html = (((html + "<li class=\"") + css) + "\">");
     html = (((html + "<span class=\"trajectoire-nom\">") + nom) + "</span>");
     if ((!__ml_truthy(est_dernier))) {
-      html = (html + "<span class=\"trajectoire-rel\">a influencé ↓</span>");
+      html = (((html + "<span class=\"trajectoire-rel\">") + _t("trajectory.influenced")) + "</span>");
     }
     html = (html + "</li>");
   }
   html = (html + "</ol>");
   var nb_degres = ((chemin).length - 1);
-  html = (((html + "<p class=\"trajectoire-longueur\">") + String(nb_degres)) + " degré");
+  var cle_degres = "trajectory.degreeSingular";
   if (__ml_truthy((nb_degres > 1))) {
-    html = (html + "s");
+    cle_degres = "trajectory.degreePlural";
   }
-  html = (html + " de séparation</p>");
+  html = (((html + "<p class=\"trajectoire-longueur\">") + _ti(cle_degres, {["count"]: nb_degres})) + "</p>");
   return html;
 }
 
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.trajectoire = window.ui.composants.trajectoire || {};
-Object.assign(window.ui.composants.trajectoire, {rendre_trajectoire: rendre_trajectoire, _rendre_borne: _rendre_borne, _rendre_chemin: _rendre_chemin});
+Object.assign(window.ui.composants.trajectoire, {_t: _t, _ti: _ti, rendre_trajectoire: rendre_trajectoire, _rendre_borne: _rendre_borne, _rendre_chemin: _rendre_chemin});
 })();
 
 (() => {

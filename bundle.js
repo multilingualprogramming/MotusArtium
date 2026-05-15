@@ -2354,6 +2354,87 @@ Object.assign(window.ui.composants.panneau_detail, {ouvrir_panneau_detail: ouvri
 })();
 
 (() => {
+var LANGUE_INTERFACE_PAR_DEFAUT = "fr";
+
+var LANGUE_INTERFACE_SECOURS = "en";
+
+var LANGUES_INTERFACE = ["fr", "en", "es"];
+
+var CHEMIN_LOCALES_INTERFACE = "src/i18n/locales/";
+
+var textes_interface = {};
+
+function obtenir_chemin_locale(langue) {
+  "Retourner le chemin du fichier JSON pour une langue d'interface.";
+  if (__ml_truthy((!__ml_contains(LANGUES_INTERFACE, langue)))) {
+    langue = LANGUE_INTERFACE_SECOURS;
+  }
+  return ((CHEMIN_LOCALES_INTERFACE + langue) + ".json");
+}
+
+function obtenir_langues_disponibles() {
+  "Retourner les langues d'interface configurees.";
+  return LANGUES_INTERFACE;
+}
+
+async function charger_locale(langue) {
+  "Charger le fichier JSON d'une langue d'interface.";
+  var chemin = obtenir_chemin_locale(langue);
+  var reponse = await fetch(chemin);
+  if ((!__ml_truthy(reponse.ok))) {
+    throw new Error(("Impossible de charger la locale: " + langue));
+  }
+  var donnees = await reponse.json();
+  textes_interface[langue] = donnees;
+  return donnees;
+}
+
+async function charger_textes_interface() {
+  "Charger toutes les locales d'interface connues.";
+  for (const langue of __ml_iterate(LANGUES_INTERFACE)) {
+    await charger_locale(langue);
+  }
+  return textes_interface;
+}
+
+function obtenir_texte(cle, langue = LANGUE_INTERFACE_PAR_DEFAUT) {
+  "Retourner un texte charge depuis les fichiers JSON avec replis.";
+  var table_langue = ((textes_interface)?.[langue] ?? {});
+  var texte = ((table_langue)?.[cle] ?? "");
+  if (__ml_truthy(texte)) {
+    return texte;
+  }
+  var table_secours = ((textes_interface)?.[LANGUE_INTERFACE_SECOURS] ?? {});
+  var texte_secours = ((table_secours)?.[cle] ?? "");
+  if (__ml_truthy(texte_secours)) {
+    return texte_secours;
+  }
+  var table_fr = ((textes_interface)?.[LANGUE_INTERFACE_PAR_DEFAUT] ?? {});
+  var texte_fr = ((table_fr)?.[cle] ?? "");
+  if (__ml_truthy(texte_fr)) {
+    return texte_fr;
+  }
+  return cle;
+}
+
+window.ui = window.ui || {};
+window.ui.i18n = window.ui.i18n || {};
+Object.assign(window.ui.i18n, {obtenir_chemin_locale: obtenir_chemin_locale, obtenir_langues_disponibles: obtenir_langues_disponibles, charger_locale: charger_locale, charger_textes_interface: charger_textes_interface, obtenir_texte: obtenir_texte});
+})();
+
+(() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function _ti(cle, params) {
+  var texte = _t(cle);
+  for (const [nom, valeur] of __ml_iterate(Object.entries(params))) {
+    texte = texte.replace((("{" + nom) + "}"), String(valeur));
+  }
+  return texte;
+}
+
 function _extraire_annee(temps) {
   "Extraire l'année depuis une chaîne de temps Wikidata (ex: +1860-00-00T00:00:00Z)";
   if (((!__ml_truthy(temps)) || __ml_truthy(((temps).length < 4)))) {
@@ -2374,7 +2455,7 @@ function rendre_recit() {
   "Rendre le récit narratif de l'entité sélectionnée";
   var entite = ui.etat.obtenir_entite_selectionnee();
   if (((!__ml_truthy(entite)) || (!__ml_truthy(((entite)?.["id"] ?? ""))))) {
-    return "<div class=\"recit-vide\"><p>Sélectionnez un mouvement, un artiste ou une œuvre pour lire son récit.</p></div>";
+    return (("<div class=\"recit-vide\"><p>" + _t("recit.empty")) + "</p></div>");
   }
   var type_entite = ((entite)?.["type"] ?? "");
   if (__ml_truthy((type_entite == "mouvement"))) {
@@ -2401,7 +2482,7 @@ function _rendre_recit_mouvement(entite) {
   "Générer le récit narratif d'un mouvement artistique";
   var donnees = ((entite)?.["donnees"] ?? {});
   var entite_id = ((entite)?.["id"] ?? "");
-  var label = ((((donnees)?.["movementLabel"] ?? {}))?.["value"] ?? "Ce mouvement");
+  var label = ((((donnees)?.["movementLabel"] ?? {}))?.["value"] ?? _t("recit.default.movement"));
   var debut = _extraire_annee(((((donnees)?.["startTime"] ?? {}))?.["value"] ?? ""));
   var fin = _extraire_annee(((((donnees)?.["endTime"] ?? {}))?.["value"] ?? ""));
   var pays_label = ((((donnees)?.["countryLabel"] ?? {}))?.["value"] ?? "");
@@ -2417,7 +2498,7 @@ function _rendre_recit_mouvement(entite) {
   }
   var html = "<article class=\"recit-card recit-mouvement\">";
   html = (html + "<header class=\"recit-header\">");
-  html = (html + "<span class=\"recit-badge\">Mouvement artistique</span>");
+  html = (((html + "<span class=\"recit-badge\">") + _t("recit.badge.movement")) + "</span>");
   html = (((html + "<h2 class=\"recit-titre\">") + label) + "</h2>");
   if ((__ml_truthy(debut) || __ml_truthy(fin))) {
     var periode = "";
@@ -2425,10 +2506,10 @@ function _rendre_recit_mouvement(entite) {
       periode = ((debut + "–") + fin);
     }
     else if (__ml_truthy(debut)) {
-      periode = ("à partir de " + debut);
+      periode = _ti("recit.period.from", {["year"]: debut});
     }
     else {
-      periode = ("jusqu'en " + fin);
+      periode = _ti("recit.period.until", {["year"]: fin});
     }
     html = (((html + "<p class=\"recit-periode\">") + periode) + "</p>");
   }
@@ -2436,36 +2517,36 @@ function _rendre_recit_mouvement(entite) {
   html = (html + "<div class=\"recit-corps\">");
   var phrase = label;
   if ((__ml_truthy(debut) && __ml_truthy(pays_label))) {
-    phrase = (((((phrase + " prend forme en ") + pays_label) + " vers ") + debut) + ".");
+    phrase = _ti("recit.movement.intro.countryDate", {["label"]: label, ["country"]: pays_label, ["year"]: debut});
   }
   else if (__ml_truthy(debut)) {
-    phrase = (((phrase + " émerge vers ") + debut) + ".");
+    phrase = _ti("recit.movement.intro.date", {["label"]: label, ["year"]: debut});
   }
   else if (__ml_truthy(pays_label)) {
-    phrase = (((phrase + " est un mouvement artistique né en ") + pays_label) + ".");
+    phrase = _ti("recit.movement.intro.country", {["label"]: label, ["country"]: pays_label});
   }
   else {
-    phrase = (phrase + " est un mouvement artistique majeur de l'histoire de l'art.");
+    phrase = _ti("recit.movement.intro.generic", {["label"]: label});
   }
   html = (((html + "<p class=\"recit-intro\">") + phrase) + "</p>");
   if ((__ml_truthy(suit_label) || __ml_truthy(suivi_par_label))) {
     html = (html + "<section class=\"recit-section\">");
-    html = (html + "<h3 class=\"recit-section-titre\">Filiation</h3>");
+    html = (((html + "<h3 class=\"recit-section-titre\">") + _t("recit.section.lineage")) + "</h3>");
     if (__ml_truthy(suit_label)) {
-      html = (((html + "<p class=\"recit-relation\">← Succède à <strong>") + suit_label) + "</strong></p>");
+      html = (((html + "<p class=\"recit-relation\">← ") + _ti("recit.movement.succeeds", {["label"]: suit_label})) + "</p>");
     }
     if (__ml_truthy(suivi_par_label)) {
-      html = (((html + "<p class=\"recit-relation\">→ Prépare <strong>") + suivi_par_label) + "</strong></p>");
+      html = (((html + "<p class=\"recit-relation\">→ ") + _ti("recit.movement.prepares", {["label"]: suivi_par_label})) + "</p>");
     }
     html = (html + "</section>");
   }
   if (__ml_truthy(noms_artistes)) {
     html = (html + "<section class=\"recit-section\">");
-    html = (html + "<h3 class=\"recit-section-titre\">Artistes représentatifs</h3>");
+    html = (((html + "<h3 class=\"recit-section-titre\">") + _t("recit.section.representativeArtists")) + "</h3>");
     html = (html + "<p class=\"recit-artistes\">");
     html = (html + (noms_artistes).join(", "));
     if (__ml_truthy(((artistes_ids).length > 5))) {
-      html = (((html + " et ") + String(((artistes_ids).length - 5))) + " autres.");
+      html = ((html + " ") + _ti("recit.more.others", {["count"]: ((artistes_ids).length - 5)}));
     }
     else {
       html = (html + ".");
@@ -2475,7 +2556,7 @@ function _rendre_recit_mouvement(entite) {
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">Voir la constellation →</button>");
+  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2485,7 +2566,7 @@ function _rendre_recit_artiste(entite) {
   "Générer le récit narratif d'un artiste";
   var donnees = ((entite)?.["donnees"] ?? {});
   var entite_id = ((entite)?.["id"] ?? "");
-  var label = ((((donnees)?.["artistLabel"] ?? {}))?.["value"] ?? "Cet artiste");
+  var label = ((((donnees)?.["artistLabel"] ?? {}))?.["value"] ?? _t("recit.default.artist"));
   var naissance = _extraire_annee(((((donnees)?.["birthDate"] ?? {}))?.["value"] ?? ""));
   var deces = _extraire_annee(((((donnees)?.["deathDate"] ?? {}))?.["value"] ?? ""));
   var lieu_label = ((((donnees)?.["birthplaceLabel"] ?? {}))?.["value"] ?? "");
@@ -2508,10 +2589,10 @@ function _rendre_recit_artiste(entite) {
       vie = ((naissance + "–") + deces);
     }
     else if (__ml_truthy(naissance)) {
-      vie = ("né(e) en " + naissance);
+      vie = _ti("recit.artist.born", {["year"]: naissance});
     }
     else {
-      vie = ("décédé(e) en " + deces);
+      vie = _ti("recit.artist.died", {["year"]: deces});
     }
     html = (((html + "<p class=\"recit-periode\">") + vie) + "</p>");
   }
@@ -2519,40 +2600,40 @@ function _rendre_recit_artiste(entite) {
   html = (html + "<div class=\"recit-corps\">");
   var phrase = label;
   if ((__ml_truthy(naissance) && __ml_truthy(lieu_label))) {
-    phrase = (((((phrase + ", né(e) en ") + naissance) + " à ") + lieu_label) + ".");
+    phrase = _ti("recit.artist.intro.birthPlace", {["label"]: label, ["year"]: naissance, ["place"]: lieu_label});
   }
   else if (__ml_truthy(lieu_label)) {
-    phrase = (((phrase + " est originaire de ") + lieu_label) + ".");
+    phrase = _ti("recit.artist.intro.place", {["label"]: label, ["place"]: lieu_label});
   }
   else if (__ml_truthy(naissance)) {
-    phrase = (((phrase + " naît en ") + naissance) + ".");
+    phrase = _ti("recit.artist.intro.birth", {["label"]: label, ["year"]: naissance});
   }
   else {
-    phrase = (phrase + " est un artiste majeur de l'histoire de l'art.");
+    phrase = _ti("recit.artist.intro.generic", {["label"]: label});
   }
   html = (((html + "<p class=\"recit-intro\">") + phrase) + "</p>");
   if (__ml_truthy(mouvement_label)) {
     html = (html + "<section class=\"recit-section\">");
-    html = (html + "<h3 class=\"recit-section-titre\">Mouvement</h3>");
-    html = (((html + "<p class=\"recit-relation\">Associé au <strong>") + mouvement_label) + "</strong></p>");
+    html = (((html + "<h3 class=\"recit-section-titre\">") + _t("recit.section.movement")) + "</h3>");
+    html = (((html + "<p class=\"recit-relation\">") + _ti("recit.artist.associatedMovement", {["label"]: mouvement_label})) + "</p>");
     html = (html + "</section>");
   }
   if (__ml_truthy(noms_oeuvres)) {
     html = (html + "<section class=\"recit-section\">");
-    html = (html + "<h3 class=\"recit-section-titre\">Œuvres chargées</h3>");
+    html = (((html + "<h3 class=\"recit-section-titre\">") + _t("recit.section.loadedWorks")) + "</h3>");
     html = (html + "<ul class=\"recit-liste\">");
     for (const nom_oeuvre of __ml_iterate(noms_oeuvres)) {
       html = (((html + "<li>") + nom_oeuvre) + "</li>");
     }
     if (__ml_truthy(((oeuvres_ids).length > 4))) {
-      html = (((html + "<li class=\"recit-plus\">+ ") + String(((oeuvres_ids).length - 4))) + " autres</li>");
+      html = (((html + "<li class=\"recit-plus\">+ ") + _ti("recit.more.othersNoDot", {["count"]: ((oeuvres_ids).length - 4)})) + "</li>");
     }
     html = (html + "</ul>");
     html = (html + "</section>");
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">Voir la constellation →</button>");
+  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2561,7 +2642,7 @@ function _rendre_recit_artiste(entite) {
 function _rendre_recit_oeuvre(entite) {
   "Générer le récit narratif d'une œuvre";
   var donnees = ((entite)?.["donnees"] ?? {});
-  var label = ((((donnees)?.["artworkLabel"] ?? {}))?.["value"] ?? "Cette œuvre");
+  var label = ((((donnees)?.["artworkLabel"] ?? {}))?.["value"] ?? _t("recit.default.artwork"));
   var createur_label = ((((donnees)?.["creatorLabel"] ?? {}))?.["value"] ?? "");
   var date_brute = ((((donnees)?.["inceptionDate"] ?? {}))?.["value"] ?? "");
   var date = _extraire_annee(date_brute);
@@ -2570,7 +2651,7 @@ function _rendre_recit_oeuvre(entite) {
   var materiau_label = ((((donnees)?.["materialLabel"] ?? {}))?.["value"] ?? "");
   var html = "<article class=\"recit-card recit-oeuvre\">";
   html = (html + "<header class=\"recit-header\">");
-  html = (html + "<span class=\"recit-badge\">Œuvre</span>");
+  html = (((html + "<span class=\"recit-badge\">") + _t("recit.badge.artwork")) + "</span>");
   html = (((html + "<h2 class=\"recit-titre\">") + label) + "</h2>");
   if (__ml_truthy(date)) {
     html = (((html + "<p class=\"recit-periode\">") + date) + "</p>");
@@ -2579,35 +2660,35 @@ function _rendre_recit_oeuvre(entite) {
   html = (html + "<div class=\"recit-corps\">");
   var phrase = label;
   if ((__ml_truthy(createur_label) && __ml_truthy(date))) {
-    phrase = (((((phrase + " est une œuvre de ") + createur_label) + ", réalisée en ") + date) + ".");
+    phrase = _ti("recit.artwork.intro.creatorDate", {["label"]: label, ["creator"]: createur_label, ["year"]: date});
   }
   else if (__ml_truthy(createur_label)) {
-    phrase = (((phrase + " est une œuvre de ") + createur_label) + ".");
+    phrase = _ti("recit.artwork.intro.creator", {["label"]: label, ["creator"]: createur_label});
   }
   else if (__ml_truthy(date)) {
-    phrase = (((phrase + " date de ") + date) + ".");
+    phrase = _ti("recit.artwork.intro.date", {["label"]: label, ["year"]: date});
   }
   else {
-    phrase = (phrase + " est une œuvre remarquable de l'histoire de l'art.");
+    phrase = _ti("recit.artwork.intro.generic", {["label"]: label});
   }
   html = (((html + "<p class=\"recit-intro\">") + phrase) + "</p>");
   if ((__ml_truthy(musee_label) || __ml_truthy(sujet_label) || __ml_truthy(materiau_label))) {
     html = (html + "<section class=\"recit-section\">");
-    html = (html + "<h3 class=\"recit-section-titre\">Détails</h3>");
+    html = (((html + "<h3 class=\"recit-section-titre\">") + _t("recit.section.details")) + "</h3>");
     if (__ml_truthy(musee_label)) {
-      html = (((html + "<p class=\"recit-relation\">🏛 Conservée au <strong>") + musee_label) + "</strong></p>");
+      html = (((html + "<p class=\"recit-relation\">🏛 ") + _ti("recit.artwork.museum", {["label"]: musee_label})) + "</p>");
     }
     if (__ml_truthy(sujet_label)) {
-      html = (((html + "<p class=\"recit-relation\">🎨 Représente <strong>") + sujet_label) + "</strong></p>");
+      html = (((html + "<p class=\"recit-relation\">🎨 ") + _ti("recit.artwork.depicts", {["label"]: sujet_label})) + "</p>");
     }
     if (__ml_truthy(materiau_label)) {
-      html = (((html + "<p class=\"recit-relation\">🖌 Réalisée en <strong>") + materiau_label) + "</strong></p>");
+      html = (((html + "<p class=\"recit-relation\">🖌 ") + _ti("recit.artwork.material", {["label"]: materiau_label})) + "</p>");
     }
     html = (html + "</section>");
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">Voir la constellation →</button>");
+  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2720,7 +2801,7 @@ function _rendre_recit_generique(entite) {
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.recit = window.ui.composants.recit || {};
-Object.assign(window.ui.composants.recit, {_extraire_annee: _extraire_annee, rendre_recit: rendre_recit, _rendre_recit_mouvement: _rendre_recit_mouvement, _rendre_recit_artiste: _rendre_recit_artiste, _rendre_recit_oeuvre: _rendre_recit_oeuvre, _rendre_recit_musee: _rendre_recit_musee, _rendre_recit_sujet: _rendre_recit_sujet, _rendre_recit_generique: _rendre_recit_generique});
+Object.assign(window.ui.composants.recit, {_t: _t, _ti: _ti, _extraire_annee: _extraire_annee, rendre_recit: rendre_recit, _rendre_recit_mouvement: _rendre_recit_mouvement, _rendre_recit_artiste: _rendre_recit_artiste, _rendre_recit_oeuvre: _rendre_recit_oeuvre, _rendre_recit_musee: _rendre_recit_musee, _rendre_recit_sujet: _rendre_recit_sujet, _rendre_recit_generique: _rendre_recit_generique});
 })();
 
 (() => {
@@ -3085,75 +3166,6 @@ window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.grille_themes = window.ui.composants.grille_themes || {};
 Object.assign(window.ui.composants.grille_themes, {_tuile_theme: _tuile_theme, rendre_grille_themes: rendre_grille_themes});
-})();
-
-(() => {
-var LANGUE_INTERFACE_PAR_DEFAUT = "fr";
-
-var LANGUE_INTERFACE_SECOURS = "en";
-
-var LANGUES_INTERFACE = ["fr", "en", "es"];
-
-var CHEMIN_LOCALES_INTERFACE = "src/i18n/locales/";
-
-var textes_interface = {};
-
-function obtenir_chemin_locale(langue) {
-  "Retourner le chemin du fichier JSON pour une langue d'interface.";
-  if (__ml_truthy((!__ml_contains(LANGUES_INTERFACE, langue)))) {
-    langue = LANGUE_INTERFACE_SECOURS;
-  }
-  return ((CHEMIN_LOCALES_INTERFACE + langue) + ".json");
-}
-
-function obtenir_langues_disponibles() {
-  "Retourner les langues d'interface configurees.";
-  return LANGUES_INTERFACE;
-}
-
-async function charger_locale(langue) {
-  "Charger le fichier JSON d'une langue d'interface.";
-  var chemin = obtenir_chemin_locale(langue);
-  var reponse = await fetch(chemin);
-  if ((!__ml_truthy(reponse.ok))) {
-    throw new Error(("Impossible de charger la locale: " + langue));
-  }
-  var donnees = await reponse.json();
-  textes_interface[langue] = donnees;
-  return donnees;
-}
-
-async function charger_textes_interface() {
-  "Charger toutes les locales d'interface connues.";
-  for (const langue of __ml_iterate(LANGUES_INTERFACE)) {
-    await charger_locale(langue);
-  }
-  return textes_interface;
-}
-
-function obtenir_texte(cle, langue = LANGUE_INTERFACE_PAR_DEFAUT) {
-  "Retourner un texte charge depuis les fichiers JSON avec replis.";
-  var table_langue = ((textes_interface)?.[langue] ?? {});
-  var texte = ((table_langue)?.[cle] ?? "");
-  if (__ml_truthy(texte)) {
-    return texte;
-  }
-  var table_secours = ((textes_interface)?.[LANGUE_INTERFACE_SECOURS] ?? {});
-  var texte_secours = ((table_secours)?.[cle] ?? "");
-  if (__ml_truthy(texte_secours)) {
-    return texte_secours;
-  }
-  var table_fr = ((textes_interface)?.[LANGUE_INTERFACE_PAR_DEFAUT] ?? {});
-  var texte_fr = ((table_fr)?.[cle] ?? "");
-  if (__ml_truthy(texte_fr)) {
-    return texte_fr;
-  }
-  return cle;
-}
-
-window.ui = window.ui || {};
-window.ui.i18n = window.ui.i18n || {};
-Object.assign(window.ui.i18n, {obtenir_chemin_locale: obtenir_chemin_locale, obtenir_langues_disponibles: obtenir_langues_disponibles, charger_locale: charger_locale, charger_textes_interface: charger_textes_interface, obtenir_texte: obtenir_texte});
 })();
 
 async function charger_mouvement(mouvement_id) {

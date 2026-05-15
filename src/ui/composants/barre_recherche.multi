@@ -1,5 +1,10 @@
 importer ui.interactions.recherche
 importer ui.etat
+importer ui.i18n
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
 
 
 asynchrone déf ouvrir_barre_recherche():
@@ -19,7 +24,7 @@ déf rendre_barre_recherche():
 
     # Rendre l'input de recherche
     html = '<div class="search-bar-container">'
-    html = html + '<input type="text" class="search-input" placeholder="Chercher..." />'
+    html = html + '<input type="text" class="search-input" placeholder="' + _t("search.placeholder.short") + '" />'
     html = html + '<div class="search-results">'
 
     # Rendre les résultats de recherche

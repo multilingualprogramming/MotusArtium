@@ -2151,6 +2151,79 @@ Object.assign(window.ui.interactions.recherche, {lancer_recherche: lancer_recher
 })();
 
 (() => {
+var LANGUE_INTERFACE_PAR_DEFAUT = "fr";
+
+var LANGUE_INTERFACE_SECOURS = "en";
+
+var LANGUES_INTERFACE = ["fr", "en", "es"];
+
+var CHEMIN_LOCALES_INTERFACE = "src/i18n/locales/";
+
+var textes_interface = {};
+
+function obtenir_chemin_locale(langue) {
+  "Retourner le chemin du fichier JSON pour une langue d'interface.";
+  if (__ml_truthy((!__ml_contains(LANGUES_INTERFACE, langue)))) {
+    langue = LANGUE_INTERFACE_SECOURS;
+  }
+  return ((CHEMIN_LOCALES_INTERFACE + langue) + ".json");
+}
+
+function obtenir_langues_disponibles() {
+  "Retourner les langues d'interface configurees.";
+  return LANGUES_INTERFACE;
+}
+
+async function charger_locale(langue) {
+  "Charger le fichier JSON d'une langue d'interface.";
+  var chemin = obtenir_chemin_locale(langue);
+  var reponse = await fetch(chemin);
+  if ((!__ml_truthy(reponse.ok))) {
+    throw new Error(("Impossible de charger la locale: " + langue));
+  }
+  var donnees = await reponse.json();
+  textes_interface[langue] = donnees;
+  return donnees;
+}
+
+async function charger_textes_interface() {
+  "Charger toutes les locales d'interface connues.";
+  for (const langue of __ml_iterate(LANGUES_INTERFACE)) {
+    await charger_locale(langue);
+  }
+  return textes_interface;
+}
+
+function obtenir_texte(cle, langue = LANGUE_INTERFACE_PAR_DEFAUT) {
+  "Retourner un texte charge depuis les fichiers JSON avec replis.";
+  var table_langue = ((textes_interface)?.[langue] ?? {});
+  var texte = ((table_langue)?.[cle] ?? "");
+  if (__ml_truthy(texte)) {
+    return texte;
+  }
+  var table_secours = ((textes_interface)?.[LANGUE_INTERFACE_SECOURS] ?? {});
+  var texte_secours = ((table_secours)?.[cle] ?? "");
+  if (__ml_truthy(texte_secours)) {
+    return texte_secours;
+  }
+  var table_fr = ((textes_interface)?.[LANGUE_INTERFACE_PAR_DEFAUT] ?? {});
+  var texte_fr = ((table_fr)?.[cle] ?? "");
+  if (__ml_truthy(texte_fr)) {
+    return texte_fr;
+  }
+  return cle;
+}
+
+window.ui = window.ui || {};
+window.ui.i18n = window.ui.i18n || {};
+Object.assign(window.ui.i18n, {obtenir_chemin_locale: obtenir_chemin_locale, obtenir_langues_disponibles: obtenir_langues_disponibles, charger_locale: charger_locale, charger_textes_interface: charger_textes_interface, obtenir_texte: obtenir_texte});
+})();
+
+(() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
 async function ouvrir_barre_recherche() {
   "Ouvrir la barre de recherche";
   await ui.interactions.recherche.ouvrir_barre_recherche();
@@ -2167,7 +2240,7 @@ function rendre_barre_recherche() {
     return "";
   }
   var html = "<div class=\"search-bar-container\">";
-  html = (html + "<input type=\"text\" class=\"search-input\" placeholder=\"Chercher...\" />");
+  html = (((html + "<input type=\"text\" class=\"search-input\" placeholder=\"") + _t("search.placeholder.short")) + "\" />");
   html = (html + "<div class=\"search-results\">");
   for (const resultat of __ml_iterate(ui.etat.resultats_recherche)) {
     var entite_id = ((resultat)?.["id"] ?? "");
@@ -2189,7 +2262,7 @@ function rendre_barre_recherche() {
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.barre_recherche = window.ui.composants.barre_recherche || {};
-Object.assign(window.ui.composants.barre_recherche, {ouvrir_barre_recherche: ouvrir_barre_recherche, fermer_barre_recherche: fermer_barre_recherche, rendre_barre_recherche: rendre_barre_recherche});
+Object.assign(window.ui.composants.barre_recherche, {_t: _t, ouvrir_barre_recherche: ouvrir_barre_recherche, fermer_barre_recherche: fermer_barre_recherche, rendre_barre_recherche: rendre_barre_recherche});
 })();
 
 (() => {
@@ -2351,75 +2424,6 @@ window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.panneau_detail = window.ui.composants.panneau_detail || {};
 Object.assign(window.ui.composants.panneau_detail, {ouvrir_panneau_detail: ouvrir_panneau_detail, fermer_panneau_detail: fermer_panneau_detail, rendre_panneau_detail: rendre_panneau_detail, _rendre_detail_mouvement: _rendre_detail_mouvement, _rendre_detail_artiste: _rendre_detail_artiste, _rendre_detail_oeuvre: _rendre_detail_oeuvre, _rendre_detail_generique: _rendre_detail_generique});
-})();
-
-(() => {
-var LANGUE_INTERFACE_PAR_DEFAUT = "fr";
-
-var LANGUE_INTERFACE_SECOURS = "en";
-
-var LANGUES_INTERFACE = ["fr", "en", "es"];
-
-var CHEMIN_LOCALES_INTERFACE = "src/i18n/locales/";
-
-var textes_interface = {};
-
-function obtenir_chemin_locale(langue) {
-  "Retourner le chemin du fichier JSON pour une langue d'interface.";
-  if (__ml_truthy((!__ml_contains(LANGUES_INTERFACE, langue)))) {
-    langue = LANGUE_INTERFACE_SECOURS;
-  }
-  return ((CHEMIN_LOCALES_INTERFACE + langue) + ".json");
-}
-
-function obtenir_langues_disponibles() {
-  "Retourner les langues d'interface configurees.";
-  return LANGUES_INTERFACE;
-}
-
-async function charger_locale(langue) {
-  "Charger le fichier JSON d'une langue d'interface.";
-  var chemin = obtenir_chemin_locale(langue);
-  var reponse = await fetch(chemin);
-  if ((!__ml_truthy(reponse.ok))) {
-    throw new Error(("Impossible de charger la locale: " + langue));
-  }
-  var donnees = await reponse.json();
-  textes_interface[langue] = donnees;
-  return donnees;
-}
-
-async function charger_textes_interface() {
-  "Charger toutes les locales d'interface connues.";
-  for (const langue of __ml_iterate(LANGUES_INTERFACE)) {
-    await charger_locale(langue);
-  }
-  return textes_interface;
-}
-
-function obtenir_texte(cle, langue = LANGUE_INTERFACE_PAR_DEFAUT) {
-  "Retourner un texte charge depuis les fichiers JSON avec replis.";
-  var table_langue = ((textes_interface)?.[langue] ?? {});
-  var texte = ((table_langue)?.[cle] ?? "");
-  if (__ml_truthy(texte)) {
-    return texte;
-  }
-  var table_secours = ((textes_interface)?.[LANGUE_INTERFACE_SECOURS] ?? {});
-  var texte_secours = ((table_secours)?.[cle] ?? "");
-  if (__ml_truthy(texte_secours)) {
-    return texte_secours;
-  }
-  var table_fr = ((textes_interface)?.[LANGUE_INTERFACE_PAR_DEFAUT] ?? {});
-  var texte_fr = ((table_fr)?.[cle] ?? "");
-  if (__ml_truthy(texte_fr)) {
-    return texte_fr;
-  }
-  return cle;
-}
-
-window.ui = window.ui || {};
-window.ui.i18n = window.ui.i18n || {};
-Object.assign(window.ui.i18n, {obtenir_chemin_locale: obtenir_chemin_locale, obtenir_langues_disponibles: obtenir_langues_disponibles, charger_locale: charger_locale, charger_textes_interface: charger_textes_interface, obtenir_texte: obtenir_texte});
 })();
 
 (() => {
@@ -2709,12 +2713,12 @@ function _rendre_recit_musee(entite) {
   var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, "expose");
   var html = "<article class=\"recit-card recit-musee\">";
   html = (html + "<header class=\"recit-header\">");
-  html = (html + "<span class=\"recit-badge\">Museum</span>");
+  html = (((html + "<span class=\"recit-badge\">") + _t("recit.badge.museum")) + "</span>");
   html = (((html + "<h2 class=\"recit-titre\">") + label) + "</h2>");
   html = (html + "</header>");
   html = (html + "<div class=\"recit-corps\">");
   if (__ml_truthy(oeuvres_ids)) {
-    html = (html + "<p class=\"recit-intro\">Works in this collection:</p>");
+    html = (((html + "<p class=\"recit-intro\">") + _t("recit.museum.worksIntro")) + "</p>");
     html = (html + "<ul class=\"recit-liste-oeuvres\">");
     for (const oeuvre_id of __ml_iterate(oeuvres_ids.slice(0, 8))) {
       var noeud_oeuvre = ui.etat.obtenir_noeud_graphe(oeuvre_id);
@@ -2723,16 +2727,16 @@ function _rendre_recit_musee(entite) {
       }
     }
     if (__ml_truthy(((oeuvres_ids).length > 8))) {
-      html = (((html + "<li class=\"recit-plus\">... and ") + String(((oeuvres_ids).length - 8))) + " more works.</li>");
+      html = (((html + "<li class=\"recit-plus\">") + _ti("recit.museum.moreWorks", {["count"]: ((oeuvres_ids).length - 8)})) + "</li>");
     }
     html = (html + "</ul>");
   }
   else {
-    html = (html + "<p class=\"recit-intro\">Loading works from this collection...</p>");
+    html = (((html + "<p class=\"recit-intro\">") + _t("recit.museum.loadingWorks")) + "</p>");
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">Explore in constellation</button>");
+  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2753,12 +2757,12 @@ function _rendre_recit_sujet(entite) {
   var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, "represente");
   var html = "<article class=\"recit-card recit-sujet\">";
   html = (html + "<header class=\"recit-header\">");
-  html = (html + "<span class=\"recit-badge\">Theme</span>");
+  html = (((html + "<span class=\"recit-badge\">") + _t("recit.badge.theme")) + "</span>");
   html = (((html + "<h2 class=\"recit-titre\">") + label) + "</h2>");
   html = (html + "</header>");
   html = (html + "<div class=\"recit-corps\">");
   if (__ml_truthy(oeuvres_ids)) {
-    html = (html + "<p class=\"recit-intro\">Artworks on this theme:</p>");
+    html = (((html + "<p class=\"recit-intro\">") + _t("recit.theme.artworksIntro")) + "</p>");
     html = (html + "<ul class=\"recit-liste-oeuvres\">");
     for (const oeuvre_id of __ml_iterate(oeuvres_ids.slice(0, 8))) {
       var noeud_oeuvre = ui.etat.obtenir_noeud_graphe(oeuvre_id);
@@ -2767,16 +2771,16 @@ function _rendre_recit_sujet(entite) {
       }
     }
     if (__ml_truthy(((oeuvres_ids).length > 8))) {
-      html = (((html + "<li class=\"recit-plus\">... and ") + String(((oeuvres_ids).length - 8))) + " more artworks.</li>");
+      html = (((html + "<li class=\"recit-plus\">") + _ti("recit.theme.moreArtworks", {["count"]: ((oeuvres_ids).length - 8)})) + "</li>");
     }
     html = (html + "</ul>");
   }
   else {
-    html = (html + "<p class=\"recit-intro\">Loading artworks for this theme...</p>");
+    html = (((html + "<p class=\"recit-intro\">") + _t("recit.theme.loadingArtworks")) + "</p>");
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">Explore in constellation</button>");
+  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2792,7 +2796,7 @@ function _rendre_recit_generique(entite) {
   html = (((html + "<h2 class=\"recit-titre\">") + entite_id) + "</h2>");
   html = (html + "</header>");
   html = (html + "<div class=\"recit-corps\">");
-  html = (html + "<p class=\"recit-intro\">Sélectionnez une entité pour lire son récit.</p>");
+  html = (((html + "<p class=\"recit-intro\">") + _t("recit.generic.empty")) + "</p>");
   html = (html + "</div>");
   html = (html + "</article>");
   return html;
@@ -2907,6 +2911,18 @@ Object.assign(window.semantique.intersections, {calculer_intersection_artistes: 
 })();
 
 (() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function _ti(cle, params) {
+  var texte = _t(cle);
+  for (const [nom, valeur] of __ml_iterate(Object.entries(params))) {
+    texte = texte.replace((("{" + nom) + "}"), String(valeur));
+  }
+  return texte;
+}
+
 function rendre_panneau_comparaison() {
   "Rendre le panneau de comparaison entre entités sélectionnées";
   var entites = ui.etat.obtenir_entites_comparaison();
@@ -2915,15 +2931,15 @@ function rendre_panneau_comparaison() {
   }
   var html = "<div class=\"comparaison-panel\">";
   html = (html + "<header class=\"comparaison-header\">");
-  html = (html + "<h3 class=\"comparaison-titre\">Comparaison</h3>");
-  html = (html + "<button class=\"comparaison-effacer\" onclick=\"window.ui&&window.ui.etat&&window.ui.etat.effacer_comparaison&&(window.ui.etat.effacer_comparaison(),window.renderComparisonPanel())\" aria-label=\"Effacer la comparaison\">Effacer</button>");
+  html = (((html + "<h3 class=\"comparaison-titre\">") + _t("comparison.title")) + "</h3>");
+  html = (((((html + "<button class=\"comparaison-effacer\" onclick=\"window.ui&&window.ui.etat&&window.ui.etat.effacer_comparaison&&(window.ui.etat.effacer_comparaison(),window.renderComparisonPanel())\" aria-label=\"") + _t("comparison.clearAria")) + "\">") + _t("comparison.clear")) + "</button>");
   html = (html + "</header>");
   html = (html + _rendre_pastilles(entites));
   if (__ml_truthy(((entites).length < 2))) {
     var label = ((entites[0])?.["label"] ?? "");
     html = (html + "<div class=\"comparaison-attente\">");
-    html = (((html + "<p>Sélectionnez une autre entité à comparer avec <strong>") + label) + "</strong>.</p>");
-    html = (html + "<p class=\"comparaison-conseil\">Utilisez le bouton <em>+ Comparer</em> dans les résultats de recherche.</p>");
+    html = (((html + "<p>") + _ti("comparison.waiting", {["label"]: (("<strong>" + label) + "</strong>")})) + "</p>");
+    html = (((html + "<p class=\"comparaison-conseil\">") + _t("comparison.tip")) + "</p>");
     html = (html + "</div>");
     html = (html + "</div>");
     return html;
@@ -2944,7 +2960,7 @@ function rendre_panneau_comparaison() {
   }
   if ((!__ml_truthy(toutes_chargees))) {
     html = (html + "<div class=\"comparaison-chargement\">");
-    html = (html + "<p>Chargement des données de comparaison...</p>");
+    html = (((html + "<p>") + _t("comparison.loading")) + "</p>");
     html = (html + "</div>");
     html = (html + "</div>");
     return html;
@@ -2952,14 +2968,10 @@ function rendre_panneau_comparaison() {
   var nb_communs = ((stats)?.["artistes_communs_count"] ?? 0);
   html = (html + "<div class=\"comparaison-resume\">");
   if (__ml_truthy((nb_communs > 0))) {
-    html = (((html + "<p class=\"comparaison-resume-texte\"><strong>") + String(nb_communs)) + "</strong> artiste");
-    if (__ml_truthy((nb_communs > 1))) {
-      html = (html + "s");
-    }
-    html = (html + " en commun</p>");
+    html = (((html + "<p class=\"comparaison-resume-texte\">") + _ti("comparison.commonArtists", {["count"]: (("<strong>" + String(nb_communs)) + "</strong>")})) + "</p>");
   }
   else {
-    html = (html + "<p class=\"comparaison-resume-texte\">Aucun artiste en commun</p>");
+    html = (((html + "<p class=\"comparaison-resume-texte\">") + _t("comparison.noCommonArtists")) + "</p>");
   }
   html = (html + "</div>");
   html = (((html + "<div class=\"comparaison-grille\" style=\"grid-template-columns: ") + _generer_colonnes((entites).length)) + "\">");
@@ -2970,7 +2982,7 @@ function rendre_panneau_comparaison() {
     var total = ((((stats)?.["total_par_entite"] ?? {}))?.[entite_id] ?? 0);
     html = (html + "<div class=\"comparaison-colonne\">");
     html = (((html + "<h4 class=\"comparaison-col-titre\">") + entite_label) + "</h4>");
-    html = (((((html + "<span class=\"comparaison-col-meta\">") + String(total)) + " artistes • ") + String((uniques).length)) + " uniques</span>");
+    html = (((html + "<span class=\"comparaison-col-meta\">") + _ti("comparison.columnMeta", {["total"]: total, ["unique"]: (uniques).length})) + "</span>");
     if (__ml_truthy(uniques)) {
       html = (html + "<ul class=\"comparaison-liste\">");
       for (const artiste_id of __ml_iterate(uniques.slice(0, 8))) {
@@ -2978,22 +2990,18 @@ function rendre_panneau_comparaison() {
         html = (((html + "<li class=\"comparaison-item comparaison-unique\">") + nom) + "</li>");
       }
       if (__ml_truthy(((uniques).length > 8))) {
-        html = (((html + "<li class=\"comparaison-item comparaison-plus\">+ ") + String(((uniques).length - 8))) + " autres</li>");
+        html = (((html + "<li class=\"comparaison-item comparaison-plus\">+ ") + _ti("comparison.moreOthers", {["count"]: ((uniques).length - 8)})) + "</li>");
       }
       html = (html + "</ul>");
     }
     else {
-      html = (html + "<p class=\"comparaison-vide\">Aucun artiste unique</p>");
+      html = (((html + "<p class=\"comparaison-vide\">") + _t("comparison.noUniqueArtist")) + "</p>");
     }
     html = (html + "</div>");
   }
   html = (html + "<div class=\"comparaison-colonne comparaison-colonne-commun\">");
-  html = (html + "<h4 class=\"comparaison-col-titre comparaison-col-titre-commun\">En commun</h4>");
-  html = (((html + "<span class=\"comparaison-col-meta\">") + String(nb_communs)) + " artiste");
-  if (__ml_truthy((nb_communs > 1))) {
-    html = (html + "s");
-  }
-  html = (html + "</span>");
+  html = (((html + "<h4 class=\"comparaison-col-titre comparaison-col-titre-commun\">") + _t("comparison.commonColumn")) + "</h4>");
+  html = (((html + "<span class=\"comparaison-col-meta\">") + _ti("comparison.artistCount", {["count"]: nb_communs})) + "</span>");
   if (__ml_truthy(artistes_communs)) {
     html = (html + "<ul class=\"comparaison-liste\">");
     for (const artiste_id of __ml_iterate(artistes_communs)) {
@@ -3003,7 +3011,7 @@ function rendre_panneau_comparaison() {
     html = (html + "</ul>");
   }
   else {
-    html = (html + "<p class=\"comparaison-vide\">Aucun artiste partagé</p>");
+    html = (((html + "<p class=\"comparaison-vide\">") + _t("comparison.noSharedArtist")) + "</p>");
   }
   html = (html + "</div>");
   html = (html + "</div>");
@@ -3025,7 +3033,7 @@ function _rendre_pastilles(entites) {
     html = (((html + " data-cmp-type=\"") + entite_type) + "\"");
     html = (((html + " data-cmp-label=\"") + entite_label) + "\"");
     html = (html + " onclick=\"var b=this;window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(b.dataset.cmpId,b.dataset.cmpType,b.dataset.cmpLabel),window.renderComparisonPanel())\"");
-    html = (((html + " aria-label=\"Retirer ") + entite_label) + "\">×</button>");
+    html = (((html + " aria-label=\"") + _ti("comparison.removeAria", {["label"]: entite_label})) + "\">×</button>");
     html = (html + "</span>");
   }
   html = (html + "</div>");
@@ -3045,7 +3053,7 @@ function _generer_colonnes(nb_entites) {
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.panneau_comparaison = window.ui.composants.panneau_comparaison || {};
-Object.assign(window.ui.composants.panneau_comparaison, {rendre_panneau_comparaison: rendre_panneau_comparaison, _rendre_pastilles: _rendre_pastilles, _generer_colonnes: _generer_colonnes});
+Object.assign(window.ui.composants.panneau_comparaison, {_t: _t, _ti: _ti, rendre_panneau_comparaison: rendre_panneau_comparaison, _rendre_pastilles: _rendre_pastilles, _generer_colonnes: _generer_colonnes});
 })();
 
 (() => {
@@ -3137,10 +3145,16 @@ Object.assign(window.ui.composants.trajectoire, {rendre_trajectoire: rendre_traj
 })();
 
 (() => {
-function _tuile_theme(sujet_id, label, detail) {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function _tuile_theme(sujet_id, label_cle, detail_cle) {
   "Rendre une tuile thematique cliquable.";
+  var label = _t(label_cle);
+  var detail = _t(detail_cle);
   var html = "<button class=\"theme-tile\" role=\"listitem\" data-action=\"charger-sujet\" data-sujet-id=\"";
-  html = ((((((html + sujet_id) + "\" data-sujet-label=\"") + label) + "\" aria-label=\"Browse ") + label) + "\">");
+  html = ((((((((html + sujet_id) + "\" data-sujet-label=\"") + label) + "\" aria-label=\"") + _t("themeGrid.tile.ariaPrefix")) + " ") + label) + "\">");
   html = (((html + "<span class=\"theme-tile-label\">") + label) + "</span>");
   html = (((html + "<span class=\"theme-tile-detail\">") + detail) + "</span>");
   html = (html + "</button>");
@@ -3149,15 +3163,15 @@ function _tuile_theme(sujet_id, label, detail) {
 
 function rendre_grille_themes() {
   "Rendre la grille de 8 tuiles thematiques pour la decouverte Story.";
-  var html = "<div class=\"theme-grid\" role=\"list\" aria-label=\"Browse artworks by theme\">";
-  html = (html + _tuile_theme("Q441", "Nature", "landscapes, plants, animals"));
-  html = (html + _tuile_theme("Q34379", "Mythology", "gods, heroes, legends"));
-  html = (html + _tuile_theme("Q45621", "Religion", "sacred art, devotion"));
-  html = (html + _tuile_theme("Q134307", "Portrait", "faces, people, identity"));
-  html = (html + _tuile_theme("Q515", "City", "urban life, architecture"));
-  html = (html + _tuile_theme("Q9415", "Love", "romance, relationships"));
-  html = (html + _tuile_theme("Q1221", "Sea", "ocean, ships, coasts"));
-  html = (html + _tuile_theme("Q198", "War", "battles, conflict, history"));
+  var html = (("<div class=\"theme-grid\" role=\"list\" aria-label=\"" + _t("themeGrid.aria")) + "\">");
+  html = (html + _tuile_theme("Q441", "themeGrid.nature.label", "themeGrid.nature.detail"));
+  html = (html + _tuile_theme("Q34379", "themeGrid.mythology.label", "themeGrid.mythology.detail"));
+  html = (html + _tuile_theme("Q45621", "themeGrid.religion.label", "themeGrid.religion.detail"));
+  html = (html + _tuile_theme("Q134307", "themeGrid.portrait.label", "themeGrid.portrait.detail"));
+  html = (html + _tuile_theme("Q515", "themeGrid.city.label", "themeGrid.city.detail"));
+  html = (html + _tuile_theme("Q9415", "themeGrid.love.label", "themeGrid.love.detail"));
+  html = (html + _tuile_theme("Q1221", "themeGrid.sea.label", "themeGrid.sea.detail"));
+  html = (html + _tuile_theme("Q198", "themeGrid.war.label", "themeGrid.war.detail"));
   html = (html + "</div>");
   return html;
 }
@@ -3165,7 +3179,7 @@ function rendre_grille_themes() {
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.grille_themes = window.ui.composants.grille_themes || {};
-Object.assign(window.ui.composants.grille_themes, {_tuile_theme: _tuile_theme, rendre_grille_themes: rendre_grille_themes});
+Object.assign(window.ui.composants.grille_themes, {_t: _t, _tuile_theme: _tuile_theme, rendre_grille_themes: rendre_grille_themes});
 })();
 
 async function charger_mouvement(mouvement_id) {

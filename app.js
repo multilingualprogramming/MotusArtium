@@ -64,78 +64,24 @@
         }
 
         const translatableElements = {
-            "brand-eyebrow": {
-                fr: "Multilingual x Wikidata GraphQL",
-                en: "Multilingual x Wikidata GraphQL"
-            },
-            "brand-title": {
-                fr: "MotusArtium",
-                en: "MotusArtium"
-            },
-            "brand-subtitle": {
-                fr: "Observatoire polyglotte de requetes pour suivre mouvements, artistes, oeuvres, lieux et influences dans l'histoire de l'art.",
-                en: "Polyglot query observatory for tracing movements, artists, works, places, and influence across art history."
-            },
-            "hero-eyebrow": {
-                fr: "Manifeste",
-                en: "Manifest"
-            },
-            "hero-title": {
-                fr: "Parcourez l'histoire de l'art a travers des surfaces de requete en direct et des semantiques multilingues.",
-                en: "Navigate art history through live query surfaces and multilingual semantics."
-            },
-            "hero-description": {
-                fr: "MotusArtium se conçoit comme un instrument culturel plutot qu'un tableau de bord : un espace ou les documents GraphQL, les relations semantiques et l'exploration linguistique restent visibles ensemble.",
-                en: "MotusArtium is designed as a cultural instrument rather than a dashboard: a place where GraphQL documents, semantic relationships, and language-aware exploration are visible at the same time."
-            },
-            "entry-movements-title": {
-                fr: "Commencer par les mouvements",
-                en: "Start with Movements"
-            },
-            "entry-movements-copy": {
-                fr: "Entrez par les ecoles, ruptures et successions pour voir l'histoire de l'art se reorganiser comme une constellation vivante.",
-                en: "Enter through schools, ruptures, and successions to watch art history reorganize itself as a living constellation."
-            },
-            "entry-artists-title": {
-                fr: "Commencer par les artistes",
-                en: "Start with Artists"
-            },
-            "entry-artists-copy": {
-                fr: "Suivez la creation par les personnes, l'influence, le lieu de naissance et l'oeuvre tout en gardant la trajectoire GraphQL visible.",
-                en: "Trace creation through people, influence, birthplace, and oeuvre while the active GraphQL path remains visible."
-            },
-            "entry-themes-title": {
-                fr: "Commencer par les themes",
-                en: "Start with Themes"
-            },
-            "entry-themes-copy": {
-                fr: "Abordez l'atlas par materiau, sujet, musee ou lieu et laissez l'interface reformuler la lentille narrative.",
-                en: "Approach the atlas by material, subject, museum, or place and let the interface reshape the narrative lens."
-            },
-            "app-root-hint": {
-                fr: "<strong>Montage Multilingual :</strong> ce panneau accueille les fragments d'interface Multilingual integres progressivement dans l'Observatory.",
-                en: "<strong>Multilingual mount:</strong> this panel is reserved for embedded Multilingual UI fragments and diagnostics as we progressively connect more of the original runtime into the Observatory shell."
-            },
-            "polyglot-card-1-title": {
-                fr: "Surface d'interface",
-                en: "Interface Surface"
-            },
-            "polyglot-card-1-copy": {
-                fr: "La coque change invites, libelles et interpretation avec la langue active.",
-                en: "The shell changes prompts, labels, and interpretation text with the active language."
-            },
-            "polyglot-card-2-title": {
-                fr: "Surface d'entite",
-                en: "Entity Surface"
-            },
-            "polyglot-card-2-copy": {
-                fr: "Les entites selectionnees peuvent etre lues selon plusieurs surfaces linguistiques tout en gardant la meme identite Wikidata.",
-                en: "Selected entities can be read through different language surfaces while keeping the same Wikidata identity."
-            },
-            "polyglot-card-3-title": {
-                fr: "Lentille source",
-                en: "Source Lens"
-            }
+            "brand-eyebrow": "shell.brand.eyebrow",
+            "brand-title": "shell.brand.title",
+            "brand-subtitle": "shell.brand.subtitle",
+            "hero-eyebrow": "shell.hero.eyebrow",
+            "hero-title": "shell.hero.title",
+            "hero-description": "shell.hero.description",
+            "entry-movements-title": "shell.entry.movements.title",
+            "entry-movements-copy": "shell.entry.movements.copy",
+            "entry-artists-title": "shell.entry.artists.title",
+            "entry-artists-copy": "shell.entry.artists.copy",
+            "entry-themes-title": "shell.entry.themes.title",
+            "entry-themes-copy": "shell.entry.themes.copy",
+            "app-root-hint": "shell.appRoot.hint",
+            "polyglot-card-1-title": "shell.polyglot.card1.title",
+            "polyglot-card-1-copy": "shell.polyglot.card1.copy",
+            "polyglot-card-2-title": "shell.polyglot.card2.title",
+            "polyglot-card-2-copy": "shell.polyglot.card2.copy",
+            "polyglot-card-3-title": "shell.polyglot.card3.title"
         };
 
         const runtimeState = {
@@ -693,12 +639,12 @@
         }
 
         function applyInterfaceLanguage(languageCode) {
-            Object.entries(translatableElements).forEach(([id, values]) => {
+            Object.entries(translatableElements).forEach(([id, key]) => {
                 const element = document.getElementById(id);
                 if (!element) {
                     return;
                 }
-                const value = values[languageCode] || values.en || values.fr;
+                const value = traduireInterface(key, {}, languageCode);
                 if (id === "app-root-hint") {
                     element.innerHTML = value;
                 } else {

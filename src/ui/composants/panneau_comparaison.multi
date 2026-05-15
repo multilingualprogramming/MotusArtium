@@ -1,5 +1,17 @@
 importer ui.etat
+importer ui.i18n
 importer semantique.intersections
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
+
+
+déf _ti(cle: chaine, params: dictionnaire) -> chaine:
+    texte = _t(cle)
+    pour nom, valeur dans params.items():
+        texte = texte.remplacer("{" + nom + "}", chaine(valeur))
+    retour texte
 
 
 déf rendre_panneau_comparaison() -> chaine:
@@ -11,8 +23,8 @@ déf rendre_panneau_comparaison() -> chaine:
 
     html = '<div class="comparaison-panel">'
     html = html + '<header class="comparaison-header">'
-    html = html + '<h3 class="comparaison-titre">Comparaison</h3>'
-    html = html + '<button class="comparaison-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_comparaison&&(window.ui.etat.effacer_comparaison(),window.renderComparisonPanel())" aria-label="Effacer la comparaison">Effacer</button>'
+    html = html + '<h3 class="comparaison-titre">' + _t("comparison.title") + '</h3>'
+    html = html + '<button class="comparaison-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_comparaison&&(window.ui.etat.effacer_comparaison(),window.renderComparisonPanel())" aria-label="' + _t("comparison.clearAria") + '">' + _t("comparison.clear") + '</button>'
     html = html + '</header>'
 
     # Pastilles des entités sélectionnées
@@ -22,8 +34,8 @@ déf rendre_panneau_comparaison() -> chaine:
         # Attente d'une deuxième entité
         label = entites[0].obtenir("label", "")
         html = html + '<div class="comparaison-attente">'
-        html = html + '<p>Sélectionnez une autre entité à comparer avec <strong>' + label + '</strong>.</p>'
-        html = html + '<p class="comparaison-conseil">Utilisez le bouton <em>+ Comparer</em> dans les résultats de recherche.</p>'
+        html = html + '<p>' + _ti("comparison.waiting", {"label": '<strong>' + label + '</strong>'}) + '</p>'
+        html = html + '<p class="comparaison-conseil">' + _t("comparison.tip") + '</p>'
         html = html + '</div>'
         html = html + '</div>'
         retour html
@@ -46,7 +58,7 @@ déf rendre_panneau_comparaison() -> chaine:
 
     si non toutes_chargees:
         html = html + '<div class="comparaison-chargement">'
-        html = html + '<p>Chargement des données de comparaison...</p>'
+        html = html + '<p>' + _t("comparison.loading") + '</p>'
         html = html + '</div>'
         html = html + '</div>'
         retour html
@@ -55,12 +67,9 @@ déf rendre_panneau_comparaison() -> chaine:
     nb_communs = stats.obtenir("artistes_communs_count", 0)
     html = html + '<div class="comparaison-resume">'
     si nb_communs > 0:
-        html = html + '<p class="comparaison-resume-texte"><strong>' + chaine(nb_communs) + '</strong> artiste'
-        si nb_communs > 1:
-            html = html + 's'
-        html = html + ' en commun</p>'
+        html = html + '<p class="comparaison-resume-texte">' + _ti("comparison.commonArtists", {"count": '<strong>' + chaine(nb_communs) + '</strong>'}) + '</p>'
     sinon:
-        html = html + '<p class="comparaison-resume-texte">Aucun artiste en commun</p>'
+        html = html + '<p class="comparaison-resume-texte">' + _t("comparison.noCommonArtists") + '</p>'
     html = html + '</div>'
 
     # Grille: colonnes entités + colonne centrale commune
@@ -75,7 +84,7 @@ déf rendre_panneau_comparaison() -> chaine:
 
         html = html + '<div class="comparaison-colonne">'
         html = html + '<h4 class="comparaison-col-titre">' + entite_label + '</h4>'
-        html = html + '<span class="comparaison-col-meta">' + chaine(total) + ' artistes • ' + chaine(len(uniques)) + ' uniques</span>'
+        html = html + '<span class="comparaison-col-meta">' + _ti("comparison.columnMeta", {"total": total, "unique": len(uniques)}) + '</span>'
 
         si uniques:
             html = html + '<ul class="comparaison-liste">'
@@ -83,20 +92,17 @@ déf rendre_panneau_comparaison() -> chaine:
                 nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites)
                 html = html + '<li class="comparaison-item comparaison-unique">' + nom + '</li>'
             si len(uniques) > 8:
-                html = html + '<li class="comparaison-item comparaison-plus">+ ' + chaine(len(uniques) - 8) + ' autres</li>'
+                html = html + '<li class="comparaison-item comparaison-plus">+ ' + _ti("comparison.moreOthers", {"count": len(uniques) - 8}) + '</li>'
             html = html + '</ul>'
         sinon:
-            html = html + '<p class="comparaison-vide">Aucun artiste unique</p>'
+            html = html + '<p class="comparaison-vide">' + _t("comparison.noUniqueArtist") + '</p>'
 
         html = html + '</div>'
 
     # Colonne centrale — artistes communs
     html = html + '<div class="comparaison-colonne comparaison-colonne-commun">'
-    html = html + '<h4 class="comparaison-col-titre comparaison-col-titre-commun">En commun</h4>'
-    html = html + '<span class="comparaison-col-meta">' + chaine(nb_communs) + ' artiste'
-    si nb_communs > 1:
-        html = html + 's'
-    html = html + '</span>'
+    html = html + '<h4 class="comparaison-col-titre comparaison-col-titre-commun">' + _t("comparison.commonColumn") + '</h4>'
+    html = html + '<span class="comparaison-col-meta">' + _ti("comparison.artistCount", {"count": nb_communs}) + '</span>'
 
     si artistes_communs:
         html = html + '<ul class="comparaison-liste">'
@@ -105,7 +111,7 @@ déf rendre_panneau_comparaison() -> chaine:
             html = html + '<li class="comparaison-item comparaison-commun">' + nom + '</li>'
         html = html + '</ul>'
     sinon:
-        html = html + '<p class="comparaison-vide">Aucun artiste partagé</p>'
+        html = html + '<p class="comparaison-vide">' + _t("comparison.noSharedArtist") + '</p>'
 
     html = html + '</div>'
     html = html + '</div>'
@@ -128,7 +134,7 @@ déf _rendre_pastilles(entites: liste) -> chaine:
         html = html + ' data-cmp-type="' + entite_type + '"'
         html = html + ' data-cmp-label="' + entite_label + '"'
         html = html + ' onclick="var b=this;window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(b.dataset.cmpId,b.dataset.cmpType,b.dataset.cmpLabel),window.renderComparisonPanel())"'
-        html = html + ' aria-label="Retirer ' + entite_label + '">×</button>'
+        html = html + ' aria-label="' + _ti("comparison.removeAria", {"label": entite_label}) + '">×</button>'
         html = html + '</span>'
     html = html + '</div>'
     retour html

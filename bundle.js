@@ -2047,110 +2047,6 @@ Object.assign(window.ui.interactions.navigation, {naviguer_vers_entite: naviguer
 })();
 
 (() => {
-async function lancer_recherche(requete) {
-  "Lancer une recherche: cache + Wikidata, fusionner et afficher";
-  if (((!__ml_truthy(requete)) || __ml_truthy(((requete).length < 2)))) {
-    ui.etat.resultats_recherche = [];
-    return;
-  }
-  var resultats_cache = _rechercher_cache(requete);
-  var resultats_wikidata = await donnees.requetes.rechercher_entites_wikidata(requete);
-  var entites_vues = {};
-  var resultats_fusionnes = [];
-  for (const resultat of __ml_iterate(resultats_cache)) {
-    var cle = ((resultat)?.["id"] ?? "");
-    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
-      entites_vues[cle] = true;
-      __ml_add(resultats_fusionnes, resultat);
-    }
-  }
-  for (const resultat of __ml_iterate(resultats_wikidata)) {
-    cle = ((resultat)?.["id"] ?? "");
-    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
-      entites_vues[cle] = true;
-      __ml_add(resultats_fusionnes, resultat);
-    }
-  }
-  ui.etat.resultats_recherche = resultats_fusionnes;
-}
-
-function _rechercher_cache(requete) {
-  "Rechercher dans le cache des entités chargées";
-  var resultats = [];
-  var requete_bas = String(requete).toLowerCase();
-  for (const [id_noeud, noeud] of __ml_iterate(Object.entries(ui.etat.graphe.noeuds))) {
-    var etiquette = String(noeud.etiquette).toLowerCase();
-    if (__ml_truthy(__ml_contains(etiquette, requete_bas))) {
-      var type_noeud = noeud.type;
-      __ml_add(resultats, {["id"]: id_noeud, ["label"]: noeud.etiquette, ["description"]: "(dans le graphe chargé)", ["type"]: type_noeud});
-    }
-  }
-  return resultats;
-}
-
-async function resoudre_type_entite(entite_id, type_par_defaut) {
-  "Résoudre le type d'une entité via les claims Wikidata (P31/P279)";
-  try {
-    var url = (("https://www.wikidata.org/w/api.php?action=wbgetentities&ids=" + encodeURIComponent(entite_id)) + "&props=claims&format=json&origin=*");
-    var reponse = await fetch(url);
-    var corps = await reponse.json();
-    var entite = ((((corps)?.["entities"] ?? {}))?.[entite_id] ?? {});
-    var reclamations = ((entite)?.["claims"] ?? {});
-    var ids_rec = [];
-    for (const prop of __ml_iterate(["P31", "P279"])) {
-      for (const rec of __ml_iterate(((reclamations)?.[prop] ?? []))) {
-        var val = ((((((rec)?.["mainsnak"] ?? {}))?.["datavalue"] ?? {}))?.["value"] ?? {});
-        var id_val = ((val)?.["id"] ?? "");
-        if (__ml_truthy(id_val)) {
-          __ml_add(ids_rec, id_val);
-        }
-      }
-    }
-    if ((__ml_truthy(__ml_contains(ids_rec, "Q33506")) || __ml_truthy(__ml_contains(ids_rec, "Q207694")) || __ml_truthy(__ml_contains(ids_rec, "Q11635")))) {
-      return "museum";
-    }
-    if (__ml_truthy(__ml_contains(ids_rec, "Q5"))) {
-      return "artist";
-    }
-    if (__ml_truthy(__ml_contains(ids_rec, "Q968159"))) {
-      return "movement";
-    }
-    if ((__ml_truthy(__ml_contains(ids_rec, "Q3305213")) || __ml_truthy(__ml_contains(ids_rec, "Q838948")))) {
-      return "artwork";
-    }
-    if ((__ml_truthy(__ml_contains(ids_rec, "Q82550")) || __ml_truthy(__ml_contains(ids_rec, "Q157957")) || __ml_truthy(__ml_contains(ids_rec, "Q1790144")))) {
-      return "subject";
-    }
-    return type_par_defaut;
-  } catch (erreur) {
-    return type_par_defaut;
-  }
-}
-
-async function selectionner_resultat_recherche(entite_id, entite_type) {
-  "Sélectionner un résultat: naviguer vers l'entité et fermer la barre";
-  await ui.interactions.navigation.naviguer_vers_entite(entite_id, entite_type);
-  await fermer_barre_recherche();
-}
-
-async function ouvrir_barre_recherche() {
-  "Ouvrir la barre de recherche";
-  ui.etat.barre_recherche_active = true;
-}
-
-async function fermer_barre_recherche() {
-  "Fermer la barre de recherche et nettoyer les résultats";
-  ui.etat.barre_recherche_active = false;
-  ui.etat.resultats_recherche = [];
-}
-
-window.ui = window.ui || {};
-window.ui.interactions = window.ui.interactions || {};
-window.ui.interactions.recherche = window.ui.interactions.recherche || {};
-Object.assign(window.ui.interactions.recherche, {lancer_recherche: lancer_recherche, _rechercher_cache: _rechercher_cache, resoudre_type_entite: resoudre_type_entite, selectionner_resultat_recherche: selectionner_resultat_recherche, ouvrir_barre_recherche: ouvrir_barre_recherche, fermer_barre_recherche: fermer_barre_recherche});
-})();
-
-(() => {
 var LANGUE_INTERFACE_PAR_DEFAUT = "fr";
 
 var LANGUE_INTERFACE_SECOURS = "en";
@@ -2217,6 +2113,114 @@ function obtenir_texte(cle, langue = LANGUE_INTERFACE_PAR_DEFAUT) {
 window.ui = window.ui || {};
 window.ui.i18n = window.ui.i18n || {};
 Object.assign(window.ui.i18n, {obtenir_chemin_locale: obtenir_chemin_locale, obtenir_langues_disponibles: obtenir_langues_disponibles, charger_locale: charger_locale, charger_textes_interface: charger_textes_interface, obtenir_texte: obtenir_texte});
+})();
+
+(() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+async function lancer_recherche(requete) {
+  "Lancer une recherche: cache + Wikidata, fusionner et afficher";
+  if (((!__ml_truthy(requete)) || __ml_truthy(((requete).length < 2)))) {
+    ui.etat.resultats_recherche = [];
+    return;
+  }
+  var resultats_cache = _rechercher_cache(requete);
+  var resultats_wikidata = await donnees.requetes.rechercher_entites_wikidata(requete);
+  var entites_vues = {};
+  var resultats_fusionnes = [];
+  for (const resultat of __ml_iterate(resultats_cache)) {
+    var cle = ((resultat)?.["id"] ?? "");
+    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
+      entites_vues[cle] = true;
+      __ml_add(resultats_fusionnes, resultat);
+    }
+  }
+  for (const resultat of __ml_iterate(resultats_wikidata)) {
+    cle = ((resultat)?.["id"] ?? "");
+    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
+      entites_vues[cle] = true;
+      __ml_add(resultats_fusionnes, resultat);
+    }
+  }
+  ui.etat.resultats_recherche = resultats_fusionnes;
+}
+
+function _rechercher_cache(requete) {
+  "Rechercher dans le cache des entités chargées";
+  var resultats = [];
+  var requete_bas = String(requete).toLowerCase();
+  for (const [id_noeud, noeud] of __ml_iterate(Object.entries(ui.etat.graphe.noeuds))) {
+    var etiquette = String(noeud.etiquette).toLowerCase();
+    if (__ml_truthy(__ml_contains(etiquette, requete_bas))) {
+      var type_noeud = noeud.type;
+      __ml_add(resultats, {["id"]: id_noeud, ["label"]: noeud.etiquette, ["description"]: _t("search.result.loadedGraph"), ["type"]: type_noeud});
+    }
+  }
+  return resultats;
+}
+
+async function resoudre_type_entite(entite_id, type_par_defaut) {
+  "Résoudre le type d'une entité via les claims Wikidata (P31/P279)";
+  try {
+    var url = (("https://www.wikidata.org/w/api.php?action=wbgetentities&ids=" + encodeURIComponent(entite_id)) + "&props=claims&format=json&origin=*");
+    var reponse = await fetch(url);
+    var corps = await reponse.json();
+    var entite = ((((corps)?.["entities"] ?? {}))?.[entite_id] ?? {});
+    var reclamations = ((entite)?.["claims"] ?? {});
+    var ids_rec = [];
+    for (const prop of __ml_iterate(["P31", "P279"])) {
+      for (const rec of __ml_iterate(((reclamations)?.[prop] ?? []))) {
+        var val = ((((((rec)?.["mainsnak"] ?? {}))?.["datavalue"] ?? {}))?.["value"] ?? {});
+        var id_val = ((val)?.["id"] ?? "");
+        if (__ml_truthy(id_val)) {
+          __ml_add(ids_rec, id_val);
+        }
+      }
+    }
+    if ((__ml_truthy(__ml_contains(ids_rec, "Q33506")) || __ml_truthy(__ml_contains(ids_rec, "Q207694")) || __ml_truthy(__ml_contains(ids_rec, "Q11635")))) {
+      return "museum";
+    }
+    if (__ml_truthy(__ml_contains(ids_rec, "Q5"))) {
+      return "artist";
+    }
+    if (__ml_truthy(__ml_contains(ids_rec, "Q968159"))) {
+      return "movement";
+    }
+    if ((__ml_truthy(__ml_contains(ids_rec, "Q3305213")) || __ml_truthy(__ml_contains(ids_rec, "Q838948")))) {
+      return "artwork";
+    }
+    if ((__ml_truthy(__ml_contains(ids_rec, "Q82550")) || __ml_truthy(__ml_contains(ids_rec, "Q157957")) || __ml_truthy(__ml_contains(ids_rec, "Q1790144")))) {
+      return "subject";
+    }
+    return type_par_defaut;
+  } catch (erreur) {
+    return type_par_defaut;
+  }
+}
+
+async function selectionner_resultat_recherche(entite_id, entite_type) {
+  "Sélectionner un résultat: naviguer vers l'entité et fermer la barre";
+  await ui.interactions.navigation.naviguer_vers_entite(entite_id, entite_type);
+  await fermer_barre_recherche();
+}
+
+async function ouvrir_barre_recherche() {
+  "Ouvrir la barre de recherche";
+  ui.etat.barre_recherche_active = true;
+}
+
+async function fermer_barre_recherche() {
+  "Fermer la barre de recherche et nettoyer les résultats";
+  ui.etat.barre_recherche_active = false;
+  ui.etat.resultats_recherche = [];
+}
+
+window.ui = window.ui || {};
+window.ui.interactions = window.ui.interactions || {};
+window.ui.interactions.recherche = window.ui.interactions.recherche || {};
+Object.assign(window.ui.interactions.recherche, {_t: _t, lancer_recherche: lancer_recherche, _rechercher_cache: _rechercher_cache, resoudre_type_entite: resoudre_type_entite, selectionner_resultat_recherche: selectionner_resultat_recherche, ouvrir_barre_recherche: ouvrir_barre_recherche, fermer_barre_recherche: fermer_barre_recherche});
 })();
 
 (() => {

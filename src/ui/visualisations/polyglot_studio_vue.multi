@@ -1,6 +1,21 @@
 importer asyncio
 importer ui.etat
+importer ui.i18n
 importer ui.visualisations.utilitaires_rendu
+
+
+déf _t(cle: chaine, langue: chaine = "") -> chaine:
+    langue_active = langue
+    si non langue_active:
+        langue_active = etat.mode_langue_actif
+    retour ui.i18n.obtenir_texte(cle, langue_active)
+
+
+déf _ti(cle: chaine, langue: chaine, params: dictionnaire) -> chaine:
+    texte = _t(cle, langue)
+    pour nom, valeur dans params.items():
+        texte = texte.remplacer("{" + nom + "}", chaine(valeur))
+    retour texte
 
 
 classe VuePolyglotStudio:
@@ -36,16 +51,16 @@ classe VuePolyglotStudio:
 
     déf rendre_cote_a_cote(entite, labels, entite_id):
         """Afficher FR et EN cote a cote"""
-        contenu_html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>"
+        contenu_html = "<div class='polyglot-studio-container' role='main' aria-label='" + _t("polyglot.aria") + "'>"
         contenu_html += "<div class='polyglot-header' role='banner'>"
         contenu_html += "<div class='polyglot-title-section'>"
-        contenu_html += "<h2 id='polyglot-title'>Polyglot Studio</h2>"
-        contenu_html += "<span class='polyglot-hint' id='polyglot-hint'>Explore language variations • Ctrl+L to toggle • Ctrl+V for view</span>"
+        contenu_html += "<h2 id='polyglot-title'>" + _t("polyglot.title") + "</h2>"
+        contenu_html += "<span class='polyglot-hint' id='polyglot-hint'>" + _t("polyglot.hint") + "</span>"
         contenu_html += "</div>"
-        contenu_html += "<div class='polyglot-controls' role='toolbar' aria-label='Language and view controls'>"
-        contenu_html += "<button class='language-toggle is-active' data-lang='fr' title='French surface (Ctrl+L)' aria-pressed='true'>Francais</button>"
-        contenu_html += "<button class='language-toggle' data-lang='en' title='English surface (Ctrl+L)' aria-pressed='false'>English</button>"
-        contenu_html += "<button class='view-toggle' id='toggle-view' title='Toggle between side-by-side and tab view (Ctrl+V)' aria-label='View mode toggle'>Changer vue</button>"
+        contenu_html += "<div class='polyglot-controls' role='toolbar' aria-label='" + _t("polyglot.controlsAria") + "'>"
+        contenu_html += "<button class='language-toggle is-active' data-lang='fr' title='" + _t("polyglot.surface.fr.title") + "' aria-pressed='true'>" + _t("polyglot.surface.fr.label") + "</button>"
+        contenu_html += "<button class='language-toggle' data-lang='en' title='" + _t("polyglot.surface.en.title") + "' aria-pressed='false'>" + _t("polyglot.surface.en.label") + "</button>"
+        contenu_html += "<button class='view-toggle' id='toggle-view' title='" + _t("polyglot.viewToggle.title") + "' aria-label='" + _t("polyglot.viewToggle.aria") + "'>" + _t("polyglot.viewToggle.label") + "</button>"
         contenu_html += "</div>"
         contenu_html += "</div>"
 
@@ -62,18 +77,18 @@ classe VuePolyglotStudio:
 
     déf rendre_par_onglets(entite, labels, entite_id):
         """Afficher FR et EN par onglets"""
-        contenu_html = "<div class='polyglot-studio-container' role='main' aria-label='Polyglot Studio - Language Explorer'>"
+        contenu_html = "<div class='polyglot-studio-container' role='main' aria-label='" + _t("polyglot.aria") + "'>"
         contenu_html += "<div class='polyglot-header' role='banner'>"
         contenu_html += "<div class='polyglot-title-section'>"
-        contenu_html += "<h2 id='polyglot-title'>Polyglot Studio</h2>"
-        contenu_html += "<span class='polyglot-hint' id='polyglot-hint'>Explore language variations • Ctrl+L to toggle • Ctrl+V for view</span>"
+        contenu_html += "<h2 id='polyglot-title'>" + _t("polyglot.title") + "</h2>"
+        contenu_html += "<span class='polyglot-hint' id='polyglot-hint'>" + _t("polyglot.hint") + "</span>"
         contenu_html += "</div>"
-        contenu_html += "<div class='polyglot-controls' role='toolbar' aria-label='Language and view controls'>"
+        contenu_html += "<div class='polyglot-controls' role='toolbar' aria-label='" + _t("polyglot.controlsAria") + "'>"
 
         langue_active = etat.mode_langue_actif
-        contenu_html += "<button class='language-toggle" + (" is-active" si langue_active == "fr" sinon "") + "' data-lang='fr' title='French surface (Ctrl+L)' aria-pressed='" + ("true" si langue_active == "fr" sinon "false") + "'>Francais</button>"
-        contenu_html += "<button class='language-toggle" + (" is-active" si langue_active == "en" sinon "") + "' data-lang='en' title='English surface (Ctrl+L)' aria-pressed='" + ("true" si langue_active == "en" sinon "false") + "'>English</button>"
-        contenu_html += "<button class='view-toggle' id='toggle-view' title='Toggle between side-by-side and tab view (Ctrl+V)' aria-label='View mode toggle'>Changer vue</button>"
+        contenu_html += "<button class='language-toggle" + (" is-active" si langue_active == "fr" sinon "") + "' data-lang='fr' title='" + _t("polyglot.surface.fr.title") + "' aria-pressed='" + ("true" si langue_active == "fr" sinon "false") + "'>" + _t("polyglot.surface.fr.label") + "</button>"
+        contenu_html += "<button class='language-toggle" + (" is-active" si langue_active == "en" sinon "") + "' data-lang='en' title='" + _t("polyglot.surface.en.title") + "' aria-pressed='" + ("true" si langue_active == "en" sinon "false") + "'>" + _t("polyglot.surface.en.label") + "</button>"
+        contenu_html += "<button class='view-toggle' id='toggle-view' title='" + _t("polyglot.viewToggle.title") + "' aria-label='" + _t("polyglot.viewToggle.aria") + "'>" + _t("polyglot.viewToggle.label") + "</button>"
         contenu_html += "</div>"
         contenu_html += "</div>"
 
@@ -91,7 +106,7 @@ classe VuePolyglotStudio:
     déf _rendre_surface_linguistique(entite, labels, langue, entite_id):
         """Rendre une surface linguistique pour FR ou EN"""
         classe = "surface-" + langue
-        contenu = "<div class='polyglot-surface " + classe + "' lang='" + langue + "' role='region' aria-label='" + langue.upper() + " surface for " + entite_id + "'>"
+        contenu = "<div class='polyglot-surface " + classe + "' lang='" + langue + "' role='region' aria-label='" + _ti("polyglot.surface.aria", langue, {"lang": langue.upper()}) + " " + entite_id + "'>"
 
         label_dict = labels.obtenir(langue, {})
         si type(label_dict) == chaine:
@@ -99,7 +114,7 @@ classe VuePolyglotStudio:
             label_dict = {}
         sinon:
             etiquette = label_dict.obtenir("label", "")
-        etiquette = etiquette ou entite.obtenir("label", "") ou "Entite"
+        etiquette = etiquette ou entite.obtenir("label", "") ou _t("runtime.entity", langue)
 
         contenu += "<div class='entity-header'>"
         contenu += "<h3 class='entity-label'>" + etiquette + "</h3>"
@@ -119,7 +134,7 @@ classe VuePolyglotStudio:
             description = label_dict.obtenir("description", "")
             si description:
                 contenu += "<div class='property-group'>"
-                contenu += "<span class='property-label'>" + ("Description" si langue == "fr" sinon "Description") + "</span>"
+                contenu += "<span class='property-label'>" + _t("polyglot.property.description", langue) + "</span>"
                 contenu += "<p class='property-value'>" + description + "</p>"
                 contenu += "</div>"
 
@@ -144,14 +159,14 @@ classe VuePolyglotStudio:
         fin = entite.obtenir("fin", "") ou entite.obtenir("endTime", {}).obtenir("value", "")
         si debut ou fin:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Periode" si langue == "fr" sinon "Period") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.period", langue) + "</span>"
             contenu += "<span class='property-value'>" + chaine(debut) + " - " + chaine(fin) + "</span>"
             contenu += "</div>"
 
         pays = entite.obtenir("countryLabel", "")
         si pays:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Pays" si langue == "fr" sinon "Country") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.country", langue) + "</span>"
             contenu += "<span class='property-value'>" + pays + "</span>"
             contenu += "</div>"
 
@@ -159,7 +174,7 @@ classe VuePolyglotStudio:
         suivant = entite.obtenir("followedByLabel", "")
         si precedent ou suivant:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Contexte historique" si langue == "fr" sinon "Historical context") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.section.historical", langue) + "</span>"
             contenu += "<span class='property-value'>" + " | ".joindre([valeur pour valeur dans [precedent, suivant] si valeur]) + "</span>"
             contenu += "</div>"
 
@@ -173,28 +188,28 @@ classe VuePolyglotStudio:
         mort = entite.obtenir("mort", "") ou entite.obtenir("deathDate", {}).obtenir("value", "")
         si naissance ou mort:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Dates" si langue == "fr" sinon "Dates") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.dates", langue) + "</span>"
             contenu += "<span class='property-value'>" + chaine(naissance) + " - " + chaine(mort) + "</span>"
             contenu += "</div>"
 
         lieu_naissance = entite.obtenir("lieu_naissance", "") ou entite.obtenir("birthplaceLabel", "")
         si lieu_naissance:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Lieu de naissance" si langue == "fr" sinon "Birthplace") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.birthplace", langue) + "</span>"
             contenu += "<span class='property-value'>" + lieu_naissance + "</span>"
             contenu += "</div>"
 
         lieu_deces = entite.obtenir("deathplaceLabel", "")
         si lieu_deces:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Lieu de deces" si langue == "fr" sinon "Deathplace") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.deathplace", langue) + "</span>"
             contenu += "<span class='property-value'>" + lieu_deces + "</span>"
             contenu += "</div>"
 
         mouvement = entite.obtenir("movementLabel", "")
         si mouvement:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Mouvements artistiques" si langue == "fr" sinon "Artistic movements") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.artisticMovements", langue) + "</span>"
             contenu += "<span class='property-value'>" + mouvement + "</span>"
             contenu += "</div>"
 
@@ -207,21 +222,21 @@ classe VuePolyglotStudio:
         date_creation = entite.obtenir("date_creation", "") ou entite.obtenir("inceptionDate", {}).obtenir("value", "")
         si date_creation:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Date de creation" si langue == "fr" sinon "Date Created") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.creationDate", langue) + "</span>"
             contenu += "<span class='property-value'>" + chaine(date_creation) + "</span>"
             contenu += "</div>"
 
         createur = entite.obtenir("createur", "") ou entite.obtenir("creatorLabel", "")
         si createur:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Createur" si langue == "fr" sinon "Creator") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.creator", langue) + "</span>"
             contenu += "<span class='property-value'>" + createur + "</span>"
             contenu += "</div>"
 
         musee = entite.obtenir("museumLabel", "")
         si musee:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Localisation" si langue == "fr" sinon "Location") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.location", langue) + "</span>"
             contenu += "<span class='property-value'>" + musee + "</span>"
             contenu += "</div>"
 
@@ -229,7 +244,7 @@ classe VuePolyglotStudio:
         sujet = entite.obtenir("depictsLabel", "")
         si materiau ou sujet:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Caracteristiques" si langue == "fr" sinon "Characteristics") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.characteristics", langue) + "</span>"
             contenu += "<span class='property-value'>" + " | ".joindre([valeur pour valeur dans [materiau, sujet] si valeur]) + "</span>"
             contenu += "</div>"
 
@@ -242,7 +257,7 @@ classe VuePolyglotStudio:
         fondation = entite.obtenir("inceptionDate", {}).obtenir("value", "")
         si fondation:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Fondation" si langue == "fr" sinon "Founded") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.founded", langue) + "</span>"
             contenu += "<span class='property-value'>" + chaine(fondation) + "</span>"
             contenu += "</div>"
 
@@ -250,14 +265,14 @@ classe VuePolyglotStudio:
         lieu = entite.obtenir("locationLabel", "")
         si pays ou lieu:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Lieu" si langue == "fr" sinon "Place") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.place", langue) + "</span>"
             contenu += "<span class='property-value'>" + " | ".joindre([valeur pour valeur dans [pays, lieu] si valeur]) + "</span>"
             contenu += "</div>"
 
         site = entite.obtenir("officialWebsite", {}).obtenir("value", "")
         si site:
             contenu += "<div class='property-group'>"
-            contenu += "<span class='property-label'>" + ("Site web" si langue == "fr" sinon "Website") + "</span>"
+            contenu += "<span class='property-label'>" + _t("polyglot.property.website", langue) + "</span>"
             contenu += "<span class='property-value'>" + site + "</span>"
             contenu += "</div>"
 

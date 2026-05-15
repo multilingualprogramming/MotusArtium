@@ -55,7 +55,14 @@
         window.motusI18nReady = attendreTextesInterface();
 
         function traduireInterface(cle, parametres = {}, langue) {
-            const langueActive = langue || (typeof runtimeState !== "undefined" && runtimeState.currentLanguage) || "fr";
+            let langueActive = langue || "fr";
+            try {
+                if (!langue && typeof runtimeState !== "undefined" && runtimeState.currentLanguage) {
+                    langueActive = runtimeState.currentLanguage;
+                }
+            } catch (error) {
+                langueActive = langue || "fr";
+            }
             const i18n = obtenirI18nInterface();
             const modele = i18n && typeof i18n.obtenir_texte === "function" ? i18n.obtenir_texte(cle, langueActive) : cle;
             return String(modele).replace(/\{([a-zA-Z0-9_]+)\}/g, (match, nom) => {
@@ -97,17 +104,17 @@
                 id: "Q40415",
                 type: "Movement",
                 name: "Impressionism",
-                meta: "Awaiting live GraphQL response"
+                meta: traduireInterface("runtime.awaitingLiveGraphQL")
             },
             responseShape: "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}",
-            lastStatus: "Bootstrapping",
+            lastStatus: traduireInterface("runtime.bootstrapping"),
             lastError: "",
             lastRequestedEntityId: "",
             multilingualEntityLabels: {},
             stateSnapshot: null,
             querySession: [],
             requestPhase: "idle",
-            queryNarrative: "Awaiting first live GraphQL request.",
+            queryNarrative: traduireInterface("session.emptyDetail"),
             temporalInsights: [],
             temporalFocus: null,
             nextSessionId: 1,
@@ -225,24 +232,24 @@
 
         function inferEntityTypeFromDocument(documentName) {
             if (!documentName) {
-                return "Entity";
+                return traduireInterface("runtime.entity");
             }
             if (documentName.includes("movement")) {
-                return "Movement";
+                return traduireInterface("runtime.entityType.movement");
             }
             if (documentName.includes("artist")) {
-                return "Artist";
+                return traduireInterface("runtime.entityType.artist");
             }
             if (documentName.includes("artwork")) {
-                return "Work";
+                return traduireInterface("runtime.entityType.work");
             }
             if (documentName.includes("museum")) {
-                return "Museum";
+                return traduireInterface("runtime.entityType.museum");
             }
             if (documentName.includes("subject")) {
-                return "Subject";
+                return traduireInterface("runtime.entityType.subject");
             }
-            return "Entity";
+            return traduireInterface("runtime.entity");
         }
 
         function findSelectedEntityId(variables) {
@@ -366,14 +373,14 @@
                 const summary = error
                     ? trimText(error, 160)
                     : primary
-                        ? trimText(describeResponse(data) + " · " + (primary.label || primary.id || "Live entity"))
-                        : trimText(statusText || "Live GraphQL response");
+                        ? trimText(describeResponse(data) + " · " + (primary.label || primary.id || traduireInterface("runtime.liveEntity")))
+                        : trimText(statusText || traduireInterface("runtime.liveGraphQLResponse"));
 
                 return {
                     ...entry,
                     status: error ? "error" : "success",
                     summary,
-                    narrative: error ? ("GraphQL request failed in " + entry.documentName + ": " + trimText(error, 120)) : entry.narrative
+                    narrative: error ? traduireInterface("runtime.graphQLFailedIn", { documentName: entry.documentName, error: trimText(error, 120) }) : entry.narrative
                 };
             });
 
@@ -434,15 +441,15 @@
         function describeResponse(data) {
             const primary = extractPrimaryEntity(data);
             if (primary && primary.source === "searchItems") {
-                return primary.count + " linked results from searchItems";
+                return traduireInterface("runtime.response.searchItems", { count: primary.count });
             }
             if (primary && primary.source === "itemsById") {
-                return primary.count + " entities loaded with itemsById";
+                return traduireInterface("runtime.response.itemsById", { count: primary.count });
             }
             if (primary && primary.source === "item") {
-                return "Single entity resolved via item(...)";
+                return traduireInterface("runtime.response.item");
             }
-            return "Live GraphQL response";
+            return traduireInterface("runtime.liveGraphQLResponse");
         }
 
         function renderQueryDocList() {
@@ -453,7 +460,7 @@
                 badge.textContent = doc;
                 queryDocListEl.appendChild(badge);
             });
-            statusChipEl.textContent = "GraphQL Live - " + runtimeState.knownDocs.length + " docs - " + runtimeState.lastStatus;
+            statusChipEl.textContent = traduireInterface("runtime.graphQLLiveStatus", { count: runtimeState.knownDocs.length, status: runtimeState.lastStatus });
             activeDocChipEl.textContent = runtimeState.currentDocument;
         }
 
@@ -523,12 +530,12 @@
             };
             runtimeState.currentMode = "observatory";
             runtimeState.responseShape = "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}";
-            runtimeState.lastStatus = "Session cleared";
+            runtimeState.lastStatus = traduireInterface("runtime.sessionCleared");
             runtimeState.lastError = "";
             runtimeState.lastRequestedEntityId = "";
             runtimeState.querySession = [];
             runtimeState.requestPhase = "idle";
-            runtimeState.queryNarrative = "Session cleared. Restoring the default Impressionism opening scene.";
+            runtimeState.queryNarrative = traduireInterface("runtime.sessionClearedNarrative");
             runtimeState.temporalInsights = [];
             runtimeState.temporalFocus = null;
             browserAdapterState.activeLensPreset = "";
@@ -564,7 +571,7 @@
                     window.renderDetailPanel();
                 }
             } catch (error) {
-                runtimeState.lastError = "Session reset warning: " + error.message;
+                runtimeState.lastError = traduireInterface("runtime.sessionResetWarning", { error: error.message });
                 renderRuntimeState();
             }
         }
@@ -630,7 +637,7 @@
                 await executeGraphQLDocument(documentName, variables);
                 renderRuntimeState();
             } catch (error) {
-                runtimeState.lastError = "Session replay warning: " + error.message;
+                runtimeState.lastError = traduireInterface("runtime.sessionReplayWarning", { error: error.message });
                 renderRuntimeState();
             } finally {
                 runtimeState.replayingSessionId = 0;
@@ -1003,22 +1010,22 @@ function setActiveTier(tier, options = {}) {
 
         function renderPolyglotSurface(selectedEntity, labels, lang, entityId) {
             const entity = selectedEntity.donnees || selectedEntity || {};
-            const entityType = selectedEntity.type || "Entity";
+            const entityType = selectedEntity.type || traduireInterface("runtime.entity");
 
             const langLabels = labels[lang] || {};
             let label = typeof langLabels === "string" ? langLabels : langLabels.label;
 
             if (!label) {
                 if (entityType.toLowerCase().includes("mouvement")) {
-                    label = extractLabel(entity.movementLabel) || entity.label || "Movement";
+                    label = extractLabel(entity.movementLabel) || entity.label || traduireInterface("runtime.entityType.movement", {}, lang);
                 } else if (entityType.toLowerCase().includes("artist") || entityType.toLowerCase().includes("artiste")) {
-                    label = extractLabel(entity.artistLabel) || entity.label || "Artist";
+                    label = extractLabel(entity.artistLabel) || entity.label || traduireInterface("runtime.entityType.artist", {}, lang);
                 } else if (entityType.toLowerCase().includes("work") || entityType.toLowerCase().includes("oeuvre")) {
-                    label = extractLabel(entity.artworkLabel) || entity.label || "Work";
+                    label = extractLabel(entity.artworkLabel) || entity.label || traduireInterface("runtime.entityType.work", {}, lang);
                 } else if (entityType.toLowerCase().includes("museum") || entityType.toLowerCase().includes("musee") || entityType.toLowerCase().includes("gallery") || entityType.toLowerCase().includes("galerie")) {
-                    label = extractLabel(entity.museumLabel) || entity.label || "Museum";
+                    label = extractLabel(entity.museumLabel) || entity.label || traduireInterface("runtime.entityType.museum", {}, lang);
                 } else {
-                    label = entity.label || "Entity";
+                    label = entity.label || traduireInterface("runtime.entity", {}, lang);
                 }
             }
 
@@ -1026,7 +1033,7 @@ function setActiveTier(tier, options = {}) {
 
             html += "<div class='entity-header'>";
             html += "<div style='flex: 1'>";
-            html += "<h3 class='entity-label'>" + String(label || "Unknown").substring(0, 100) + "</h3>";
+            html += "<h3 class='entity-label'>" + String(label || traduireInterface("runtime.unknown", {}, lang)).substring(0, 100) + "</h3>";
             html += "</div>";
             html += "<div style='display: flex; gap: 8px; align-items: center'>";
             html += "<span class='entity-type-badge'>" + (lang === "fr" ? translateEntityType(entityType, "fr") : translateEntityType(entityType, "en")) + "</span>";
@@ -1057,15 +1064,15 @@ function setActiveTier(tier, options = {}) {
         function translateEntityType(type, lang) {
             const typeStr = String(type).toLowerCase();
             if (lang === "fr") {
-                if (typeStr.includes("mouvement")) return "Mouvement";
-                if (typeStr.includes("artist") || typeStr.includes("artiste")) return "Artiste";
-                if (typeStr.includes("work") || typeStr.includes("oeuvre")) return "Oeuvre";
-                if (typeStr.includes("museum") || typeStr.includes("musee") || typeStr.includes("gallery") || typeStr.includes("galerie")) return "Musee";
+                if (typeStr.includes("mouvement")) return traduireInterface("runtime.entityType.movement", {}, lang);
+                if (typeStr.includes("artist") || typeStr.includes("artiste")) return traduireInterface("runtime.entityType.artist", {}, lang);
+                if (typeStr.includes("work") || typeStr.includes("oeuvre")) return traduireInterface("runtime.entityType.work", {}, lang);
+                if (typeStr.includes("museum") || typeStr.includes("musee") || typeStr.includes("gallery") || typeStr.includes("galerie")) return traduireInterface("runtime.entityType.museum", {}, lang);
             }
-            if (typeStr.includes("mouvement")) return "Movement";
-            if (typeStr.includes("artist") || typeStr.includes("artiste")) return "Artist";
-            if (typeStr.includes("work") || typeStr.includes("oeuvre")) return "Artwork";
-            if (typeStr.includes("museum") || typeStr.includes("musee") || typeStr.includes("gallery") || typeStr.includes("galerie")) return "Museum";
+            if (typeStr.includes("mouvement")) return traduireInterface("runtime.entityType.movement", {}, lang);
+            if (typeStr.includes("artist") || typeStr.includes("artiste")) return traduireInterface("runtime.entityType.artist", {}, lang);
+            if (typeStr.includes("work") || typeStr.includes("oeuvre")) return traduireInterface("runtime.entityType.work", {}, lang);
+            if (typeStr.includes("museum") || typeStr.includes("musee") || typeStr.includes("gallery") || typeStr.includes("galerie")) return traduireInterface("runtime.entityType.museum", {}, lang);
             return type;
         }
 
@@ -1629,7 +1636,7 @@ function setActiveTier(tier, options = {}) {
 
             let entityEl = coreEl.querySelector(".compass-core-entity");
             const name = entity && entity.name;
-            const isPlaceholder = !name || name === "Impressionism" || name === "Awaiting response";
+            const isPlaceholder = !name || name === "Impressionism" || name === traduireInterface("runtime.awaitingResponse");
             if (!isPlaceholder) {
                 if (!entityEl) {
                     entityEl = document.createElement("span");
@@ -1768,11 +1775,11 @@ function setActiveTier(tier, options = {}) {
 
         function renderSelectedEntity() {
             const activeEntity = currentEntityRecord();
-            let metaText = describeEntityMeta(runtimeState.selectedEntity.type, activeEntity) || runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || "Live GraphQL";
-            selectedEntityNameEl.textContent = runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || "Awaiting selection";
-            selectedEntityTypeEl.textContent = runtimeState.selectedEntity.type || "Entity";
+            let metaText = describeEntityMeta(runtimeState.selectedEntity.type, activeEntity) || runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || traduireInterface("runtime.liveGraphQL");
+            selectedEntityNameEl.textContent = runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || traduireInterface("runtime.awaitingSelection");
+            selectedEntityTypeEl.textContent = runtimeState.selectedEntity.type || traduireInterface("runtime.entity");
             selectedEntityMetaEl.textContent = metaText;
-            selectedEntityActionEl.textContent = runtimeState.currentDocument || "Show Query";
+            selectedEntityActionEl.textContent = runtimeState.currentDocument || traduireInterface("runtime.showQuery");
 
             const labels = runtimeState.multilingualEntityLabels || {};
             const alternates = Object.entries(labels)
@@ -1787,16 +1794,16 @@ function setActiveTier(tier, options = {}) {
         function renderTrail() {
             const snapshot = currentSnapshot();
             const trailItems = [
-                { label: "Document", value: runtimeState.currentDocument },
-                { label: runtimeState.selectedEntity.type || "Entity", value: runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || "Awaiting response" },
-                { label: "Language", value: runtimeState.currentMode === "polyglot-studio" ? (snapshot.mode_langue_actif || "fr").toUpperCase() : runtimeState.currentLanguage },
-                { label: "Result", value: runtimeState.selectedEntity.meta || "Live GraphQL" }
+                { label: traduireInterface("runtime.trail.document"), value: runtimeState.currentDocument },
+                { label: runtimeState.selectedEntity.type || traduireInterface("runtime.entity"), value: runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || traduireInterface("runtime.awaitingResponse") },
+                { label: traduireInterface("runtime.trail.language"), value: runtimeState.currentMode === "polyglot-studio" ? (snapshot.mode_langue_actif || "fr").toUpperCase() : runtimeState.currentLanguage },
+                { label: traduireInterface("runtime.trail.result"), value: runtimeState.selectedEntity.meta || traduireInterface("runtime.liveGraphQL") }
             ];
 
             // Add polyglot studio view mode indicator
             if (runtimeState.currentMode === "polyglot-studio" && snapshot.afficher_surfaces_paralleles !== undefined) {
-                const viewMode = snapshot.afficher_surfaces_paralleles ? "Side-by-side" : "Tabs";
-                trailItems.push({ label: "View", value: viewMode });
+                const viewMode = snapshot.afficher_surfaces_paralleles ? traduireInterface("runtime.view.sideBySide") : traduireInterface("runtime.view.tabs");
+                trailItems.push({ label: traduireInterface("runtime.trail.view"), value: viewMode });
             }
 
             explorationTrailEl.innerHTML = "";
@@ -1826,7 +1833,7 @@ function setActiveTier(tier, options = {}) {
             if (runtimeState.lastError) {
                 queryExplanationEl.textContent = runtimeState.lastError;
             } else if (snapshot.affichage_chargement) {
-                queryExplanationEl.textContent = "Loading live GraphQL data for " + (runtimeState.lastRequestedEntityId || runtimeState.selectedEntity.id || "selection") + ".";
+                queryExplanationEl.textContent = traduireInterface("runtime.loadingLiveGraphQLFor", { target: runtimeState.lastRequestedEntityId || runtimeState.selectedEntity.id || traduireInterface("runtime.selection") });
             } else {
                 queryExplanationEl.textContent = runtimeState.queryNarrative;
             }
@@ -3414,7 +3421,7 @@ function setActiveTier(tier, options = {}) {
             if (!nodes.length) {
                 const empty = document.createElement("div");
                 empty.className = "constellation-empty";
-                empty.textContent = "Awaiting live graph state from Multilingual and Wikidata GraphQL.";
+                empty.textContent = traduireInterface("runtime.awaitingGraphState");
                 constellationNodesEl.appendChild(empty);
                 renderConstellationZoomControls();
                 return;
@@ -3597,13 +3604,16 @@ function setActiveTier(tier, options = {}) {
             const graphStats = ((runtimeState.stateSnapshot.graphe || {}).stats) || {};
             const derivedType = selectedEntity.type || inferEntityTypeFromDocument(runtimeState.currentDocument);
             const derivedName = inferDisplayLabel(selectedRecord, selectedEntity.id || runtimeState.stateSnapshot.entite_selectionnee_id);
-            const fallbackMeta = (graphStats.total_noeuds || 0) + " nodes · " + (graphStats.total_relations || 0) + " relations";
+            const fallbackMeta = traduireInterface("runtime.graphStats", {
+                nodes: graphStats.total_noeuds || 0,
+                relations: graphStats.total_relations || 0
+            });
 
             runtimeState.multilingualEntityLabels = selectedEntity.labels_multilingues || runtimeState.multilingualEntityLabels || {};
             runtimeState.selectedEntity = {
                 id: selectedEntity.id || runtimeState.stateSnapshot.entite_selectionnee_id || "",
-                type: derivedType || "Entity",
-                name: derivedName || selectedEntity.id || "Awaiting response",
+                type: derivedType || traduireInterface("runtime.entity"),
+                name: derivedName || selectedEntity.id || traduireInterface("runtime.awaitingResponse"),
                 meta: describeEntityMeta(derivedType, selectedRecord) || fallbackMeta
             };
             updateCompassCore();
@@ -4121,8 +4131,8 @@ function setActiveTier(tier, options = {}) {
             runtimeState.selectedEntity = {
                 id: selectedId,
                 type: inferEntityTypeFromDocument(runtimeState.currentDocument),
-                name: selectedId || "Awaiting response",
-                meta: selectedId ? "Pending GraphQL response" : "Live GraphQL request"
+                name: selectedId || traduireInterface("runtime.awaitingResponse"),
+                meta: selectedId ? traduireInterface("runtime.pendingGraphQLResponse") : traduireInterface("runtime.liveGraphQLRequest")
             };
             renderRuntimeState();
         }
@@ -4139,7 +4149,10 @@ function setActiveTier(tier, options = {}) {
                 }
                 runtimeState.selectedEntity.type = inferEntityTypeFromDocument(runtimeState.currentDocument);
                 runtimeState.selectedEntity.meta = describeResponse(data);
-                runtimeState.queryNarrative = narrativeForDocument(runtimeState.currentDocument, runtimeState.currentVariables) + " Response: " + describeResponse(data) + ".";
+                runtimeState.queryNarrative = traduireInterface("runtime.queryNarrative.response", {
+                    narrative: narrativeForDocument(runtimeState.currentDocument, runtimeState.currentVariables),
+                    response: describeResponse(data)
+                });
             } else if (runtimeState.selectedEntity.id) {
                 runtimeState.selectedEntity.meta = runtimeState.selectedEntity.id + " via " + runtimeState.currentDocument;
             }
@@ -4353,7 +4366,7 @@ function setActiveTier(tier, options = {}) {
                         updateLanguageSurface(language);
                     }
                 } catch (error) {
-                    runtimeState.lastError = `Language switch failed: ${error.message}`;
+                    runtimeState.lastError = traduireInterface("runtime.languageSwitchFailed", { error: error.message });
                     renderRuntimeState();
                 }
             });
@@ -4463,7 +4476,7 @@ function setActiveTier(tier, options = {}) {
                 const storyRoot = document.getElementById("__ml_story_recit_root");
                 const subjectLabel = tile.dataset.sujetLabel || tile.querySelector(".theme-tile-label")?.textContent || tile.textContent.trim() || sujetId;
                 if (storyRoot && document.body?.dataset.tier === "story") {
-                    storyRoot.innerHTML = '<article class="recit-card recit-sujet story-subject-result"><header class="recit-header"><span class="recit-badge">Theme</span><h2 class="recit-titre">' + escapeHtml(subjectLabel) + '</h2></header><div class="recit-corps"><p class="recit-intro">Loading artworks for this theme...</p></div></article>';
+                    storyRoot.innerHTML = '<article class="recit-card recit-sujet story-subject-result"><header class="recit-header"><span class="recit-badge">' + escapeHtml(traduireInterface("recit.badge.theme")) + '</span><h2 class="recit-titre">' + escapeHtml(subjectLabel) + '</h2></header><div class="recit-corps"><p class="recit-intro">' + escapeHtml(traduireInterface("explorer.theme.loadingArtworks")) + '</p></div></article>';
                 }
                 if (window.ui?.etat?.amorcer_entite) {
                     window.ui.etat.amorcer_entite(sujetId, "sujet", subjectLabel);
@@ -4552,7 +4565,7 @@ function setActiveTier(tier, options = {}) {
                 for (const node of browserAdapterState.graphe.noeuds.values()) {
                     if (node.etiquette && node.etiquette.toLowerCase().includes(queryLower)) {
                         seen.add(node.id);
-                        results.push({ id: node.id, label: node.etiquette, description: "(dans le graphe chargé)", entityType: node.type || "", primaryAction: "Open" });
+                        results.push({ id: node.id, label: node.etiquette, description: traduireInterface("search.result.loadedGraph"), entityType: node.type || "", primaryAction: traduireInterface("search.result.open") });
                     }
                 }
             }

@@ -1,6 +1,11 @@
 importer ui.interactions.navigation
 importer donnees.requetes
 importer ui.etat
+importer ui.i18n
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
 
 
 asynchrone déf lancer_recherche(requete: chaine):
@@ -49,7 +54,7 @@ déf _rechercher_cache(requete: chaine) -> liste:
             resultats.ajouter({
                 "id": id_noeud,
                 "label": noeud.etiquette,
-                "description": "(dans le graphe chargé)",
+                "description": _t("search.result.loadedGraph"),
                 "type": type_noeud
             })
 

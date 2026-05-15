@@ -121,7 +121,7 @@ def validate_files(site_root: pathlib.Path) -> None:
         raise AssertionError("index.html must load bundle.js before the JS shell fallback")
 
     app_js = (site_root / "app.js").read_text(encoding="utf-8")
-    assert_contains(app_js, "if (!window.ui.etat)", "app.js")
+    assert_contains(app_js, "window.ui.etat = window.ui.etat || {}", "app.js")
 
     principal_path = site_root / "src/principal.multi"
     if principal_path.exists():

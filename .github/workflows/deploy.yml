@@ -39,21 +39,8 @@ jobs:
           pip install -e ".[wasm]"
           cd ..
 
-      - name: Build MotusArtium UI bundle
-        run: |
-          mkdir -p _build
-          python -m multilingualprogramming build-ui-bundle src/principal.multi --lang fr --out-dir _build
-
-      - name: Stage GitHub Pages artifact
-        run: |
-          mkdir -p _site
-          cp index.html _site/index.html
-          cp styles.css _site/styles.css
-          cp app.js _site/app.js
-          cp theme.js _site/theme.js
-          cp bootstrap.js _site/bootstrap.js
-          cp _build/bundle.js _site/bundle.js
-          cp -r graphql _site/graphql
+      - name: Build and stage GitHub Pages artifact
+        run: python scripts/build_static_site.py --multilingual-root multilingual --build-dir _build --out-dir _site
 
       - name: Smoke test static artifact
         run: python tests/smoke_static_site.py _site

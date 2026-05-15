@@ -1,0 +1,63 @@
+# I18n minimal pour l'interface MotusArtium.
+#
+# Source unique des textes: src/i18n/locales/*.json.
+# Ce module garde le contrat Multilingual cote application sans recopier les
+# traductions. Le shell statique charge les memes fichiers JSON au demarrage.
+
+var LANGUE_INTERFACE_PAR_DEFAUT = "fr"
+var LANGUE_INTERFACE_SECOURS = "en"
+var LANGUES_INTERFACE = ["fr", "en", "es"]
+var CHEMIN_LOCALES_INTERFACE = "src/i18n/locales/"
+var textes_interface = {}
+
+
+déf obtenir_chemin_locale(langue: chaine) -> chaine:
+    """Retourner le chemin du fichier JSON pour une langue d'interface."""
+    si langue non dans LANGUES_INTERFACE:
+        langue = LANGUE_INTERFACE_SECOURS
+    retour CHEMIN_LOCALES_INTERFACE + langue + ".json"
+
+
+déf obtenir_langues_disponibles() -> liste:
+    """Retourner les langues d'interface configurees."""
+    retour LANGUES_INTERFACE
+
+
+asynchrone déf charger_locale(langue: chaine) -> dictionnaire:
+    """Charger le fichier JSON d'une langue d'interface."""
+    chemin = obtenir_chemin_locale(langue)
+    reponse = attendre fetch(chemin)
+
+    si non reponse.ok:
+        lever Exception("Impossible de charger la locale: " + langue)
+
+    donnees = attendre reponse.json()
+    textes_interface[langue] = donnees
+    retour donnees
+
+
+asynchrone déf charger_textes_interface() -> dictionnaire:
+    """Charger toutes les locales d'interface connues."""
+    pour langue dans LANGUES_INTERFACE:
+        attendre charger_locale(langue)
+    retour textes_interface
+
+
+déf obtenir_texte(cle: chaine, langue: chaine = LANGUE_INTERFACE_PAR_DEFAUT) -> chaine:
+    """Retourner un texte charge depuis les fichiers JSON avec replis."""
+    table_langue = textes_interface.obtenir(langue, {})
+    texte = table_langue.obtenir(cle, "")
+    si texte:
+        retour texte
+
+    table_secours = textes_interface.obtenir(LANGUE_INTERFACE_SECOURS, {})
+    texte_secours = table_secours.obtenir(cle, "")
+    si texte_secours:
+        retour texte_secours
+
+    table_fr = textes_interface.obtenir(LANGUE_INTERFACE_PAR_DEFAUT, {})
+    texte_fr = table_fr.obtenir(cle, "")
+    si texte_fr:
+        retour texte_fr
+
+    retour cle

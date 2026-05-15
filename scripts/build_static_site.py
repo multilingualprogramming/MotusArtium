@@ -22,6 +22,13 @@ STATIC_FILES = [
     "bootstrap.js",
 ]
 
+I18N_FILES = [
+    "src/ui/i18n.multi",
+    "src/i18n/locales/fr.json",
+    "src/i18n/locales/en.json",
+    "src/i18n/locales/es.json",
+]
+
 
 def ensure_roman_stub(stub_dir: pathlib.Path) -> None:
     """Provide the tiny roman API needed by the local checkout when pip is absent."""
@@ -73,6 +80,11 @@ def stage_site(build_dir: pathlib.Path, site_dir: pathlib.Path) -> None:
 
     for relative in STATIC_FILES:
         shutil.copy2(ROOT / relative, site_dir / relative)
+
+    for relative in I18N_FILES:
+        destination = site_dir / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / relative, destination)
 
     shutil.copy2(build_dir / "bundle.js", site_dir / "bundle.js")
     shutil.copytree(ROOT / "graphql", site_dir / "graphql")

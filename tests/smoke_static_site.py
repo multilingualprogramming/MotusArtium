@@ -7,6 +7,7 @@ import argparse
 import contextlib
 import functools
 import http.server
+import json
 import pathlib
 import socket
 import socketserver
@@ -23,6 +24,10 @@ REQUIRED_FILES = [
     "theme.js",
     "bootstrap.js",
     "bundle.js",
+    "src/ui/i18n.multi",
+    "src/i18n/locales/fr.json",
+    "src/i18n/locales/en.json",
+    "src/i18n/locales/es.json",
     "graphql/artists_by_movement.graphql",
     "graphql/artworks_by_artist.graphql",
     "graphql/artworks_by_museum.graphql",
@@ -81,6 +86,8 @@ BUNDLE_EXPORTS = [
     "charger_musee",
     "charger_sujet",
     "rendre_grille_themes",
+    # I18n bridge
+    "charger_textes_interface",
 ]
 
 # Every entity-loader in bundle.js must delegate to ui.etat, not re-implement.
@@ -145,6 +152,7 @@ def validate_files(site_root: pathlib.Path) -> None:
             assert_contains(query, expected, query_path)
 
     validate_bundle_exports(site_root)
+    validate_i18n_contract(site_root)
     validate_graph_display_contract(site_root)
     validate_recit_comparaison_contract(site_root)
     validate_three_tier_contract(site_root)
@@ -158,6 +166,7 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
     for marker in BUNDLE_DELEGATION_MARKERS:
         assert_contains(bundle_js, marker, "bundle.js delegation")
     assert_contains(bundle_js, "Object.assign(window.ui.etat", "bundle.js")
+    assert_contains(bundle_js, "Object.assign(window.ui.i18n", "bundle.js i18n")
     if "unsupported" in bundle_js:
         raise AssertionError("bundle.js contains unsupported lowering output")
     if "null /*" in bundle_js:
@@ -210,6 +219,57 @@ def validate_bundle_graph_runtime(bundle_js: str) -> None:
         if marker in bundle_js:
             raise AssertionError(
                 "bundle.js leaked helper-function body statements to module scope"
+            )
+
+
+def validate_i18n_contract(site_root: pathlib.Path) -> None:
+    """Check that new interface-copy keys stay locale-driven."""
+    app_js = (site_root / "app.js").read_text(encoding="utf-8")
+    assert_contains(app_js, "function traduireInterface", "app.js i18n")
+    assert_contains(app_js, "window.ui.i18n", "app.js i18n")
+    assert_contains(app_js, "charger_textes_interface", "app.js i18n")
+    assert_contains(app_js, "window.motusI18nReady", "app.js i18n")
+    if "fetch(\"src/i18n/locales/\" + langue + \".json\")" in app_js:
+        raise AssertionError("app.js must not load locale JSON directly; ui.i18n owns loading")
+    if "\"session.clear\": \"Clear Session\"" in app_js:
+        raise AssertionError("app.js must load locale JSON instead of embedding translation tables")
+
+    i18n_multi = (site_root / "src/ui/i18n.multi").read_text(encoding="utf-8")
+    assert_contains(i18n_multi, "déf obtenir_texte", "src/ui/i18n.multi")
+    assert_contains(i18n_multi, "asynchrone déf charger_textes_interface", "src/ui/i18n.multi")
+    assert_contains(i18n_multi, "attendre fetch(chemin)", "src/ui/i18n.multi")
+    assert_contains(i18n_multi, "LANGUE_INTERFACE_PAR_DEFAUT = \"fr\"", "src/ui/i18n.multi")
+    assert_contains(i18n_multi, "CHEMIN_LOCALES_INTERFACE = \"src/i18n/locales/\"", "src/ui/i18n.multi")
+    if "\"session.clear\": \"Clear Session\"" in i18n_multi:
+        raise AssertionError("src/ui/i18n.multi must not duplicate locale dictionaries")
+
+    locale_dir = site_root / "src/i18n/locales"
+    locales = {}
+    for code in ["fr", "en", "es"]:
+        path = locale_dir / f"{code}.json"
+        with path.open(encoding="utf-8") as handle:
+            locales[code] = json.load(handle)
+
+    reference_keys = set(locales["fr"].keys())
+    required_keys = {
+        "session.clear",
+        "mode.observatory",
+        "compass.movement",
+        "preset.cross-language.title",
+        "collection.loadMoreArtists",
+        "search.placeholder.entity",
+    }
+    for key in required_keys:
+        if key not in reference_keys:
+            raise AssertionError(f"fr locale missing required key: {key}")
+
+    for code, table in locales.items():
+        keys = set(table.keys())
+        if keys != reference_keys:
+            missing = sorted(reference_keys - keys)
+            extra = sorted(keys - reference_keys)
+            raise AssertionError(
+                f"{code} locale keys differ; missing={missing}, extra={extra}"
             )
 
 

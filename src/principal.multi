@@ -9,6 +9,7 @@ importer ui.composants.grille_themes
 importer ui.interactions.recherche
 importer ui.interactions.navigation
 importer ui.etat
+importer ui.i18n
 importer donnees.requetes
 importer semantique.intersections
 
@@ -241,3 +242,17 @@ déf effacer_trajectoire():
 déf rendre_grille_themes():
     """Rendre la grille de tuiles thematiques pour le mode Story"""
     retour ui.composants.grille_themes.rendre_grille_themes()
+
+
+# ============================================================================
+# I18n — re-exports depuis ui.i18n
+# ============================================================================
+
+asynchrone déf charger_textes_interface():
+    """Charger les textes d'interface depuis les fichiers JSON de locales."""
+    retour attendre ui.i18n.charger_textes_interface()
+
+
+déf obtenir_texte_interface(cle: chaine, langue: chaine = "fr") -> chaine:
+    """Retourner un texte d'interface localise."""
+    retour ui.i18n.obtenir_texte(cle, langue)

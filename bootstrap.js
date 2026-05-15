@@ -85,6 +85,10 @@
         (async () => {
             if (typeof initialiser_application === "function") {
                 try {
+                    if (window.motusI18nReady && typeof window.motusI18nReady.then === "function") {
+                        await window.motusI18nReady;
+                    }
+
                     async function loadInitialEntity(entityId, frenchType) {
                         if (window.ui && window.ui.etat) {
                             window.ui.etat.entite_selectionnee_id = entityId;

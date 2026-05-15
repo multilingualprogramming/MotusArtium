@@ -39,6 +39,30 @@
         const compassPoleButtons = Array.from(document.querySelectorAll(".compass-pole[data-lens]"));
         const lensPresetButtons = Array.from(document.querySelectorAll(".preset-button[data-preset]"));
 
+        function obtenirI18nInterface() {
+            return window.ui && window.ui.i18n ? window.ui.i18n : null;
+        }
+
+        async function attendreTextesInterface() {
+            const i18n = obtenirI18nInterface();
+            if (i18n && typeof i18n.charger_textes_interface === "function") {
+                return i18n.charger_textes_interface();
+            }
+            console.warn("ui.i18n indisponible: les cles de traduction seront utilisees en repli.");
+            return {};
+        }
+
+        window.motusI18nReady = attendreTextesInterface();
+
+        function traduireInterface(cle, parametres = {}, langue) {
+            const langueActive = langue || (typeof runtimeState !== "undefined" && runtimeState.currentLanguage) || "fr";
+            const i18n = obtenirI18nInterface();
+            const modele = i18n && typeof i18n.obtenir_texte === "function" ? i18n.obtenir_texte(cle, langueActive) : cle;
+            return String(modele).replace(/\{([a-zA-Z0-9_]+)\}/g, (match, nom) => {
+                return Object.prototype.hasOwnProperty.call(parametres, nom) ? String(parametres[nom]) : match;
+            });
+        }
+
         const translatableElements = {
             "brand-eyebrow": {
                 fr: "Multilingual x Wikidata GraphQL",
@@ -695,7 +719,7 @@
 
             const entries = runtimeState.querySession || [];
             if (!entries.length) {
-                querySessionListEl.innerHTML = '<div class="session-entry"><strong>Bootstrapping</strong><small>Awaiting first live GraphQL request.</small></div>';
+                querySessionListEl.innerHTML = '<div class="session-entry"><strong>' + escapeHtml(traduireInterface("session.emptyTitle")) + '</strong><small>' + escapeHtml(traduireInterface("session.emptyDetail")) + '</small></div>';
                 return;
             }
 
@@ -704,7 +728,7 @@
                 const wrapper = document.createElement("button");
                 wrapper.type = "button";
                 wrapper.className = "session-entry" + (index === 0 ? " is-live" : "") + (entry.status === "error" ? " is-error" : "") + (entry.id === runtimeState.replayingSessionId ? " is-replaying" : "");
-                wrapper.title = runtimeState.currentLanguage === "fr" ? "Cliquer pour rejouer cette requete" : "Click to replay this query";
+                wrapper.title = traduireInterface("session.replayTitle");
 
                 const title = document.createElement("strong");
                 title.textContent = entry.documentName;
@@ -863,81 +887,38 @@
                 }
             });
 
-            const modeLabels = {
-                fr: {
-                    observatory: "Observatoire",
-                    "query-theater": "Theatre GraphQL",
-                    "polyglot-studio": "Studio Polyglotte",
-                    "temporal-river": "Riviere Temporelle"
-                },
-                en: {
-                    observatory: "Observatory",
-                    "query-theater": "Query Theater",
-                    "polyglot-studio": "Polyglot Studio",
-                    "temporal-river": "Temporal River"
-                }
-            };
-
             modeButtons.forEach((button) => {
-                const labels = modeLabels[languageCode] || modeLabels.en;
-                button.textContent = labels[button.dataset.mode] || button.textContent;
+                button.textContent = traduireInterface("mode." + button.dataset.mode, {}, languageCode);
             });
 
             if (clearSessionButtonEl) {
-                clearSessionButtonEl.textContent = languageCode === "fr" ? "Effacer la session" : "Clear Session";
+                clearSessionButtonEl.textContent = traduireInterface("session.clear", {}, languageCode);
             }
 
-            const compassLabels = {
-                fr: { movement: "Mouvement", artist: "Artiste", work: "Oeuvre", place: "Lieu", time: "Temps", influence: "Influence" },
-                en: { movement: "Movement", artist: "Artist", work: "Work", place: "Place", time: "Time", influence: "Influence" }
-            };
             compassPoleButtons.forEach((button) => {
-                const labels = compassLabels[languageCode] || compassLabels.en;
+                const texte = traduireInterface("compass." + button.dataset.lens, {}, languageCode);
                 const nameSpan = button.querySelector(".pole-name");
                 if (nameSpan) {
-                    nameSpan.textContent = labels[button.dataset.lens] || nameSpan.textContent;
+                    nameSpan.textContent = texte;
                 } else {
-                    button.textContent = labels[button.dataset.lens] || button.textContent;
+                    button.textContent = texte;
                 }
             });
 
-            const presetLabels = {
-                fr: {
-                    lineage: ["Lignee", "mouvement vers successeur"],
-                    geography: ["Geographie", "pays, musees et diffusion"],
-                    materials: ["Materiaux", "oeuvres, sujets et matieres"],
-                    "cross-language": ["Interlangue", "etiquettes multilingues"]
-                },
-                en: {
-                    lineage: ["Lineage", "movement to successor"],
-                    geography: ["Geography", "country, museums, and diffusion"],
-                    materials: ["Materials", "works, subjects, and mediums"],
-                    "cross-language": ["Cross-Language", "multilingual labels"]
-                }
-            };
             lensPresetButtons.forEach((button) => {
-                const labels = presetLabels[languageCode] || presetLabels.en;
-                const text = labels[button.dataset.preset];
-                if (!text) {
-                    return;
-                }
                 const title = button.querySelector("span");
                 const detail = button.querySelector("small");
                 if (title) {
-                    title.textContent = text[0];
+                    title.textContent = traduireInterface("preset." + button.dataset.preset + ".title", {}, languageCode);
                 }
                 if (detail) {
-                    detail.textContent = text[1];
+                    detail.textContent = traduireInterface("preset." + button.dataset.preset + ".detail", {}, languageCode);
                 }
             });
 
-            const sourceSnippetByLanguage = {
-                fr: "asynchrone déf charger_mouvement(id):\n    attendre ui.etat.charger_mouvement(id)",
-                en: "async def load_movement(id):\n    await ui.state.load_movement(id)"
-            };
             const sourceSnippetEl = document.getElementById("polyglot-source-snippet");
             if (sourceSnippetEl) {
-                sourceSnippetEl.textContent = sourceSnippetByLanguage[languageCode] || sourceSnippetByLanguage.en;
+                sourceSnippetEl.textContent = traduireInterface("source.polyglotSnippet", {}, languageCode);
             }
 
             renderHeroActions(languageCode, runtimeState.currentMode);
@@ -2096,16 +2077,16 @@ function setActiveTier(tier, options = {}) {
             chronologyLoadMoreEl.disabled = !hasMore || browserAdapterState.affichage_chargement;
             renderCollectionStatus(collectionKind);
             if (paginationKind === "movementArtists") {
-                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'artistes" : "Load more artists";
+                chronologyLoadMoreEl.textContent = traduireInterface("collection.loadMoreArtists");
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             } else if (paginationKind === "artistWorks") {
-                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'oeuvres" : "Load more works";
+                chronologyLoadMoreEl.textContent = traduireInterface("collection.loadMoreWorks");
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             } else if (paginationKind === "museumWorks") {
-                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus d'oeuvres" : "Load more works";
+                chronologyLoadMoreEl.textContent = traduireInterface("collection.loadMoreWorks");
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             } else {
-                chronologyLoadMoreEl.textContent = runtimeState.currentLanguage === "fr" ? "Charger plus de mouvements" : "Load more movements";
+                chronologyLoadMoreEl.textContent = traduireInterface("collection.loadMoreMovements");
                 chronologyLoadMoreEl.setAttribute("aria-label", chronologyLoadMoreEl.textContent);
             }
         }
@@ -4756,23 +4737,11 @@ function setActiveTier(tier, options = {}) {
             });
             const hintEl = document.getElementById("search-mode-hint");
             const searchInput = document.getElementById("search-input");
-            const hints = {
-                entity: "Search for any movement, artist, artwork, museum, or theme.",
-                subject: "Enter a subject such as dog, cat, flower, sea, or portrait to find artworks depicting it.",
-                nationality: "Enter a country to discover artists from that place. This guided query is staged next.",
-                material: "Enter a material or technique such as oil, marble, bronze, or watercolor. This guided query is staged next."
-            };
-            const placeholders = {
-                entity: "Search movements, artists, works...",
-                subject: "Artworks depicting dog, cat, flower...",
-                nationality: "Artists from France, Japan, Mexico...",
-                material: "Works made with oil, marble, bronze..."
-            };
             if (hintEl) {
-                hintEl.textContent = hints[mode] || hints.entity;
+                hintEl.textContent = traduireInterface("search.hint." + mode);
             }
             if (searchInput) {
-                searchInput.placeholder = placeholders[mode] || placeholders.entity;
+                searchInput.placeholder = traduireInterface("search.placeholder." + mode);
             }
         }
 
@@ -4834,8 +4803,10 @@ function setActiveTier(tier, options = {}) {
 
         buildShellFilter();
         loadQueryInventory();
-        updateLanguageSurface("fr");
-        updateSearchModeSurface(currentSearchMode);
-        // Render Story tier content on load (body starts as data-tier="story")
-        renderStoryTier();
-        applyTierFromUrl();
+        window.motusI18nReady.finally(() => {
+            updateLanguageSurface("fr");
+            updateSearchModeSurface(currentSearchMode);
+            // Render Story tier content on load (body starts as data-tier="story")
+            renderStoryTier();
+            applyTierFromUrl();
+        });

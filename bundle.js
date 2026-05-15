@@ -3087,6 +3087,75 @@ window.ui.composants.grille_themes = window.ui.composants.grille_themes || {};
 Object.assign(window.ui.composants.grille_themes, {_tuile_theme: _tuile_theme, rendre_grille_themes: rendre_grille_themes});
 })();
 
+(() => {
+var LANGUE_INTERFACE_PAR_DEFAUT = "fr";
+
+var LANGUE_INTERFACE_SECOURS = "en";
+
+var LANGUES_INTERFACE = ["fr", "en", "es"];
+
+var CHEMIN_LOCALES_INTERFACE = "src/i18n/locales/";
+
+var textes_interface = {};
+
+function obtenir_chemin_locale(langue) {
+  "Retourner le chemin du fichier JSON pour une langue d'interface.";
+  if (__ml_truthy((!__ml_contains(LANGUES_INTERFACE, langue)))) {
+    langue = LANGUE_INTERFACE_SECOURS;
+  }
+  return ((CHEMIN_LOCALES_INTERFACE + langue) + ".json");
+}
+
+function obtenir_langues_disponibles() {
+  "Retourner les langues d'interface configurees.";
+  return LANGUES_INTERFACE;
+}
+
+async function charger_locale(langue) {
+  "Charger le fichier JSON d'une langue d'interface.";
+  var chemin = obtenir_chemin_locale(langue);
+  var reponse = await fetch(chemin);
+  if ((!__ml_truthy(reponse.ok))) {
+    throw new Error(("Impossible de charger la locale: " + langue));
+  }
+  var donnees = await reponse.json();
+  textes_interface[langue] = donnees;
+  return donnees;
+}
+
+async function charger_textes_interface() {
+  "Charger toutes les locales d'interface connues.";
+  for (const langue of __ml_iterate(LANGUES_INTERFACE)) {
+    await charger_locale(langue);
+  }
+  return textes_interface;
+}
+
+function obtenir_texte(cle, langue = LANGUE_INTERFACE_PAR_DEFAUT) {
+  "Retourner un texte charge depuis les fichiers JSON avec replis.";
+  var table_langue = ((textes_interface)?.[langue] ?? {});
+  var texte = ((table_langue)?.[cle] ?? "");
+  if (__ml_truthy(texte)) {
+    return texte;
+  }
+  var table_secours = ((textes_interface)?.[LANGUE_INTERFACE_SECOURS] ?? {});
+  var texte_secours = ((table_secours)?.[cle] ?? "");
+  if (__ml_truthy(texte_secours)) {
+    return texte_secours;
+  }
+  var table_fr = ((textes_interface)?.[LANGUE_INTERFACE_PAR_DEFAUT] ?? {});
+  var texte_fr = ((table_fr)?.[cle] ?? "");
+  if (__ml_truthy(texte_fr)) {
+    return texte_fr;
+  }
+  return cle;
+}
+
+window.ui = window.ui || {};
+window.ui.i18n = window.ui.i18n || {};
+Object.assign(window.ui.i18n, {obtenir_chemin_locale: obtenir_chemin_locale, obtenir_langues_disponibles: obtenir_langues_disponibles, charger_locale: charger_locale, charger_textes_interface: charger_textes_interface, obtenir_texte: obtenir_texte});
+})();
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);
@@ -3280,4 +3349,14 @@ function effacer_trajectoire() {
 function rendre_grille_themes() {
   "Rendre la grille de tuiles thematiques pour le mode Story";
   return ui.composants.grille_themes.rendre_grille_themes();
+}
+
+async function charger_textes_interface() {
+  "Charger les textes d'interface depuis les fichiers JSON de locales.";
+  return await ui.i18n.charger_textes_interface();
+}
+
+function obtenir_texte_interface(cle, langue = "fr") {
+  "Retourner un texte d'interface localise.";
+  return ui.i18n.obtenir_texte(cle, langue);
 }

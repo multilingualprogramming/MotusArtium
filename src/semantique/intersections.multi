@@ -6,42 +6,57 @@ déf calculer_intersection_artistes(ids_entites: liste) -> liste:
     si len(ids_entites) < 2:
         retour []
 
-    ensemble_courant = nul
-    pour entite_id dans ids_entites:
+    # Build intersection using dicts as sets (keys = artiste ids)
+    premiere_entite = ids_entites[0]
+    donnees0 = ui.etat.obtenir_donnees_comparaison().obtenir(premiere_entite, {})
+    communs = {}
+    pour artiste_id dans donnees0.obtenir("artistes_ids", []):
+        communs[artiste_id] = vrai
+
+    pour entite_id dans ids_entites[1:]:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
-        artistes = ensemble(donnees.obtenir("artistes_ids", []))
+        ids_entite = donnees.obtenir("artistes_ids", [])
+        dict_entite = {}
+        pour a dans ids_entite:
+            dict_entite[a] = vrai
+        nouveaux_communs = {}
+        pour artiste_id dans communs:
+            si artiste_id dans dict_entite:
+                nouveaux_communs[artiste_id] = vrai
+        communs = nouveaux_communs
 
-        si ensemble_courant est nul:
-            ensemble_courant = artistes
-        sinon:
-            ensemble_courant = ensemble_courant.intersection(artistes)
-
-    si ensemble_courant est nul:
-        retour []
-    retour liste(ensemble_courant)
+    retour liste(communs.keys())
 
 
 déf calculer_artistes_uniques(ids_entites: liste) -> dictionnaire:
     """
-    Pour chaque entité, calculer les artistes qui lui sont exclusifs
-    (présents dans cette entité mais dans aucune autre).
+    Pour chaque entité, calculer les artistes qui lui sont exclusifs.
     Retourne {entite_id: [artiste_ids_uniques]}
     """
     si len(ids_entites) < 2:
         retour {}
 
+    # Build dict-of-dicts: ensembles[entite_id] = {artiste_id: True}
     ensembles = {}
     pour entite_id dans ids_entites:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
-        ensembles[entite_id] = ensemble(donnees.obtenir("artistes_ids", []))
+        d = {}
+        pour a dans donnees.obtenir("artistes_ids", []):
+            d[a] = vrai
+        ensembles[entite_id] = d
 
     resultats = {}
     pour entite_id dans ids_entites:
-        union_autres = ensemble()
-        pour autre_id, autre_ensemble dans ensembles.items():
-            si autre_id != entite_id:
-                union_autres = union_autres.union(autre_ensemble)
-        resultats[entite_id] = liste(ensembles[entite_id].difference(union_autres))
+        uniques = []
+        pour artiste_id dans ensembles[entite_id]:
+            dans_autre = faux
+            pour autre_id dans ids_entites:
+                si autre_id != entite_id:
+                    si artiste_id dans ensembles[autre_id]:
+                        dans_autre = vrai
+            si non dans_autre:
+                uniques.ajouter(artiste_id)
+        resultats[entite_id] = uniques
 
     retour resultats
 
@@ -54,11 +69,6 @@ déf obtenir_etiquette_artiste(artiste_id: chaine, ids_entites: liste) -> chaine
         label = labels.obtenir(artiste_id, "")
         si label:
             retour label
-
-    # Fallback: chercher dans le graphe principal
-    noeud = ui.etat.graphe.obtenir_noeud(artiste_id)
-    si noeud:
-        retour noeud.etiquette
 
     retour artiste_id
 

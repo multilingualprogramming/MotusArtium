@@ -140,6 +140,17 @@ function __ml_truthy(value) {
   return Boolean(value);
 }
 
+function __ml_iterate(obj) {
+  if (obj == null) return [];
+  if (Array.isArray(obj) || obj instanceof Set || obj instanceof Map || typeof obj === 'string') {
+    return obj;
+  }
+  if (typeof obj === 'object') {
+    return Object.keys(obj);
+  }
+  return obj;
+}
+
 function __ml_add(container, item) {
   if (container instanceof Set) {
     container.add(item);
@@ -235,7 +246,7 @@ function _champ_entite(entite_id) {
 }
 
 function _extraire_temps(entrees) {
-  for (const entree of (entrees || [])) {
+  for (const entree of __ml_iterate((entrees || []))) {
     var valeur = ((entree)?.['value'] ?? {});
     var temps = ((valeur)?.['time'] ?? '');
     if (__ml_truthy(temps)) {
@@ -246,7 +257,7 @@ function _extraire_temps(entrees) {
 }
 
 function _extraire_texte(entrees) {
-  for (const entree of (entrees || [])) {
+  for (const entree of __ml_iterate((entrees || []))) {
     var valeur = ((entree)?.['value'] ?? {});
     var contenu = ((valeur)?.['content'] ?? '');
     if (__ml_truthy(contenu)) {
@@ -257,7 +268,7 @@ function _extraire_texte(entrees) {
 }
 
 function _extraire_item(entrees) {
-  for (const entree of (entrees || [])) {
+  for (const entree of __ml_iterate((entrees || []))) {
     var valeur = ((entree)?.['value'] ?? {});
     var entite_id = ((valeur)?.['id'] ?? '');
     if (__ml_truthy(entite_id)) {
@@ -269,7 +280,7 @@ function _extraire_item(entrees) {
 
 function _extraire_items(entrees) {
   var resultats = [];
-  for (const entree of (entrees || [])) {
+  for (const entree of __ml_iterate((entrees || []))) {
     var valeur = ((entree)?.['value'] ?? {});
     var entite_id = ((valeur)?.['id'] ?? '');
     if (__ml_truthy(entite_id)) {
@@ -280,7 +291,7 @@ function _extraire_items(entrees) {
 }
 
 function _extraire_coordonnees(entrees) {
-  for (const entree of (entrees || [])) {
+  for (const entree of __ml_iterate((entrees || []))) {
     var valeur = ((entree)?.['value'] ?? {});
     var latitude = ((valeur)?.['latitude'] ?? null);
     var longitude = ((valeur)?.['longitude'] ?? null);
@@ -348,7 +359,7 @@ async function _recuperer_mouvements_catalogue() {
   var donnees = await executer_requete_graphql('movements_catalog.graphql', {['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if (__ml_truthy(noeud)) {
       __ml_add(resultats, noeud);
@@ -371,7 +382,7 @@ async function obtenir_mouvements_par_periode(debut_annee, fin_annee) {
   'Récupère les mouvements artistiques dans une période donnée via GraphQL';
   var mouvements = await _recuperer_mouvements_catalogue();
   var resultats = [];
-  for (const mouvement of mouvements) {
+  for (const mouvement of __ml_iterate(mouvements)) {
     var entree = _normaliser_chronologie(mouvement);
     var debut = _annee_depuis_temps(((((entree)?.['startTime'] ?? {}))?.['value'] ?? ''));
     var fin = _annee_depuis_temps(((((entree)?.['endTime'] ?? {}))?.['value'] ?? ''));
@@ -407,7 +418,7 @@ async function obtenir_artistes_mouvement(mouvement_id, limite = 50) {
   var donnees = await executer_requete_graphql('artists_by_movement.graphql', {['movementId']: mouvement_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_artiste_resume(noeud));
@@ -440,7 +451,7 @@ async function obtenir_oeuvres_artiste(artiste_id, limite = 50) {
   var donnees = await executer_requete_graphql('artworks_by_artist.graphql', {['artistId']: artiste_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
@@ -454,7 +465,7 @@ async function obtenir_oeuvres_par_sujet(sujet_id, limite = 50) {
   var donnees = await executer_requete_graphql('artworks_by_subject.graphql', {['subjectId']: sujet_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
@@ -469,7 +480,7 @@ async function obtenir_diffusion_geographique(mouvement_id) {
   var item = ((donnees_mouvement)?.['item'] ?? {});
   var pays = _extraire_items(((item)?.['country'] ?? []));
   var ids_pays = [];
-  for (const entree of pays) {
+  for (const entree of __ml_iterate(pays)) {
     var pays_id = ((entree)?.['id'] ?? '');
     if (__ml_truthy(pays_id)) {
       __ml_add(ids_pays, pays_id);
@@ -480,14 +491,14 @@ async function obtenir_diffusion_geographique(mouvement_id) {
   }
   var donnees_pays = await executer_requete_graphql('countries_coordinates.graphql', {['ids']: ids_pays, ['languageCode']: LANGUE_PAR_DEFAUT});
   var pays_par_id = {};
-  for (const pays_item of ((donnees_pays)?.['itemsById'] ?? [])) {
+  for (const pays_item of __ml_iterate(((donnees_pays)?.['itemsById'] ?? []))) {
     pays_id = ((pays_item)?.['id'] ?? '');
     if (__ml_truthy(pays_id)) {
       pays_par_id[pays_id] = pays_item;
     }
   }
   var resultats = [];
-  for (const pays_entree of pays) {
+  for (const pays_entree of __ml_iterate(pays)) {
     pays_id = ((pays_entree)?.['id'] ?? '');
     var pays_item = ((pays_par_id)?.[pays_id] ?? {});
     var coordonnees = _extraire_coordonnees(((pays_item)?.['coordinate'] ?? []));
@@ -501,7 +512,7 @@ async function obtenir_oeuvres_musee(musee_id, limite = 50) {
   var donnees = await executer_requete_graphql('artworks_by_museum.graphql', {['museumId']: musee_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
@@ -514,7 +525,7 @@ async function obtenir_chronologie_mouvements(debut, fin) {
   'Récupère une chronologie des mouvements artistiques via GraphQL';
   var mouvements = await _recuperer_mouvements_catalogue();
   var resultats = [];
-  for (const mouvement of mouvements) {
+  for (const mouvement of __ml_iterate(mouvements)) {
     var entree = _normaliser_chronologie(mouvement);
     var debut_mouvement = _annee_depuis_temps(((((entree)?.['startTime'] ?? {}))?.['value'] ?? ''));
     var fin_mouvement = _annee_depuis_temps(((((entree)?.['endTime'] ?? {}))?.['value'] ?? ''));
@@ -535,9 +546,9 @@ async function obtenir_etiquette_entite(entite_id, langue = LANGUE_PAR_DEFAUT) {
 async function obtenir_etiquettes_entite(entite_id, langues = ['fr', 'en']) {
   "Recuperer plusieurs etiquettes d'une meme entite.";
   var etiquettes = {};
-  for (const langue of (langues || [])) {
+  for (const langue of __ml_iterate((langues || []))) {
     if ((!__ml_truthy(langue))) {
-      passe;
+
     }
     var etiquette = await obtenir_etiquette_entite(entite_id, langue);
     etiquettes[langue] = ((etiquette)?.['label'] ?? '');
@@ -582,7 +593,7 @@ async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres
   var edges = ((connexion)?.['edges'] ?? []);
   var page_info = ((connexion)?.['pageInfo'] ?? {});
   var artistes = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if (__ml_truthy(noeud)) {
       __ml_add(artistes, _normaliser_artiste_resume(noeud));
@@ -602,7 +613,7 @@ async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = ''
   var edges = ((connexion)?.['edges'] ?? []);
   var page_info = ((connexion)?.['pageInfo'] ?? {});
   var oeuvres = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if (__ml_truthy(noeud)) {
       __ml_add(oeuvres, _normaliser_oeuvre_resume(noeud));
@@ -622,7 +633,7 @@ async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = '') {
   var edges = ((connexion)?.['edges'] ?? []);
   var page_info = ((connexion)?.['pageInfo'] ?? {});
   var oeuvres = [];
-  for (const edge of edges) {
+  for (const edge of __ml_iterate(edges)) {
     var noeud = ((edge)?.['node'] ?? {});
     if (__ml_truthy(noeud)) {
       __ml_add(oeuvres, _normaliser_oeuvre_resume(noeud));
@@ -641,7 +652,7 @@ async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
   var corps = await reponse.json();
   var entrees = ((corps)?.['search'] ?? []);
   var resultats = [];
-  for (const entree of entrees) {
+  for (const entree of __ml_iterate(entrees)) {
     var entite_id = ((entree)?.['id'] ?? '');
     if (__ml_truthy(entite_id)) {
       __ml_add(resultats, {['id']: entite_id, ['label']: ((entree)?.['label'] ?? ''), ['description']: ((entree)?.['description'] ?? ''), ['type']: 'entite'});
@@ -696,7 +707,7 @@ class Graphe {
     if ((__ml_truthy((!__ml_contains(this.noeuds, source_id))) || __ml_truthy((!__ml_contains(this.noeuds, target_id))))) {
       return;
     }
-    for (const rel of this.relations) {
+    for (const rel of __ml_iterate(this.relations)) {
       if ((__ml_truthy((rel.source_id == source_id)) && __ml_truthy((rel.target_id == target_id)) && __ml_truthy((rel.type_noeud == type_noeud)))) {
         rel.poids = poids;
         return;
@@ -714,7 +725,7 @@ class Graphe {
   obtenir_voisins(noeud_id, type_relation = '') {
     'Obtenir les nœuds adjacents';
     var voisins = [];
-    for (const relation of this.relations) {
+    for (const relation of __ml_iterate(this.relations)) {
       if (__ml_truthy((relation.source_id == noeud_id))) {
         if ((__ml_truthy((type_relation == '')) || __ml_truthy((relation.type_noeud == type_relation)))) {
           __ml_add(voisins, relation.target_id);
@@ -731,7 +742,7 @@ class Graphe {
   obtenir_relations_noeud(noeud_id) {
     "Obtenir toutes les relations d'un nœud";
     var rels = [];
-    for (const relation of this.relations) {
+    for (const relation of __ml_iterate(this.relations)) {
       if ((__ml_truthy((relation.source_id == noeud_id)) || __ml_truthy((relation.target_id == noeud_id)))) {
         __ml_add(rels, relation);
       }
@@ -749,7 +760,7 @@ class Graphe {
   obtenir_noeuds_par_type(type) {
     "Obtenir tous les nœuds d'un type donné";
     var resultats = [];
-    for (const [id, noeud] of Object.entries(this.noeuds)) {
+    for (const [id, noeud] of __ml_iterate(Object.entries(this.noeuds))) {
       if (__ml_truthy((noeud.type_noeud == type))) {
         __ml_add(resultats, noeud);
       }
@@ -759,7 +770,7 @@ class Graphe {
   obtenir_relations_par_type(type) {
     "Obtenir toutes les relations d'un type donné";
     var resultats = [];
-    for (const relation of this.relations) {
+    for (const relation of __ml_iterate(this.relations)) {
       if (__ml_truthy((relation.type_noeud == type))) {
         __ml_add(resultats, relation);
       }
@@ -779,7 +790,7 @@ class Graphe {
     while (__ml_truthy(((queue).length > 0))) {
       var chemin = queue.shift();
       var noeud_actuel = chemin[(-1)];
-      for (const voisin_id of this.obtenir_voisins(noeud_actuel)) {
+      for (const voisin_id of __ml_iterate(this.obtenir_voisins(noeud_actuel))) {
         if (__ml_truthy((voisin_id == noeud_arrivee_id))) {
           return (chemin + [voisin_id]);
         }
@@ -796,11 +807,11 @@ class Graphe {
     var voisinage = {['centre']: noeud_id, ['couches']: []};
     var visites = new Set([noeud_id]);
     var couche_actuelle = [noeud_id];
-    for (const _ of intervalle(profondeur)) {
+    for (const _ of __ml_iterate(intervalle(profondeur))) {
       var prochaine_couche = [];
       var noeuds_couche = [];
-      for (const noeud_courant_id of couche_actuelle) {
-        for (const voisin_id of this.obtenir_voisins(noeud_courant_id)) {
+      for (const noeud_courant_id of __ml_iterate(couche_actuelle)) {
+        for (const voisin_id of __ml_iterate(this.obtenir_voisins(noeud_courant_id))) {
           if (__ml_truthy((!__ml_contains(visites, voisin_id)))) {
             __ml_add(visites, voisin_id);
             __ml_add(prochaine_couche, voisin_id);
@@ -825,7 +836,7 @@ class Graphe {
     'Obtenir les composantes connexes du graphe';
     var visites = {};
     var composantes = [];
-    for (const noeud_id of Object.keys(this.noeuds)) {
+    for (const noeud_id of __ml_iterate(Object.keys(this.noeuds))) {
       if (__ml_truthy((!__ml_contains(visites, noeud_id)))) {
         var composante = [];
         var queue = [noeud_id];
@@ -834,7 +845,7 @@ class Graphe {
           if (__ml_truthy((!__ml_contains(visites, courant)))) {
             visites[courant] = true;
             __ml_add(composante, courant);
-            for (const voisin of this.obtenir_voisins(courant)) {
+            for (const voisin of __ml_iterate(this.obtenir_voisins(courant))) {
               if (__ml_truthy((!__ml_contains(visites, voisin)))) {
                 __ml_add(queue, voisin);
               }
@@ -851,11 +862,11 @@ class Graphe {
   exporter_json() {
     'Exporter le graphe en JSON';
     var noeuds_json = [];
-    for (const [id, noeud] of Object.entries(this.noeuds)) {
+    for (const [id, noeud] of __ml_iterate(Object.entries(this.noeuds))) {
       __ml_add(noeuds_json, {['id']: noeud.id, ['type']: noeud.type_noeud, ['etiquette']: noeud.etiquette, ['donnees']: noeud.donnees});
     }
     var relations_json = [];
-    for (const rel of this.relations) {
+    for (const rel of __ml_iterate(this.relations)) {
       __ml_add(relations_json, {['source']: rel.source_id, ['target']: rel.target_id, ['type']: rel.type_noeud, ['poids']: rel.poids});
     }
     return {['noeuds']: noeuds_json, ['relations']: relations_json, ['stats']: {['total_noeuds']: this.compter_noeuds(), ['total_relations']: this.compter_relations()}};
@@ -957,7 +968,7 @@ function _extraire_id_entite(champ) {
 }
 
 function _etiquette_entite(entite, cles, etiquette_par_defaut) {
-  for (const cle of (cles || [])) {
+  for (const cle of __ml_iterate((cles || []))) {
     var valeur = ((((entite)?.[cle] ?? {}))?.['value'] ?? '');
     if (__ml_truthy(valeur)) {
       return valeur;
@@ -1004,21 +1015,21 @@ function _supprimer_entites_graphe(ids) {
   if ((!__ml_truthy(ids))) {
     return;
   }
-  for (const entite_id of ids) {
+  for (const entite_id of __ml_iterate(ids)) {
     if (__ml_truthy(__ml_contains(_engine.get('graphe').get().noeuds, entite_id))) {
       delete _engine.get('graphe').get().noeuds[entite_id];
     }
   }
   var nouvelles_relations = [];
-  for (const relation of _engine.get('graphe').get().relations) {
+  for (const relation of __ml_iterate(_engine.get('graphe').get().relations)) {
     if ((__ml_truthy((!__ml_contains(ids, relation.source_id))) && __ml_truthy((!__ml_contains(ids, relation.target_id))))) {
       __ml_add(nouvelles_relations, relation);
     }
   }
   _engine.get('graphe').get().relations = nouvelles_relations;
-  for (const [noeud_id, noeud] of Object.entries(_engine.get('graphe').get().noeuds)) {
+  for (const [noeud_id, noeud] of __ml_iterate(Object.entries(_engine.get('graphe').get().noeuds))) {
     var voisins_filtres = [];
-    for (const voisin_id of noeud.voisins) {
+    for (const voisin_id of __ml_iterate(noeud.voisins)) {
       if (__ml_truthy((!__ml_contains(ids, voisin_id)))) {
         __ml_add(voisins_filtres, voisin_id);
       }
@@ -1029,7 +1040,7 @@ function _supprimer_entites_graphe(ids) {
 
 function _obtenir_cibles_relations(source_id, type_relation) {
   var ids = [];
-  for (const relation of _engine.get('graphe').get().relations) {
+  for (const relation of __ml_iterate(_engine.get('graphe').get().relations)) {
     if ((__ml_truthy((relation.source_id == source_id)) && __ml_truthy((relation.type == type_relation)))) {
       __ml_add(ids, relation.target_id);
     }
@@ -1053,7 +1064,7 @@ function _reduire_branche_oeuvre(oeuvre_id) {
 
 function _reduire_branche_artiste(artiste_id) {
   var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
-  for (const oeuvre_id of oeuvres) {
+  for (const oeuvre_id of __ml_iterate(oeuvres)) {
     _reduire_branche_oeuvre(oeuvre_id);
   }
   _supprimer_entites_graphe(oeuvres);
@@ -1066,7 +1077,7 @@ function _reduire_branche_artiste(artiste_id) {
 
 function _reduire_branche_mouvement(mouvement_id) {
   var artistes = _obtenir_cibles_relations(mouvement_id, 'contient_artiste');
-  for (const artiste_id of artistes) {
+  for (const artiste_id of __ml_iterate(artistes)) {
     _reduire_branche_artiste(artiste_id);
   }
   _supprimer_entites_graphe(artistes);
@@ -1084,7 +1095,7 @@ function _focaliser_oeuvre_dans_branche_artiste(artiste_id, oeuvre_id) {
   }
   var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
   var oeuvres_a_supprimer = [];
-  for (const oeuvre_courante_id of oeuvres) {
+  for (const oeuvre_courante_id of __ml_iterate(oeuvres)) {
     if (__ml_truthy((oeuvre_courante_id != oeuvre_id))) {
       _reduire_branche_oeuvre(oeuvre_courante_id);
       __ml_add(oeuvres_a_supprimer, oeuvre_courante_id);
@@ -1095,7 +1106,7 @@ function _focaliser_oeuvre_dans_branche_artiste(artiste_id, oeuvre_id) {
 }
 
 function _ajouter_references_oeuvre(oeuvre_id, references, type_noeud, type_relation, etiquette_par_defaut) {
-  for (const reference of (references || [])) {
+  for (const reference of __ml_iterate((references || []))) {
     var reference_id = ((reference)?.['id'] ?? '');
     var reference_label = (((reference)?.['label'] ?? '') || etiquette_par_defaut);
     if (__ml_truthy(reference_id)) {
@@ -1135,7 +1146,7 @@ async function charger_mouvement(mouvement_id) {
     _engine.get('cache_relations').setIndex(mouvement_id, contrat);
     var etiquette = _etiquette_entite(mouvement, ['movementLabel'], 'Mouvement inconnu');
     _ajouter_noeud(mouvement_id, 'mouvement', etiquette, mouvement);
-    for (const artiste of artistes) {
+    for (const artiste of __ml_iterate(artistes)) {
       var artiste_id = _extraire_id_entite(((artiste)?.['artist'] ?? {}));
       var artiste_label = _etiquette_entite(artiste, ['artistLabel'], 'Artiste inconnu');
       if (__ml_truthy(artiste_id)) {
@@ -1188,7 +1199,7 @@ async function charger_artiste(artiste_id) {
     _engine.get('cache_relations').setIndex(artiste_id, contrat);
     var etiquette = _etiquette_entite(artiste, ['artistLabel'], 'Artiste inconnu');
     _ajouter_noeud(artiste_id, 'artiste', etiquette, artiste);
-    for (const oeuvre of oeuvres) {
+    for (const oeuvre of __ml_iterate(oeuvres)) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
       if (__ml_truthy(oeuvre_id)) {
@@ -1269,7 +1280,7 @@ async function charger_chronologie(debut, fin) {
   _engine.get('message_erreur').set('');
   try {
     var mouvements = await donnees.requetes.obtenir_chronologie_mouvements(debut, fin);
-    for (const mouvement of mouvements) {
+    for (const mouvement of __ml_iterate(mouvements)) {
       var mouvement_id = _extraire_id_entite(((mouvement)?.['movement'] ?? {}));
       var mouvement_label = _etiquette_entite(mouvement, ['movementLabel'], 'Mouvement');
       if (__ml_truthy(mouvement_id)) {
@@ -1310,10 +1321,10 @@ async function basculer_visualisation(mode) {
       await _charger_multilingue_complet(_engine.get('entite_selectionnee_id').get());
     }
     else if (__ml_truthy((mode == 'graphe'))) {
-      passe;
+
     }
     else if (__ml_truthy((mode == 'recit'))) {
-      passe;
+
     }
     _engine.get('mode_visualisation').set(mode);
     _engine.get('affichage_chargement').set(false);
@@ -1401,7 +1412,7 @@ async function executer_recherche(requete) {
   _engine.get('barre_recherche_active').set(true);
   _engine.get('resultats_recherche').set([]);
   var resultats = [];
-  for (const [entite_id, entite] of Object.entries(_engine.get('cache_entites').get())) {
+  for (const [entite_id, entite] of __ml_iterate(Object.entries(_engine.get('cache_entites').get()))) {
     var etiquette = (((((entite)?.['movementLabel'] ?? {}))?.['value'] ?? '') || ((((entite)?.['artistLabel'] ?? {}))?.['value'] ?? '') || ((((entite)?.['artworkLabel'] ?? {}))?.['value'] ?? '') || ((entite)?.['label'] ?? ''));
     if (__ml_truthy(__ml_contains(String(etiquette).toLowerCase(), String(requete).toLowerCase()))) {
       __ml_add(resultats, {['id']: entite_id, ['etiquette']: etiquette, ['entite']: entite});
@@ -1435,7 +1446,7 @@ function obtenir_artistes_mouvement(mouvement_id) {
   var contrat = ((_engine.get('cache_relations').get())?.[mouvement_id] ?? {});
   var artistes_bruts = ((contrat)?.['artistes'] ?? []);
   var ids = [];
-  for (const artiste of artistes_bruts) {
+  for (const artiste of __ml_iterate(artistes_bruts)) {
     var uri = ((((artiste)?.['artist'] ?? {}))?.['value'] ?? '');
     if (__ml_truthy(uri)) {
       var artiste_id = uri.replace('http://www.wikidata.org/entity/', '');
@@ -1449,10 +1460,10 @@ function obtenir_artistes_mouvement(mouvement_id) {
 
 function basculer_comparaison(entite_id, type_entite, etiquette) {
   'Ajouter ou retirer une entité du panneau de comparaison. Retourne vrai si ajoutée.';
-  for (const entite of _engine.get('entites_comparaison').get()) {
+  for (const entite of __ml_iterate(_engine.get('entites_comparaison').get())) {
     if (__ml_truthy((((entite)?.['id'] ?? '') == entite_id))) {
       var nouvelles = [];
-      for (const e of _engine.get('entites_comparaison').get()) {
+      for (const e of __ml_iterate(_engine.get('entites_comparaison').get())) {
         if (__ml_truthy((((e)?.['id'] ?? '') != entite_id))) {
           __ml_add(nouvelles, e);
         }
@@ -1474,7 +1485,7 @@ function basculer_comparaison(entite_id, type_entite, etiquette) {
   var artistes_labels = {};
   if (__ml_truthy((type_entite == 'mouvement'))) {
     artistes_ids = obtenir_artistes_mouvement(entite_id);
-    for (const artiste_id of artistes_ids) {
+    for (const artiste_id of __ml_iterate(artistes_ids)) {
       var noeud = _engine.get('graphe').get().obtenir_noeud(artiste_id);
       if (__ml_truthy(noeud)) {
         artistes_labels[artiste_id] = noeud.etiquette;
@@ -1497,7 +1508,7 @@ async function charger_donnees_comparaison(entite_id, type_entite) {
       var artistes_bruts = ((contrat)?.['artistes'] ?? []);
       var ids = [];
       var labels = {};
-      for (const artiste of artistes_bruts) {
+      for (const artiste of __ml_iterate(artistes_bruts)) {
         var uri = ((((artiste)?.['artist'] ?? {}))?.['value'] ?? '');
         var label_art = ((((artiste)?.['artistLabel'] ?? {}))?.['value'] ?? '');
         if (__ml_truthy(uri)) {
@@ -1515,7 +1526,7 @@ async function charger_donnees_comparaison(entite_id, type_entite) {
       donnees_courantes['artistes_labels'] = labels;
       _engine.get('donnees_comparaison').setIndex(entite_id, donnees_courantes);
     } catch (erreur) {
-      passe;
+
     }
   }
 }
@@ -1567,7 +1578,7 @@ async function charger_mouvement_artistes_page_suivante() {
   _engine.get('affichage_chargement').set(true);
   try {
     var page = await donnees.requetes.obtenir_artistes_mouvement_page(_engine.get('source_id_artistes_mouvement').get(), 20, _engine.get('curseur_artistes_mouvement').get());
-    for (const artiste of ((page)?.['artistes'] ?? [])) {
+    for (const artiste of __ml_iterate(((page)?.['artistes'] ?? []))) {
       var artiste_id = _extraire_id_entite(((artiste)?.['artist'] ?? {}));
       var artiste_label = _etiquette_entite(artiste, ['artistLabel'], 'Artiste inconnu');
       if (__ml_truthy(artiste_id)) {
@@ -1595,7 +1606,7 @@ async function charger_artiste_oeuvres_page_suivante() {
   _engine.get('affichage_chargement').set(true);
   try {
     var page = await donnees.requetes.obtenir_oeuvres_artiste_page(_engine.get('source_id_oeuvres_artiste').get(), 20, _engine.get('curseur_oeuvres_artiste').get());
-    for (const oeuvre of ((page)?.['oeuvres'] ?? [])) {
+    for (const oeuvre of __ml_iterate(((page)?.['oeuvres'] ?? []))) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
       if (__ml_truthy(oeuvre_id)) {
@@ -1623,7 +1634,7 @@ async function charger_musee_oeuvres_page_suivante() {
   _engine.get('affichage_chargement').set(true);
   try {
     var page = await donnees.requetes.obtenir_oeuvres_musee_page(_engine.get('source_id_oeuvres_musee').get(), 20, _engine.get('curseur_oeuvres_musee').get());
-    for (const oeuvre of ((page)?.['oeuvres'] ?? [])) {
+    for (const oeuvre of __ml_iterate(((page)?.['oeuvres'] ?? []))) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
       if (__ml_truthy(oeuvre_id)) {
@@ -1725,8 +1736,8 @@ async function explorer_voisinage(entite_id, profondeur = 2) {
     return;
   }
   var voisinage = ui.etat.graphe.obtenir_voisinage(entite_id, profondeur);
-  for (const couche of ((voisinage)?.['couches'] ?? [])) {
-    for (const element of couche) {
+  for (const couche of __ml_iterate(((voisinage)?.['couches'] ?? []))) {
+    for (const element of __ml_iterate(couche)) {
       var element_id = ((element)?.['id'] ?? '');
     }
   }
@@ -1739,10 +1750,10 @@ async function explorer_influences(artiste_id) {
     return;
   }
   var voisins = ui.etat.graphe.obtenir_voisins(artiste_id, 'influence');
-  for (const voisin_id of voisins) {
+  for (const voisin_id of __ml_iterate(voisins)) {
     var voisin = ui.etat.graphe.obtenir_noeud(voisin_id);
     if ((__ml_truthy(voisin) && __ml_truthy((voisin.type == 'artiste')))) {
-      passe;
+
     }
   }
 }
@@ -1777,7 +1788,7 @@ async function obtenir_entites_liees(entite_id) {
   }
   var voisins = ui.etat.graphe.obtenir_voisins(entite_id);
   var entites_liees = {['directes']: [], ['par_type']: {}};
-  for (const voisin_id of voisins) {
+  for (const voisin_id of __ml_iterate(voisins)) {
     var voisin = ui.etat.graphe.obtenir_noeud(voisin_id);
     if (__ml_truthy(voisin)) {
       __ml_add(entites_liees['directes'], {['id']: voisin_id, ['etiquette']: voisin.etiquette, ['type']: voisin.type});
@@ -1793,7 +1804,7 @@ async function obtenir_entites_liees(entite_id) {
 async function obtenir_composante_connexe(entite_id) {
   'Obtenir tous les nœuds connectés à une entité';
   var composantes = ui.etat.graphe.obtenir_composantes_connexes();
-  for (const composante of composantes) {
+  for (const composante of __ml_iterate(composantes)) {
     if (__ml_truthy(__ml_contains(composante, entite_id))) {
       return composante;
     }
@@ -1818,14 +1829,14 @@ async function lancer_recherche(requete) {
   var resultats_wikidata = await donnees.requetes.rechercher_entites_wikidata(requete);
   var entites_vues = {};
   var resultats_fusionnes = [];
-  for (const resultat of resultats_cache) {
+  for (const resultat of __ml_iterate(resultats_cache)) {
     var cle = ((resultat)?.['id'] ?? '');
     if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
       entites_vues[cle] = true;
       __ml_add(resultats_fusionnes, resultat);
     }
   }
-  for (const resultat of resultats_wikidata) {
+  for (const resultat of __ml_iterate(resultats_wikidata)) {
     cle = ((resultat)?.['id'] ?? '');
     if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
       entites_vues[cle] = true;
@@ -1839,7 +1850,7 @@ function _rechercher_cache(requete) {
   'Rechercher dans le cache des entités chargées';
   var resultats = [];
   var requete_bas = String(requete).toLowerCase();
-  for (const [id_noeud, noeud] of Object.entries(ui.etat.graphe.noeuds)) {
+  for (const [id_noeud, noeud] of __ml_iterate(Object.entries(ui.etat.graphe.noeuds))) {
     var etiquette = String(noeud.etiquette).toLowerCase();
     if (__ml_truthy(__ml_contains(etiquette, requete_bas))) {
       var type_noeud = noeud.type;
@@ -1858,8 +1869,8 @@ async function resoudre_type_entite(entite_id, type_par_defaut) {
     var entite = ((((corps)?.['entities'] ?? {}))?.[entite_id] ?? {});
     var reclamations = ((entite)?.['claims'] ?? {});
     var ids_rec = [];
-    for (const prop of ['P31', 'P279']) {
-      for (const rec of ((reclamations)?.[prop] ?? [])) {
+    for (const prop of __ml_iterate(['P31', 'P279'])) {
+      for (const rec of __ml_iterate(((reclamations)?.[prop] ?? []))) {
         var val = ((((((rec)?.['mainsnak'] ?? {}))?.['datavalue'] ?? {}))?.['value'] ?? {});
         var id_val = ((val)?.['id'] ?? '');
         if (__ml_truthy(id_val)) {
@@ -1930,7 +1941,7 @@ function rendre_barre_recherche() {
   var html = '<div class="search-bar-container">';
   html = (html + '<input type="text" class="search-input" placeholder="Chercher..." />');
   html = (html + '<div class="search-results">');
-  for (const resultat of ui.etat.resultats_recherche) {
+  for (const resultat of __ml_iterate(ui.etat.resultats_recherche)) {
     var entite_id = ((resultat)?.['id'] ?? '');
     var label = ((resultat)?.['label'] ?? '');
     var description = ((resultat)?.['description'] ?? '');
@@ -2145,7 +2156,7 @@ function _rendre_recit_mouvement(entite) {
   var suivi_par_label = ((((donnees)?.['followedByLabel'] ?? {}))?.['value'] ?? '');
   var artistes_ids = ui.etat._obtenir_cibles_relations(entite_id, 'contient_artiste');
   var noms_artistes = [];
-  for (const artiste_id of artistes_ids.slice(0, 5)) {
+  for (const artiste_id of __ml_iterate(artistes_ids.slice(0, 5))) {
     var noeud = ui.etat.graphe.obtenir_noeud(artiste_id);
     if (__ml_truthy(noeud)) {
       __ml_add(noms_artistes, noeud.etiquette);
@@ -2228,7 +2239,7 @@ function _rendre_recit_artiste(entite) {
   var mouvement_label = ((((donnees)?.['movementLabel'] ?? {}))?.['value'] ?? '');
   var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, 'a_cree');
   var noms_oeuvres = [];
-  for (const oeuvre_id of oeuvres_ids.slice(0, 4)) {
+  for (const oeuvre_id of __ml_iterate(oeuvres_ids.slice(0, 4))) {
     var noeud = ui.etat.graphe.obtenir_noeud(oeuvre_id);
     if (__ml_truthy(noeud)) {
       __ml_add(noms_oeuvres, noeud.etiquette);
@@ -2277,7 +2288,7 @@ function _rendre_recit_artiste(entite) {
     html = (html + '<section class="recit-section">');
     html = (html + '<h3 class="recit-section-titre">Œuvres chargées</h3>');
     html = (html + '<ul class="recit-liste">');
-    for (const nom_oeuvre of noms_oeuvres) {
+    for (const nom_oeuvre of __ml_iterate(noms_oeuvres)) {
       html = (((html + '<li>') + nom_oeuvre) + '</li>');
     }
     if (__ml_truthy(((oeuvres_ids).length > 4))) {
@@ -2377,59 +2388,74 @@ function calculer_intersection_artistes(ids_entites) {
   if (__ml_truthy(((ids_entites).length < 2))) {
     return [];
   }
-  var ensemble_courant = null;
-  for (const entite_id of ids_entites) {
+  var premiere_entite = ids_entites[0];
+  var donnees0 = ((ui.etat.obtenir_donnees_comparaison())?.[premiere_entite] ?? {});
+  var communs = {};
+  for (const artiste_id of __ml_iterate(((donnees0)?.['artistes_ids'] ?? []))) {
+    communs[artiste_id] = true;
+  }
+  for (const entite_id of __ml_iterate(ids_entites.slice(1, undefined))) {
     var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
-    var artistes = ensemble(((donnees)?.['artistes_ids'] ?? []));
-    if (__ml_truthy((ensemble_courant === null))) {
-      ensemble_courant = artistes;
+    var ids_entite = ((donnees)?.['artistes_ids'] ?? []);
+    var dict_entite = {};
+    for (const a of __ml_iterate(ids_entite)) {
+      dict_entite[a] = true;
     }
-    else {
-      ensemble_courant = ensemble_courant.intersection(artistes);
+    var nouveaux_communs = {};
+    for (const artiste_id of __ml_iterate(communs)) {
+      if (__ml_truthy(__ml_contains(dict_entite, artiste_id))) {
+        nouveaux_communs[artiste_id] = true;
+      }
     }
+    communs = nouveaux_communs;
   }
-  if (__ml_truthy((ensemble_courant === null))) {
-    return [];
-  }
-  return Array.from(ensemble_courant);
+  return Array.from(Object.keys(communs));
 }
 
 function calculer_artistes_uniques(ids_entites) {
-  '\n    Pour chaque entité, calculer les artistes qui lui sont exclusifs\n    (présents dans cette entité mais dans aucune autre).\n    Retourne {entite_id: [artiste_ids_uniques]}\n    ';
+  '\n    Pour chaque entité, calculer les artistes qui lui sont exclusifs.\n    Retourne {entite_id: [artiste_ids_uniques]}\n    ';
   if (__ml_truthy(((ids_entites).length < 2))) {
     return {};
   }
   var ensembles = {};
-  for (const entite_id of ids_entites) {
+  for (const entite_id of __ml_iterate(ids_entites)) {
     var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
-    ensembles[entite_id] = ensemble(((donnees)?.['artistes_ids'] ?? []));
+    var d = {};
+    for (const a of __ml_iterate(((donnees)?.['artistes_ids'] ?? []))) {
+      d[a] = true;
+    }
+    ensembles[entite_id] = d;
   }
   var resultats = {};
-  for (const entite_id of ids_entites) {
-    var union_autres = ensemble();
-    for (const [autre_id, autre_ensemble] of Object.entries(ensembles)) {
-      if (__ml_truthy((autre_id != entite_id))) {
-        union_autres = union_autres.union(autre_ensemble);
+  for (const entite_id of __ml_iterate(ids_entites)) {
+    var uniques = [];
+    for (const artiste_id of __ml_iterate(ensembles[entite_id])) {
+      var dans_autre = false;
+      for (const autre_id of __ml_iterate(ids_entites)) {
+        if (__ml_truthy((autre_id != entite_id))) {
+          if (__ml_truthy(__ml_contains(ensembles[autre_id], artiste_id))) {
+            dans_autre = true;
+          }
+        }
+      }
+      if ((!__ml_truthy(dans_autre))) {
+        __ml_add(uniques, artiste_id);
       }
     }
-    resultats[entite_id] = Array.from(ensembles[entite_id].difference(union_autres));
+    resultats[entite_id] = uniques;
   }
   return resultats;
 }
 
 function obtenir_etiquette_artiste(artiste_id, ids_entites) {
   "Chercher l'étiquette d'un artiste dans les données de comparaison chargées";
-  for (const entite_id of ids_entites) {
+  for (const entite_id of __ml_iterate(ids_entites)) {
     var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     var labels = ((donnees)?.['artistes_labels'] ?? {});
     var label = ((labels)?.[artiste_id] ?? '');
     if (__ml_truthy(label)) {
       return label;
     }
-  }
-  var noeud = ui.etat.graphe.obtenir_noeud(artiste_id);
-  if (__ml_truthy(noeud)) {
-    return noeud.etiquette;
   }
   return artiste_id;
 }
@@ -2442,12 +2468,12 @@ function obtenir_statistiques(ids_entites) {
   var artistes_communs = calculer_intersection_artistes(ids_entites);
   var artistes_uniques = calculer_artistes_uniques(ids_entites);
   var total_par_entite = {};
-  for (const entite_id of ids_entites) {
+  for (const entite_id of __ml_iterate(ids_entites)) {
     var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     total_par_entite[entite_id] = (((donnees)?.['artistes_ids'] ?? [])).length;
   }
   var uniques_par_entite = {};
-  for (const [eid, u] of Object.entries(artistes_uniques)) {
+  for (const [eid, u] of __ml_iterate(Object.entries(artistes_uniques))) {
     uniques_par_entite[eid] = (u).length;
   }
   return {['artistes_communs_count']: (artistes_communs).length, ['total_par_entite']: total_par_entite, ['uniques_par_entite']: uniques_par_entite};
@@ -2481,14 +2507,14 @@ function rendre_panneau_comparaison() {
     return html;
   }
   var ids_entites = [];
-  for (const entite of entites) {
+  for (const entite of __ml_iterate(entites)) {
     __ml_add(ids_entites, ((entite)?.['id'] ?? ''));
   }
   var artistes_communs = semantique.intersections.calculer_intersection_artistes(ids_entites);
   var artistes_uniques = semantique.intersections.calculer_artistes_uniques(ids_entites);
   var stats = semantique.intersections.obtenir_statistiques(ids_entites);
   var toutes_chargees = true;
-  for (const entite_id of ids_entites) {
+  for (const entite_id of __ml_iterate(ids_entites)) {
     var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     if (__ml_truthy((((donnees)?.['artistes_ids'] ?? null) === null))) {
       toutes_chargees = false;
@@ -2515,7 +2541,7 @@ function rendre_panneau_comparaison() {
   }
   html = (html + '</div>');
   html = (((html + '<div class="comparaison-grille" style="grid-template-columns: ') + _generer_colonnes((entites).length)) + '">');
-  for (const entite of entites) {
+  for (const entite of __ml_iterate(entites)) {
     var entite_id = ((entite)?.['id'] ?? '');
     var entite_label = ((entite)?.['label'] ?? '');
     var uniques = ((artistes_uniques)?.[entite_id] ?? []);
@@ -2525,7 +2551,7 @@ function rendre_panneau_comparaison() {
     html = (((((html + '<span class="comparaison-col-meta">') + String(total)) + ' artistes • ') + String((uniques).length)) + ' uniques</span>');
     if (__ml_truthy(uniques)) {
       html = (html + '<ul class="comparaison-liste">');
-      for (const artiste_id of uniques.slice(0, 8)) {
+      for (const artiste_id of __ml_iterate(uniques.slice(0, 8))) {
         var nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites);
         html = (((html + '<li class="comparaison-item comparaison-unique">') + nom) + '</li>');
       }
@@ -2548,7 +2574,7 @@ function rendre_panneau_comparaison() {
   html = (html + '</span>');
   if (__ml_truthy(artistes_communs)) {
     html = (html + '<ul class="comparaison-liste">');
-    for (const artiste_id of artistes_communs) {
+    for (const artiste_id of __ml_iterate(artistes_communs)) {
       nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites);
       html = (((html + '<li class="comparaison-item comparaison-commun">') + nom) + '</li>');
     }
@@ -2566,7 +2592,7 @@ function rendre_panneau_comparaison() {
 function _rendre_pastilles(entites) {
   'Rendre les pastilles des entités sélectionnées avec bouton de retrait';
   var html = '<div class="comparaison-pastilles">';
-  for (const entite of entites) {
+  for (const entite of __ml_iterate(entites)) {
     var entite_id = ((entite)?.['id'] ?? '');
     var entite_label = ((entite)?.['label'] ?? '');
     var entite_type = ((entite)?.['type'] ?? '');
@@ -2587,7 +2613,11 @@ function _rendre_pastilles(entites) {
 function _generer_colonnes(nb_entites) {
   "Générer la valeur grid-template-columns selon le nombre d'entités";
   var total = (nb_entites + 1);
-  return ((['1fr'] * total)).join(' ');
+  var colonnes = [];
+  for (const i of __ml_iterate(intervalle(total))) {
+    __ml_add(colonnes, '1fr');
+  }
+  return (colonnes).join(' ');
 }
 
 window.ui = window.ui || {};
@@ -2657,7 +2687,7 @@ async function rechercher_entites(requete) {
   var resultats_wikidata = await donnees.requetes.rechercher_entites_wikidata(requete);
   var entites_vues = {};
   var resultats = [];
-  for (const r of (resultats_cache + resultats_wikidata)) {
+  for (const r of __ml_iterate((resultats_cache + resultats_wikidata))) {
     var cle = ((r)?.['id'] ?? '');
     if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
       entites_vues[cle] = true;

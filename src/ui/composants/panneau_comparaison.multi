@@ -136,6 +136,8 @@ déf _rendre_pastilles(entites: liste) -> chaine:
 
 déf _generer_colonnes(nb_entites: nombre) -> chaine:
     """Générer la valeur grid-template-columns selon le nombre d'entités"""
-    # Entity columns + 1 shared column in the middle
     total = nb_entites + 1
-    retour " ".joindre(["1fr"] * total)
+    colonnes = []
+    pour i dans intervalle(total):
+        colonnes.ajouter("1fr")
+    retour " ".joindre(colonnes)

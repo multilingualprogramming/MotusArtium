@@ -112,7 +112,7 @@ déf _rendre_recit_mouvement(entite: dictionnaire) -> chaine:
 
     # Pied — invitation à explorer la constellation
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" onclick="document.querySelector(\'[data-mode=observatory]\').click()">Voir la constellation →</button>'
+    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Voir la constellation →</button>'
     html = html + '</footer>'
     html = html + '</article>'
 
@@ -191,7 +191,7 @@ déf _rendre_recit_artiste(entite: dictionnaire) -> chaine:
 
     html = html + '</div>'
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" onclick="document.querySelector(\'[data-mode=observatory]\').click()">Voir la constellation →</button>'
+    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Voir la constellation →</button>'
     html = html + '</footer>'
     html = html + '</article>'
 
@@ -240,16 +240,16 @@ déf _rendre_recit_oeuvre(entite: dictionnaire) -> chaine:
         html = html + '<section class="recit-section">'
         html = html + '<h3 class="recit-section-titre">Détails</h3>'
         si musee_label:
-            html = html + '<p class="recit-relation">\U0001f3db Conservée au <strong>' + musee_label + '</strong></p>'
+            html = html + '<p class="recit-relation">🏛 Conservée au <strong>' + musee_label + '</strong></p>'
         si sujet_label:
-            html = html + '<p class="recit-relation">\U0001f3a8 Représente <strong>' + sujet_label + '</strong></p>'
+            html = html + '<p class="recit-relation">🎨 Représente <strong>' + sujet_label + '</strong></p>'
         si materiau_label:
-            html = html + '<p class="recit-relation">\U0001f58c Réalisée en <strong>' + materiau_label + '</strong></p>'
+            html = html + '<p class="recit-relation">🖌 Réalisée en <strong>' + materiau_label + '</strong></p>'
         html = html + '</section>'
 
     html = html + '</div>'
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" onclick="document.querySelector(\'[data-mode=observatory]\').click()">Voir la constellation →</button>'
+    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Voir la constellation →</button>'
     html = html + '</footer>'
     html = html + '</article>'
 

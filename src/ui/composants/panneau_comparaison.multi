@@ -4,7 +4,7 @@ importer semantique.intersections
 
 déf rendre_panneau_comparaison() -> chaine:
     """Rendre le panneau de comparaison entre entités sélectionnées"""
-    entites = ui.etat.entites_comparaison
+    entites = ui.etat.obtenir_entites_comparaison()
 
     si non entites:
         retour ""
@@ -40,8 +40,8 @@ déf rendre_panneau_comparaison() -> chaine:
     # Vérifier si les données sont chargées
     toutes_chargees = vrai
     pour entite_id dans ids_entites:
-        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
-        si non donnees.obtenir("artistes_ids", nul) est nul:
+        donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
+        si donnees.obtenir("artistes_ids", nul) est nul:
             toutes_chargees = faux
 
     si non toutes_chargees:
@@ -124,7 +124,10 @@ déf _rendre_pastilles(entites: liste) -> chaine:
         html = html + '<span class="comparaison-pastille">'
         html = html + entite_label
         html = html + '<button class="comparaison-pastille-retirer"'
-        html = html + ' onclick="window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(\'' + entite_id + '\',\'' + entite_type + '\',\'' + entite_label + '\'),window.renderComparisonPanel())"'
+        html = html + ' data-cmp-id="' + entite_id + '"'
+        html = html + ' data-cmp-type="' + entite_type + '"'
+        html = html + ' data-cmp-label="' + entite_label + '"'
+        html = html + ' onclick="var b=this;window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(b.dataset.cmpId,b.dataset.cmpType,b.dataset.cmpLabel),window.renderComparisonPanel())"'
         html = html + ' aria-label="Retirer ' + entite_label + '">×</button>'
         html = html + '</span>'
     html = html + '</div>'

@@ -8,7 +8,7 @@ déf calculer_intersection_artistes(ids_entites: liste) -> liste:
 
     ensemble_courant = nul
     pour entite_id dans ids_entites:
-        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
         artistes = ensemble(donnees.obtenir("artistes_ids", []))
 
         si ensemble_courant est nul:
@@ -32,7 +32,7 @@ déf calculer_artistes_uniques(ids_entites: liste) -> dictionnaire:
 
     ensembles = {}
     pour entite_id dans ids_entites:
-        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
         ensembles[entite_id] = ensemble(donnees.obtenir("artistes_ids", []))
 
     resultats = {}
@@ -49,7 +49,7 @@ déf calculer_artistes_uniques(ids_entites: liste) -> dictionnaire:
 déf obtenir_etiquette_artiste(artiste_id: chaine, ids_entites: liste) -> chaine:
     """Chercher l'étiquette d'un artiste dans les données de comparaison chargées"""
     pour entite_id dans ids_entites:
-        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
         labels = donnees.obtenir("artistes_labels", {})
         label = labels.obtenir(artiste_id, "")
         si label:
@@ -73,7 +73,7 @@ déf obtenir_statistiques(ids_entites: liste) -> dictionnaire:
 
     total_par_entite = {}
     pour entite_id dans ids_entites:
-        donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
+        donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
         total_par_entite[entite_id] = len(donnees.obtenir("artistes_ids", []))
 
     uniques_par_entite = {}

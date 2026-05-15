@@ -589,7 +589,11 @@ déf basculer_comparaison(entite_id: chaine, type_entite: chaine, etiquette: cha
     """Ajouter ou retirer une entité du panneau de comparaison. Retourne vrai si ajoutée."""
     pour entite dans entites_comparaison:
         si entite.obtenir("id", "") == entite_id:
-            entites_comparaison.retirer(entite)
+            nouvelles = []
+            pour e dans entites_comparaison:
+                si e.obtenir("id", "") != entite_id:
+                    nouvelles.ajouter(e)
+            entites_comparaison = nouvelles
             si entite_id dans donnees_comparaison:
                 supprimer donnees_comparaison[entite_id]
             retour faux
@@ -644,6 +648,16 @@ asynchrone déf charger_donnees_comparaison(entite_id: chaine, type_entite: chai
             donnees_comparaison[entite_id] = donnees_courantes
         sauf erreur:
             passe
+
+
+déf obtenir_entites_comparaison() -> liste:
+    """Retourner la liste des entités du panneau de comparaison"""
+    retour entites_comparaison
+
+
+déf obtenir_donnees_comparaison() -> dictionnaire:
+    """Retourner les données chargées pour le panneau de comparaison"""
+    retour donnees_comparaison
 
 
 déf effacer_comparaison():

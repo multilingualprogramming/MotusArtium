@@ -27,6 +27,22 @@
             }
         };
 
+        window.renderTrajectoirePanel = function() {
+            const container = document.getElementById("trajectoire-panel-container");
+            const root = document.getElementById("__ml_trajectoire_root");
+            if (!container || !root) return;
+            try {
+                const render = window.ui?.composants?.trajectoire?.rendre_trajectoire;
+                const html = typeof render === "function" ? render() || "" : "";
+                root.innerHTML = html;
+                container.hidden = !html;
+            } catch (e) {
+                console.warn("trajectoire panel render error:", e);
+            }
+            // Refresh detail panel so the Trajectoire button label stays in sync
+            window.renderDetailPanel();
+        };
+
         window.renderDetailPanel = function() {
             const detailContainer = document.getElementById("detail-panel-container");
             const detailRoot = document.getElementById("__ml_detail_root");
@@ -163,6 +179,7 @@
                     await refreshMultilingualEntityLabels();
                     window.renderDetailPanel();
                     window.renderComparisonPanel();
+                    window.renderTrajectoirePanel();
 
                     wireupSearchBar();
                 } catch (error) {
@@ -268,11 +285,15 @@
                         .then(results => {
                             if (results.length > 0) {
                                 const markup = results.slice(0, 8).map(item => {
-                                    const entityType = item.entityType || "movement";
+                                    const entityType = item.entityType || inferSearchResultType(item);
+                                    const trajBtn = (entityType === "artist" || entityType === "artiste")
+                                        ? `<button class="trajectoire-btn" data-action="trajectoire" data-traj-id="${item.id}" data-traj-label="${(item.label || item.id).replace(/"/g, '&quot;')}" aria-label="Trajectoire ${item.label || item.id}">+ Trajectoire</button>`
+                                        : "";
                                     return `<div class="search-result-item" data-entity-id="${item.id}" data-entity-type="${entityType}">
                                         <strong>${item.label || item.id}</strong>
                                         <small>${item.description || entityType}</small>
                                         <button class="compare-btn" data-action="comparer" data-compare-id="${item.id}" data-compare-type="${entityType}" aria-label="Comparer ${item.label || item.id}">+ Comparer</button>
+                                        ${trajBtn}
                                     </div>`
                                 }).join('');
                                 searchDropdown.innerHTML = markup;
@@ -280,6 +301,19 @@
                                 // Add click handlers to results
                                 searchDropdown.querySelectorAll(".search-result-item").forEach((item) => {
                                     item.addEventListener("click", async function(evt) {
+                                        // Intercept trajectoire button clicks
+                                        const trajBtn = evt.target.closest("[data-action='trajectoire']");
+                                        if (trajBtn) {
+                                            evt.stopPropagation();
+                                            const trajId = trajBtn.dataset.trajId;
+                                            const trajLabel = trajBtn.dataset.trajLabel || trajId;
+                                            if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_artiste_trajectoire === "function") {
+                                                await window.ui.etat.basculer_artiste_trajectoire(trajId, trajLabel);
+                                                window.renderTrajectoirePanel();
+                                            }
+                                            return;
+                                        }
+
                                         // Intercept compare button clicks before entity load
                                         const compareBtn = evt.target.closest("[data-action='comparer']");
                                         if (compareBtn) {
@@ -384,6 +418,7 @@
             if (detailContainer && detailRoot) {
                 window.renderDetailPanel();
                 window.renderComparisonPanel();
+                window.renderTrajectoirePanel();
                 return;
             }
 

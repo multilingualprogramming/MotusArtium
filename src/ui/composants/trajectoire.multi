@@ -1,0 +1,80 @@
+importer ui.etat
+
+
+déf rendre_trajectoire() -> chaine:
+    """Rendre le panneau de trajectoire d'influence entre deux artistes."""
+    depart_id = ui.etat.obtenir_trajectoire_depart_id()
+    arrivee_id = ui.etat.obtenir_trajectoire_arrivee_id()
+
+    si non depart_id et non arrivee_id:
+        retour ""
+
+    labels = ui.etat.obtenir_trajectoire_labels()
+    chemin = ui.etat.obtenir_trajectoire_chemin()
+
+    html = '<div class="trajectoire-panel">'
+    html = html + '<header class="trajectoire-header">'
+    html = html + "<h3 class='trajectoire-titre'>Trajectoire d'influence</h3>"
+    html = html + '<button class="trajectoire-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_trajectoire&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())" aria-label="Effacer la trajectoire">Effacer</button>'
+    html = html + '</header>'
+
+    html = html + '<div class="trajectoire-bornes">'
+    html = html + _rendre_borne(depart_id, labels, "depart", "Départ")
+    si arrivee_id:
+        html = html + '<span class="trajectoire-fleche">→</span>'
+        html = html + _rendre_borne(arrivee_id, labels, "arrivee", "Arrivée")
+    sinon:
+        html = html + "<span class='trajectoire-attente'>Sélectionnez un artiste d'arrivée via + Trajectoire</span>"
+    html = html + '</div>'
+
+    si chemin:
+        html = html + _rendre_chemin(chemin, labels)
+    sinon si arrivee_id:
+        si ui.etat.obtenir_affichage_chargement():
+            html = html + '<p class="trajectoire-message">Calcul en cours...</p>'
+        sinon:
+            html = html + "<p class='trajectoire-message trajectoire-aucun'>Aucun chemin d'influence trouvé entre ces deux artistes dans le graphe actuel. Chargez d'autres artistes pour enrichir le réseau.</p>"
+
+    html = html + '</div>'
+    retour html
+
+
+déf _rendre_borne(artiste_id: chaine, labels: dictionnaire, css_class: chaine, libelle: chaine) -> chaine:
+    """Rendre une borne (départ ou arrivée) de la trajectoire."""
+    nom = labels.obtenir(artiste_id, artiste_id)
+    html = '<span class="trajectoire-borne trajectoire-borne-' + css_class + '">'
+    html = html + '<small>' + libelle + '</small>'
+    html = html + '<strong>' + nom + '</strong>'
+    html = html + '</span>'
+    retour html
+
+
+déf _rendre_chemin(chemin: liste, labels: dictionnaire) -> chaine:
+    """Rendre les étapes du chemin d'influence."""
+    html = '<ol class="trajectoire-chemin">'
+
+    pour i dans intervalle(len(chemin)):
+        noeud_id = chemin[i]
+        nom = labels.obtenir(noeud_id, noeud_id)
+        est_premier = i == 0
+        est_dernier = i == len(chemin) - 1
+
+        css = "trajectoire-etape"
+        si est_premier:
+            css = css + " trajectoire-etape-depart"
+        sinon si est_dernier:
+            css = css + " trajectoire-etape-arrivee"
+
+        html = html + '<li class="' + css + '">'
+        html = html + '<span class="trajectoire-nom">' + nom + '</span>'
+        si non est_dernier:
+            html = html + '<span class="trajectoire-rel">a influencé ↓</span>'
+        html = html + '</li>'
+
+    html = html + '</ol>'
+    nb_degres = len(chemin) - 1
+    html = html + '<p class="trajectoire-longueur">' + chaine(nb_degres) + ' degré'
+    si nb_degres > 1:
+        html = html + 's'
+    html = html + ' de séparation</p>'
+    retour html

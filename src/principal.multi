@@ -4,6 +4,7 @@ importer ui.composants.barre_recherche
 importer ui.composants.panneau_detail
 importer ui.composants.recit
 importer ui.composants.panneau_comparaison
+importer ui.composants.trajectoire
 importer ui.interactions.recherche
 importer ui.interactions.navigation
 importer ui.etat
@@ -194,3 +195,27 @@ asynchrone déf basculer_comparaison(entite_id: chaine, type_entite: chaine, eti
 déf effacer_comparaison():
     """Vider le panneau de comparaison"""
     ui.etat.effacer_comparaison()
+
+
+# ============================================================================
+# Trajectoire d'Influence — re-exports depuis ui.etat et ui.composants.trajectoire
+# ============================================================================
+
+déf rendre_trajectoire():
+    """Rendre le panneau de trajectoire d'influence entre deux artistes"""
+    retour ui.composants.trajectoire.rendre_trajectoire()
+
+
+asynchrone déf basculer_artiste_trajectoire(artiste_id: chaine, etiquette: chaine):
+    """Définir le départ ou l'arrivée de la trajectoire, lancer la recherche si les deux sont définis"""
+    retour attendre ui.etat.basculer_artiste_trajectoire(artiste_id, etiquette)
+
+
+asynchrone déf trouver_trajectoire_influence(depart_id: chaine, arrivee_id: chaine):
+    """Trouver le chemin d'influence entre deux artistes"""
+    retour attendre ui.etat.trouver_trajectoire_influence(depart_id, arrivee_id)
+
+
+déf effacer_trajectoire():
+    """Vider la trajectoire d'influence"""
+    ui.etat.effacer_trajectoire()

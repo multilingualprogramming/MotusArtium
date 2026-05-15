@@ -436,6 +436,13 @@ async function obtenir_influences_artiste(artiste_id) {
   return {['artist']: _champ_entite(((item)?.['id'] ?? '')), ['artistLabel']: _champ_valeur(((item)?.['artistLabel'] ?? '')), ['influencedBy']: _champ_entite(((influence_recue)?.['id'] ?? '')), ['influencedByLabel']: _champ_valeur(((influence_recue)?.['label'] ?? '')), ['influenced']: _champ_entite(((influence_donnee)?.['id'] ?? '')), ['influencedLabel']: _champ_valeur(((influence_donnee)?.['label'] ?? ''))};
 }
 
+async function obtenir_influences_artiste_complet(artiste_id) {
+  "Récupère toutes les influences d'un artiste (P737 et P738 en listes complètes)";
+  var donnees = await executer_requete_graphql('artist_influences.graphql', {['id']: artiste_id, ['languageCode']: LANGUE_PAR_DEFAUT});
+  var item = ((donnees)?.['item'] ?? {});
+  return {['artiste_id']: artiste_id, ['artistLabel']: ((item)?.['artistLabel'] ?? ''), ['influencedBy']: _extraire_items(((item)?.['influencedBy'] ?? [])), ['influenced']: _extraire_items(((item)?.['influenced'] ?? []))};
+}
+
 async function obtenir_oeuvre_details(oeuvre_id) {
   "Récupère les détails d'une œuvre via GraphQL";
   var donnees = await executer_requete_graphql('artwork_details.graphql', {['id']: oeuvre_id, ['languageCode']: LANGUE_PAR_DEFAUT});
@@ -663,7 +670,7 @@ async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
 
 window.donnees = window.donnees || {};
 window.donnees.requetes = window.donnees.requetes || {};
-Object.assign(window.donnees.requetes, {charger_document_graphql: charger_document_graphql, executer_requete_graphql: executer_requete_graphql, _champ_valeur: _champ_valeur, _uri_entite: _uri_entite, _champ_entite: _champ_entite, _extraire_temps: _extraire_temps, _extraire_texte: _extraire_texte, _extraire_item: _extraire_item, _extraire_items: _extraire_items, _extraire_coordonnees: _extraire_coordonnees, _normaliser_mouvement_detail: _normaliser_mouvement_detail, _normaliser_artiste_detail: _normaliser_artiste_detail, _normaliser_oeuvre_detail: _normaliser_oeuvre_detail, _normaliser_artiste_resume: _normaliser_artiste_resume, _normaliser_oeuvre_resume: _normaliser_oeuvre_resume, _normaliser_chronologie: _normaliser_chronologie, _annee_depuis_temps: _annee_depuis_temps, _recuperer_mouvements_catalogue: _recuperer_mouvements_catalogue, obtenir_mouvement_details: obtenir_mouvement_details, obtenir_mouvements_par_periode: obtenir_mouvements_par_periode, obtenir_mouvements_evolution: obtenir_mouvements_evolution, obtenir_artiste_details: obtenir_artiste_details, obtenir_artistes_mouvement: obtenir_artistes_mouvement, obtenir_influences_artiste: obtenir_influences_artiste, obtenir_oeuvre_details: obtenir_oeuvre_details, obtenir_oeuvres_artiste: obtenir_oeuvres_artiste, obtenir_oeuvres_par_sujet: obtenir_oeuvres_par_sujet, obtenir_diffusion_geographique: obtenir_diffusion_geographique, obtenir_oeuvres_musee: obtenir_oeuvres_musee, obtenir_chronologie_mouvements: obtenir_chronologie_mouvements, obtenir_etiquette_entite: obtenir_etiquette_entite, obtenir_etiquettes_entite: obtenir_etiquettes_entite, obtenir_graphe_mouvement: obtenir_graphe_mouvement, obtenir_graphe_artiste: obtenir_graphe_artiste, obtenir_graphe_oeuvre: obtenir_graphe_oeuvre, obtenir_artistes_mouvement_page: obtenir_artistes_mouvement_page, obtenir_oeuvres_artiste_page: obtenir_oeuvres_artiste_page, obtenir_oeuvres_musee_page: obtenir_oeuvres_musee_page, rechercher_entites_wikidata: rechercher_entites_wikidata});
+Object.assign(window.donnees.requetes, {charger_document_graphql: charger_document_graphql, executer_requete_graphql: executer_requete_graphql, _champ_valeur: _champ_valeur, _uri_entite: _uri_entite, _champ_entite: _champ_entite, _extraire_temps: _extraire_temps, _extraire_texte: _extraire_texte, _extraire_item: _extraire_item, _extraire_items: _extraire_items, _extraire_coordonnees: _extraire_coordonnees, _normaliser_mouvement_detail: _normaliser_mouvement_detail, _normaliser_artiste_detail: _normaliser_artiste_detail, _normaliser_oeuvre_detail: _normaliser_oeuvre_detail, _normaliser_artiste_resume: _normaliser_artiste_resume, _normaliser_oeuvre_resume: _normaliser_oeuvre_resume, _normaliser_chronologie: _normaliser_chronologie, _annee_depuis_temps: _annee_depuis_temps, _recuperer_mouvements_catalogue: _recuperer_mouvements_catalogue, obtenir_mouvement_details: obtenir_mouvement_details, obtenir_mouvements_par_periode: obtenir_mouvements_par_periode, obtenir_mouvements_evolution: obtenir_mouvements_evolution, obtenir_artiste_details: obtenir_artiste_details, obtenir_artistes_mouvement: obtenir_artistes_mouvement, obtenir_influences_artiste: obtenir_influences_artiste, obtenir_influences_artiste_complet: obtenir_influences_artiste_complet, obtenir_oeuvre_details: obtenir_oeuvre_details, obtenir_oeuvres_artiste: obtenir_oeuvres_artiste, obtenir_oeuvres_par_sujet: obtenir_oeuvres_par_sujet, obtenir_diffusion_geographique: obtenir_diffusion_geographique, obtenir_oeuvres_musee: obtenir_oeuvres_musee, obtenir_chronologie_mouvements: obtenir_chronologie_mouvements, obtenir_etiquette_entite: obtenir_etiquette_entite, obtenir_etiquettes_entite: obtenir_etiquettes_entite, obtenir_graphe_mouvement: obtenir_graphe_mouvement, obtenir_graphe_artiste: obtenir_graphe_artiste, obtenir_graphe_oeuvre: obtenir_graphe_oeuvre, obtenir_artistes_mouvement_page: obtenir_artistes_mouvement_page, obtenir_oeuvres_artiste_page: obtenir_oeuvres_artiste_page, obtenir_oeuvres_musee_page: obtenir_oeuvres_musee_page, rechercher_entites_wikidata: rechercher_entites_wikidata});
 })();
 
 (() => {
@@ -940,6 +947,14 @@ __ml_signals['mode_recit'] = _engine.declare('mode_recit', false);
 __ml_signals['entites_comparaison'] = _engine.declare('entites_comparaison', []);
 
 __ml_signals['donnees_comparaison'] = _engine.declare('donnees_comparaison', {});
+
+__ml_signals['trajectoire_depart_id'] = _engine.declare('trajectoire_depart_id', '');
+
+__ml_signals['trajectoire_arrivee_id'] = _engine.declare('trajectoire_arrivee_id', '');
+
+__ml_signals['trajectoire_chemin'] = _engine.declare('trajectoire_chemin', []);
+
+__ml_signals['trajectoire_labels'] = _engine.declare('trajectoire_labels', {});
 
 __ml_signals['curseur_artistes_mouvement'] = _engine.declare('curseur_artistes_mouvement', '');
 
@@ -1531,6 +1546,126 @@ async function charger_donnees_comparaison(entite_id, type_entite) {
   }
 }
 
+async function construire_graphe_influences(artiste_id) {
+  "Enrichir le graphe avec toutes les relations d'influence d'un artiste (P737/P738).";
+  if ((!__ml_truthy(artiste_id))) {
+    return;
+  }
+  try {
+    var reseau = await donnees.requetes.obtenir_influences_artiste_complet(artiste_id);
+    var label_artiste = ((reseau)?.['artistLabel'] ?? artiste_id);
+    _ajouter_noeud(artiste_id, 'artiste', label_artiste, {});
+    for (const inf of __ml_iterate(((reseau)?.['influencedBy'] ?? []))) {
+      var inf_id = ((inf)?.['id'] ?? '');
+      var inf_label = ((inf)?.['label'] ?? '');
+      if (__ml_truthy(inf_id)) {
+        _ajouter_noeud(inf_id, 'artiste', inf_label, {});
+        _ajouter_relation(inf_id, artiste_id, 'a_influence');
+      }
+    }
+    for (const inf of __ml_iterate(((reseau)?.['influenced'] ?? []))) {
+      inf_id = ((inf)?.['id'] ?? '');
+      inf_label = ((inf)?.['label'] ?? '');
+      if (__ml_truthy(inf_id)) {
+        _ajouter_noeud(inf_id, 'artiste', inf_label, {});
+        _ajouter_relation(artiste_id, inf_id, 'a_influence');
+      }
+    }
+  } catch (erreur) {
+
+  }
+}
+
+async function trouver_trajectoire_influence(depart_id, arrivee_id) {
+  "Trouver le chemin d'influence entre deux artistes via BFS.";
+  if (((!__ml_truthy(depart_id)) || (!__ml_truthy(arrivee_id)))) {
+    _engine.get('trajectoire_chemin').set([]);
+    return [];
+  }
+  _engine.get('affichage_chargement').set(true);
+  try {
+    await construire_graphe_influences(depart_id);
+    await construire_graphe_influences(arrivee_id);
+    var chemin = _engine.get('graphe').get().chemin_plus_court(depart_id, arrivee_id);
+    var labels = {};
+    for (const noeud_id of __ml_iterate(chemin)) {
+      var noeud = _engine.get('graphe').get().obtenir_noeud(noeud_id);
+      if (__ml_truthy(noeud)) {
+        labels[noeud_id] = noeud.etiquette;
+      }
+      else {
+        labels[noeud_id] = noeud_id;
+      }
+    }
+    _engine.get('trajectoire_chemin').set(chemin);
+    _engine.get('trajectoire_labels').set(labels);
+    _engine.get('affichage_chargement').set(false);
+    return chemin;
+  } catch (erreur) {
+    _engine.get('trajectoire_chemin').set([]);
+    _engine.get('trajectoire_labels').set({});
+    _engine.get('affichage_chargement').set(false);
+    return [];
+  }
+}
+
+async function basculer_artiste_trajectoire(artiste_id, etiquette) {
+  "Définir le départ ou l'arrivée de la trajectoire; lancer la recherche si les deux sont définis.";
+  if (__ml_truthy((_engine.get('trajectoire_depart_id').get() == artiste_id))) {
+    _engine.get('trajectoire_depart_id').set('');
+    _engine.get('trajectoire_chemin').set([]);
+    _engine.get('trajectoire_labels').set({});
+    return false;
+  }
+  if (__ml_truthy((_engine.get('trajectoire_arrivee_id').get() == artiste_id))) {
+    _engine.get('trajectoire_arrivee_id').set('');
+    _engine.get('trajectoire_chemin').set([]);
+    _engine.get('trajectoire_labels').set({});
+    return false;
+  }
+  if ((!__ml_truthy(_engine.get('trajectoire_depart_id').get()))) {
+    _engine.get('trajectoire_depart_id').set(artiste_id);
+    var nouveaux_labels = _engine.get('trajectoire_labels').get();
+    nouveaux_labels[artiste_id] = etiquette;
+    _engine.get('trajectoire_labels').set(nouveaux_labels);
+    return true;
+  }
+  _engine.get('trajectoire_arrivee_id').set(artiste_id);
+  nouveaux_labels = _engine.get('trajectoire_labels').get();
+  nouveaux_labels[artiste_id] = etiquette;
+  _engine.get('trajectoire_labels').set(nouveaux_labels);
+  await trouver_trajectoire_influence(_engine.get('trajectoire_depart_id').get(), artiste_id);
+  return true;
+}
+
+function effacer_trajectoire() {
+  "Vider la trajectoire d'influence.";
+  _engine.get('trajectoire_depart_id').set('');
+  _engine.get('trajectoire_arrivee_id').set('');
+  _engine.get('trajectoire_chemin').set([]);
+  _engine.get('trajectoire_labels').set({});
+}
+
+function obtenir_trajectoire_depart_id() {
+  return _engine.get('trajectoire_depart_id').get();
+}
+
+function obtenir_trajectoire_arrivee_id() {
+  return _engine.get('trajectoire_arrivee_id').get();
+}
+
+function obtenir_trajectoire_chemin() {
+  return _engine.get('trajectoire_chemin').get();
+}
+
+function obtenir_trajectoire_labels() {
+  return _engine.get('trajectoire_labels').get();
+}
+
+function obtenir_affichage_chargement() {
+  return _engine.get('affichage_chargement').get();
+}
+
 function obtenir_entites_comparaison() {
   'Retourner la liste des entités du panneau de comparaison';
   return _engine.get('entites_comparaison').get();
@@ -1680,7 +1815,7 @@ async function reinitialiser_etat() {
 
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
-Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
+Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
 })();
 
 (() => {
@@ -2032,6 +2167,7 @@ function _rendre_detail_mouvement(entite) {
 function _rendre_detail_artiste(entite) {
   "Rendre les détails d'un artiste";
   var donnees = ((entite)?.['donnees'] ?? {});
+  var entite_id = ((entite)?.['id'] ?? '');
   var label = ((((donnees)?.['artistLabel'] ?? {}))?.['value'] ?? '');
   var naissance = ((((donnees)?.['birthTime'] ?? {}))?.['value'] ?? '');
   var deces = ((((donnees)?.['deathTime'] ?? {}))?.['value'] ?? '');
@@ -2039,6 +2175,21 @@ function _rendre_detail_artiste(entite) {
   var lieu_naissance_label = '';
   if (__ml_truthy(lieu_naissance)) {
     lieu_naissance_label = ((lieu_naissance)?.['label'] ?? '');
+  }
+  var est_depart = (ui.etat.obtenir_trajectoire_depart_id() == entite_id);
+  var est_arrivee = (ui.etat.obtenir_trajectoire_arrivee_id() == entite_id);
+  var label_esc = label.replace("'", "\\\\'");
+  if (__ml_truthy(est_depart)) {
+    var traj_label = 'Départ trajectoire ✓';
+    var traj_onclick = 'window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())';
+  }
+  else if (__ml_truthy(est_arrivee)) {
+    traj_label = 'Arrivée trajectoire ✓';
+    traj_onclick = 'window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())';
+  }
+  else {
+    traj_label = 'Trajectoire →';
+    traj_onclick = (((("window.ui&&window.ui.etat&&window.ui.etat.basculer_artiste_trajectoire&&window.ui.etat.basculer_artiste_trajectoire('" + entite_id) + "','") + label_esc) + "').then(()=>window.renderTrajectoirePanel())");
   }
   var html = '<div class="detail-section">';
   html = (((html + '<h3>') + label) + '</h3>');
@@ -2055,6 +2206,9 @@ function _rendre_detail_artiste(entite) {
   if (__ml_truthy(lieu_naissance_label)) {
     html = (((html + '<p class="detail-row">Lieu de naissance: ') + lieu_naissance_label) + '</p>');
   }
+  html = (html + '<div class="detail-actions">');
+  html = (((((html + '<button class="detail-traj-btn" onclick="') + traj_onclick) + '">') + traj_label) + '</button>');
+  html = (html + '</div>');
   html = (html + '</div>');
   return html;
 }
@@ -2626,6 +2780,94 @@ window.ui.composants.panneau_comparaison = window.ui.composants.panneau_comparai
 Object.assign(window.ui.composants.panneau_comparaison, {rendre_panneau_comparaison: rendre_panneau_comparaison, _rendre_pastilles: _rendre_pastilles, _generer_colonnes: _generer_colonnes});
 })();
 
+(() => {
+function rendre_trajectoire() {
+  "Rendre le panneau de trajectoire d'influence entre deux artistes.";
+  var depart_id = ui.etat.obtenir_trajectoire_depart_id();
+  var arrivee_id = ui.etat.obtenir_trajectoire_arrivee_id();
+  if (((!__ml_truthy(depart_id)) && (!__ml_truthy(arrivee_id)))) {
+    return '';
+  }
+  var labels = ui.etat.obtenir_trajectoire_labels();
+  var chemin = ui.etat.obtenir_trajectoire_chemin();
+  var html = '<div class="trajectoire-panel">';
+  html = (html + '<header class="trajectoire-header">');
+  html = (html + "<h3 class='trajectoire-titre'>Trajectoire d'influence</h3>");
+  html = (html + '<button class="trajectoire-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_trajectoire&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())" aria-label="Effacer la trajectoire">Effacer</button>');
+  html = (html + '</header>');
+  html = (html + '<div class="trajectoire-bornes">');
+  html = (html + _rendre_borne(depart_id, labels, 'depart', 'Départ'));
+  if (__ml_truthy(arrivee_id)) {
+    html = (html + '<span class="trajectoire-fleche">→</span>');
+    html = (html + _rendre_borne(arrivee_id, labels, 'arrivee', 'Arrivée'));
+  }
+  else {
+    html = (html + "<span class='trajectoire-attente'>Sélectionnez un artiste d'arrivée via + Trajectoire</span>");
+  }
+  html = (html + '</div>');
+  if (__ml_truthy(chemin)) {
+    html = (html + _rendre_chemin(chemin, labels));
+  }
+  else if (__ml_truthy(arrivee_id)) {
+    if (__ml_truthy(ui.etat.obtenir_affichage_chargement())) {
+      html = (html + '<p class="trajectoire-message">Calcul en cours...</p>');
+    }
+    else {
+      html = (html + "<p class='trajectoire-message trajectoire-aucun'>Aucun chemin d'influence trouvé entre ces deux artistes dans le graphe actuel. Chargez d'autres artistes pour enrichir le réseau.</p>");
+    }
+  }
+  html = (html + '</div>');
+  return html;
+}
+
+function _rendre_borne(artiste_id, labels, css_class, libelle) {
+  'Rendre une borne (départ ou arrivée) de la trajectoire.';
+  var nom = ((labels)?.[artiste_id] ?? artiste_id);
+  var html = (('<span class="trajectoire-borne trajectoire-borne-' + css_class) + '">');
+  html = (((html + '<small>') + libelle) + '</small>');
+  html = (((html + '<strong>') + nom) + '</strong>');
+  html = (html + '</span>');
+  return html;
+}
+
+function _rendre_chemin(chemin, labels) {
+  "Rendre les étapes du chemin d'influence.";
+  var html = '<ol class="trajectoire-chemin">';
+  for (const i of __ml_iterate(intervalle((chemin).length))) {
+    var noeud_id = chemin[i];
+    var nom = ((labels)?.[noeud_id] ?? noeud_id);
+    var est_premier = (i == 0);
+    var est_dernier = (i == ((chemin).length - 1));
+    var css = 'trajectoire-etape';
+    if (__ml_truthy(est_premier)) {
+      css = (css + ' trajectoire-etape-depart');
+    }
+    else if (__ml_truthy(est_dernier)) {
+      css = (css + ' trajectoire-etape-arrivee');
+    }
+    html = (((html + '<li class="') + css) + '">');
+    html = (((html + '<span class="trajectoire-nom">') + nom) + '</span>');
+    if ((!__ml_truthy(est_dernier))) {
+      html = (html + '<span class="trajectoire-rel">a influencé ↓</span>');
+    }
+    html = (html + '</li>');
+  }
+  html = (html + '</ol>');
+  var nb_degres = ((chemin).length - 1);
+  html = (((html + '<p class="trajectoire-longueur">') + String(nb_degres)) + ' degré');
+  if (__ml_truthy((nb_degres > 1))) {
+    html = (html + 's');
+  }
+  html = (html + ' de séparation</p>');
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.trajectoire = window.ui.composants.trajectoire || {};
+Object.assign(window.ui.composants.trajectoire, {rendre_trajectoire: rendre_trajectoire, _rendre_borne: _rendre_borne, _rendre_chemin: _rendre_chemin});
+})();
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);
@@ -2782,4 +3024,24 @@ async function basculer_comparaison(entite_id, type_entite, etiquette) {
 function effacer_comparaison() {
   'Vider le panneau de comparaison';
   ui.etat.effacer_comparaison();
+}
+
+function rendre_trajectoire() {
+  "Rendre le panneau de trajectoire d'influence entre deux artistes";
+  return ui.composants.trajectoire.rendre_trajectoire();
+}
+
+async function basculer_artiste_trajectoire(artiste_id, etiquette) {
+  "Définir le départ ou l'arrivée de la trajectoire, lancer la recherche si les deux sont définis";
+  return await ui.etat.basculer_artiste_trajectoire(artiste_id, etiquette);
+}
+
+async function trouver_trajectoire_influence(depart_id, arrivee_id) {
+  "Trouver le chemin d'influence entre deux artistes";
+  return await ui.etat.trouver_trajectoire_influence(depart_id, arrivee_id);
+}
+
+function effacer_trajectoire() {
+  "Vider la trajectoire d'influence";
+  ui.etat.effacer_trajectoire();
 }

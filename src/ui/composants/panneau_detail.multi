@@ -64,6 +64,7 @@ déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
 déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     """Rendre les détails d'un artiste"""
     donnees = entite.obtenir("donnees", {})
+    entite_id = entite.obtenir("id", "")
     label = donnees.obtenir("artistLabel", {}).obtenir("value", "")
     naissance = donnees.obtenir("birthTime", {}).obtenir("value", "")
     deces = donnees.obtenir("deathTime", {}).obtenir("value", "")
@@ -71,6 +72,21 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     lieu_naissance_label = ""
     si lieu_naissance:
         lieu_naissance_label = lieu_naissance.obtenir("label", "")
+
+    # Etat de la trajectoire pour cet artiste
+    est_depart = ui.etat.obtenir_trajectoire_depart_id() == entite_id
+    est_arrivee = ui.etat.obtenir_trajectoire_arrivee_id() == entite_id
+    label_esc = label.remplacer("'", "\\'")
+
+    si est_depart:
+        traj_label = "Départ trajectoire ✓"
+        traj_onclick = "window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())"
+    sinon si est_arrivee:
+        traj_label = "Arrivée trajectoire ✓"
+        traj_onclick = "window.ui&&window.ui.etat&&(window.ui.etat.effacer_trajectoire(),window.renderTrajectoirePanel())"
+    sinon:
+        traj_label = "Trajectoire →"
+        traj_onclick = "window.ui&&window.ui.etat&&window.ui.etat.basculer_artiste_trajectoire&&window.ui.etat.basculer_artiste_trajectoire('" + entite_id + "','" + label_esc + "').then(()=>window.renderTrajectoirePanel())"
 
     html = '<div class="detail-section">'
     html = html + '<h3>' + label + '</h3>'
@@ -86,6 +102,9 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     si lieu_naissance_label:
         html = html + '<p class="detail-row">Lieu de naissance: ' + lieu_naissance_label + '</p>'
 
+    html = html + '<div class="detail-actions">'
+    html = html + '<button class="detail-traj-btn" onclick="' + traj_onclick + '">' + traj_label + '</button>'
+    html = html + '</div>'
     html = html + '</div>'
     retour html
 

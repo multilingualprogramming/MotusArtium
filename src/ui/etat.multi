@@ -47,6 +47,12 @@ observer var mode_recit = faux
 observer var entites_comparaison = []   # [{id, type, label}, ...]
 observer var donnees_comparaison = {}   # id -> {label, artistes_ids, artistes_labels}
 
+# Etat de la trajectoire d'influence
+observer var trajectoire_depart_id = ""
+observer var trajectoire_arrivee_id = ""
+observer var trajectoire_chemin = []    # [id, id, ...] du BFS
+observer var trajectoire_labels = {}    # id -> etiquette
+
 # Etat de pagination curseur pour le chargement progressif
 observer var curseur_artistes_mouvement = ""
 observer var a_page_suivante_artistes_mouvement = faux
@@ -650,6 +656,125 @@ asynchrone déf charger_donnees_comparaison(entite_id: chaine, type_entite: chai
             donnees_comparaison[entite_id] = donnees_courantes
         sauf erreur:
             passe
+
+
+asynchrone déf construire_graphe_influences(artiste_id: chaine):
+    """Enrichir le graphe avec toutes les relations d'influence d'un artiste (P737/P738)."""
+    si non artiste_id:
+        retour
+
+    essayer:
+        reseau = attendre donnees.requetes.obtenir_influences_artiste_complet(artiste_id)
+        label_artiste = reseau.obtenir("artistLabel", artiste_id)
+        _ajouter_noeud(artiste_id, "artiste", label_artiste, {})
+
+        pour inf dans reseau.obtenir("influencedBy", []):
+            inf_id = inf.obtenir("id", "")
+            inf_label = inf.obtenir("label", "")
+            si inf_id:
+                _ajouter_noeud(inf_id, "artiste", inf_label, {})
+                _ajouter_relation(inf_id, artiste_id, "a_influence")
+
+        pour inf dans reseau.obtenir("influenced", []):
+            inf_id = inf.obtenir("id", "")
+            inf_label = inf.obtenir("label", "")
+            si inf_id:
+                _ajouter_noeud(inf_id, "artiste", inf_label, {})
+                _ajouter_relation(artiste_id, inf_id, "a_influence")
+
+    sauf erreur:
+        passe
+
+
+asynchrone déf trouver_trajectoire_influence(depart_id: chaine, arrivee_id: chaine):
+    """Trouver le chemin d'influence entre deux artistes via BFS."""
+    si non depart_id ou non arrivee_id:
+        trajectoire_chemin = []
+        retour []
+
+    affichage_chargement = vrai
+
+    essayer:
+        attendre construire_graphe_influences(depart_id)
+        attendre construire_graphe_influences(arrivee_id)
+
+        chemin = graphe.chemin_plus_court(depart_id, arrivee_id)
+
+        labels = {}
+        pour noeud_id dans chemin:
+            noeud = graphe.obtenir_noeud(noeud_id)
+            si noeud:
+                labels[noeud_id] = noeud.etiquette
+            sinon:
+                labels[noeud_id] = noeud_id
+
+        trajectoire_chemin = chemin
+        trajectoire_labels = labels
+        affichage_chargement = faux
+        retour chemin
+
+    sauf erreur:
+        trajectoire_chemin = []
+        trajectoire_labels = {}
+        affichage_chargement = faux
+        retour []
+
+
+asynchrone déf basculer_artiste_trajectoire(artiste_id: chaine, etiquette: chaine):
+    """Définir le départ ou l'arrivée de la trajectoire; lancer la recherche si les deux sont définis."""
+    si trajectoire_depart_id == artiste_id:
+        trajectoire_depart_id = ""
+        trajectoire_chemin = []
+        trajectoire_labels = {}
+        retour faux
+
+    si trajectoire_arrivee_id == artiste_id:
+        trajectoire_arrivee_id = ""
+        trajectoire_chemin = []
+        trajectoire_labels = {}
+        retour faux
+
+    si non trajectoire_depart_id:
+        trajectoire_depart_id = artiste_id
+        nouveaux_labels = trajectoire_labels
+        nouveaux_labels[artiste_id] = etiquette
+        trajectoire_labels = nouveaux_labels
+        retour vrai
+
+    trajectoire_arrivee_id = artiste_id
+    nouveaux_labels = trajectoire_labels
+    nouveaux_labels[artiste_id] = etiquette
+    trajectoire_labels = nouveaux_labels
+    attendre trouver_trajectoire_influence(trajectoire_depart_id, artiste_id)
+    retour vrai
+
+
+déf effacer_trajectoire():
+    """Vider la trajectoire d'influence."""
+    trajectoire_depart_id = ""
+    trajectoire_arrivee_id = ""
+    trajectoire_chemin = []
+    trajectoire_labels = {}
+
+
+déf obtenir_trajectoire_depart_id() -> chaine:
+    retour trajectoire_depart_id
+
+
+déf obtenir_trajectoire_arrivee_id() -> chaine:
+    retour trajectoire_arrivee_id
+
+
+déf obtenir_trajectoire_chemin() -> liste:
+    retour trajectoire_chemin
+
+
+déf obtenir_trajectoire_labels() -> dictionnaire:
+    retour trajectoire_labels
+
+
+déf obtenir_affichage_chargement() -> booleen:
+    retour affichage_chargement
 
 
 déf obtenir_entites_comparaison() -> liste:

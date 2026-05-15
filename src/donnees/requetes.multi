@@ -398,6 +398,26 @@ asynchrone déf obtenir_influences_artiste(artiste_id: chaine) -> dictionnaire:
     }
 
 
+asynchrone déf obtenir_influences_artiste_complet(artiste_id: chaine) -> dictionnaire:
+    """Récupère toutes les influences d'un artiste (P737 et P738 en listes complètes)"""
+    donnees = attendre executer_requete_graphql(
+        "artist_influences.graphql",
+        {
+            "id": artiste_id,
+            "languageCode": LANGUE_PAR_DEFAUT
+        }
+    )
+
+    item = donnees.obtenir("item", {})
+
+    retour {
+        "artiste_id": artiste_id,
+        "artistLabel": item.obtenir("artistLabel", ""),
+        "influencedBy": _extraire_items(item.obtenir("influencedBy", [])),
+        "influenced": _extraire_items(item.obtenir("influenced", []))
+    }
+
+
 # ============================================================================
 # Requêtes pour les œuvres d'art
 # ============================================================================

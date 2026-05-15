@@ -2193,7 +2193,7 @@ function _rendre_recit_mouvement(entite) {
   }
   html = (html + '</div>');
   html = (html + '<footer class="recit-footer">');
-  html = (html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>');
+  html = (html + '<button class="recit-btn-explorer" onclick="document.querySelector(\\\'[data-mode=observatory]\\\').click()">Voir la constellation →</button>');
   html = (html + '</footer>');
   html = (html + '</article>');
   return html;
@@ -2270,7 +2270,7 @@ function _rendre_recit_artiste(entite) {
   }
   html = (html + '</div>');
   html = (html + '<footer class="recit-footer">');
-  html = (html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>');
+  html = (html + '<button class="recit-btn-explorer" onclick="document.querySelector(\\\'[data-mode=observatory]\\\').click()">Voir la constellation →</button>');
   html = (html + '</footer>');
   html = (html + '</article>');
   return html;
@@ -2325,7 +2325,7 @@ function _rendre_recit_oeuvre(entite) {
   }
   html = (html + '</div>');
   html = (html + '<footer class="recit-footer">');
-  html = (html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>');
+  html = (html + '<button class="recit-btn-explorer" onclick="document.querySelector(\\\'[data-mode=observatory]\\\').click()">Voir la constellation →</button>');
   html = (html + '</footer>');
   html = (html + '</article>');
   return html;

@@ -72,6 +72,8 @@ BUNDLE_EXPORTS = [
     # Search dispatch (Phase 4 addition)
     "resoudre_type_entite",
     "charger_selection",
+    # Récit + Comparison panel (Priority 1 & 3)
+    "charger_donnees_comparaison",
 ]
 
 # Every entity-loader in bundle.js must delegate to ui.etat, not re-implement.
@@ -137,6 +139,7 @@ def validate_files(site_root: pathlib.Path) -> None:
 
     validate_bundle_exports(site_root)
     validate_graph_display_contract(site_root)
+    validate_recit_comparaison_contract(site_root)
 
 
 def validate_bundle_exports(site_root: pathlib.Path) -> None:
@@ -252,6 +255,89 @@ def validate_graph_display_contract(site_root: pathlib.Path) -> None:
     ]
     for marker in bootstrap_markers:
         assert_contains(bootstrap_js, marker, "bootstrap.js graph display")
+
+
+def validate_recit_comparaison_contract(site_root: pathlib.Path) -> None:
+    """Check that Récit mode (Priority 1) and Comparison panel (Priority 3) are wired up."""
+    index_html = (site_root / "index.html").read_text(encoding="utf-8")
+    app_js = (site_root / "app.js").read_text(encoding="utf-8")
+    bootstrap_js = (site_root / "bootstrap.js").read_text(encoding="utf-8")
+    bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
+
+    # index.html: mode button + mounting containers
+    html_markers = [
+        'data-mode="recit"',
+        'id="recit-visualization"',
+        'id="comparison-panel-container"',
+        'id="__ml_recit_root"',
+        'id="__ml_comparison_root"',
+    ]
+    for marker in html_markers:
+        assert_contains(index_html, marker, "index.html récit/comparaison")
+
+    # bundle.js: Récit module exported at window.ui.composants.recit
+    bundle_recit_markers = [
+        "window.ui.composants.recit",
+        "rendre_recit",
+        "window.ui.composants.panneau_comparaison",
+        "rendre_panneau_comparaison",
+        "window.semantique.intersections",
+        "calculer_intersection_artistes",
+        "calculer_artistes_uniques",
+        "obtenir_etiquette_artiste",
+        "basculer_comparaison",
+        "charger_donnees_comparaison",
+        "effacer_comparaison",
+        "donnees_comparaison",
+        "entites_comparaison",
+    ]
+    for marker in bundle_recit_markers:
+        assert_contains(bundle_js, marker, "bundle.js récit/comparaison")
+
+    # app.js: Récit mode visibility handling uses the correct deep module path
+    app_markers = [
+        "isRecitMode",
+        "recit-visualization",
+        "window.ui?.composants?.recit?.rendre_recit",
+        "rendre_recit",
+    ]
+    for marker in app_markers:
+        assert_contains(app_js, marker, "app.js récit mode")
+
+    # bootstrap.js: comparison panel wired up + compare button + correct etat path
+    bootstrap_markers = [
+        "renderComparisonPanel",
+        "data-action='comparer'",
+        "window.ui.etat.basculer_comparaison",
+        "compare-btn",
+        "window.renderComparisonPanel",
+        "comparison-panel-container",
+        "__ml_comparison_root",
+    ]
+    for marker in bootstrap_markers:
+        assert_contains(bootstrap_js, marker, "bootstrap.js comparaison")
+
+    # .multi sources: check core function signatures exist
+    recit_multi = (site_root / "src/ui/composants/recit.multi")
+    if recit_multi.exists():
+        src = recit_multi.read_text(encoding="utf-8")
+        assert_contains(src, "déf rendre_recit()", "recit.multi")
+        assert_contains(src, "_rendre_recit_mouvement", "recit.multi")
+        assert_contains(src, "_rendre_recit_artiste", "recit.multi")
+        assert_contains(src, "_rendre_recit_oeuvre", "recit.multi")
+        assert_contains(src, "data-mode=observatory", "recit.multi Voir la Constellation")
+
+    intersections_multi = (site_root / "src/semantique/intersections.multi")
+    if intersections_multi.exists():
+        src = intersections_multi.read_text(encoding="utf-8")
+        assert_contains(src, "déf calculer_intersection_artistes", "intersections.multi")
+        assert_contains(src, "déf calculer_artistes_uniques", "intersections.multi")
+
+    comparaison_multi = (site_root / "src/ui/composants/panneau_comparaison.multi")
+    if comparaison_multi.exists():
+        src = comparaison_multi.read_text(encoding="utf-8")
+        assert_contains(src, "déf rendre_panneau_comparaison()", "panneau_comparaison.multi")
+        assert_contains(src, "effacer_comparaison", "panneau_comparaison.multi")
 
 
 def validate_http(site_root: pathlib.Path) -> None:

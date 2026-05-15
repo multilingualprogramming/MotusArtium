@@ -22,3 +22,17 @@ jobs:
 
       - name: Smoke test committed static site
         run: python tests/smoke_static_site.py .
+
+  bundle-exports:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout MotusArtium
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify bundle.js module exports
+        run: node tests/bundle_exports.js bundle.js

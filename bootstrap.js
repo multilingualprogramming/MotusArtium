@@ -287,8 +287,9 @@
                                             const compareId = compareBtn.dataset.compareId;
                                             const compareType = compareBtn.dataset.compareType || "mouvement";
                                             const compareLabel = this.querySelector("strong")?.textContent || compareId;
-                                            if (window.ui && typeof window.ui.basculer_comparaison === "function") {
-                                                await window.ui.basculer_comparaison(compareId, compareType, compareLabel);
+                                            if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_comparaison === "function") {
+                                                window.ui.etat.basculer_comparaison(compareId, compareType, compareLabel);
+                                                await window.ui.etat.charger_donnees_comparaison(compareId, compareType);
                                                 window.renderComparisonPanel();
                                             }
                                             return;

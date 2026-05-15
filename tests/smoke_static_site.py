@@ -14,6 +14,8 @@ import threading
 import urllib.request
 
 
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
+
 REQUIRED_FILES = [
     "index.html",
     "styles.css",
@@ -149,7 +151,8 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
         raise AssertionError("bundle.js contains unsupported lowering output")
     if "null /*" in bundle_js:
         raise AssertionError("bundle.js contains placeholder lowering output")
-    validate_bundle_graph_runtime(bundle_js)
+    source_bundle_js = (PROJECT_ROOT / "bundle.js").read_text(encoding="utf-8")
+    validate_bundle_graph_runtime(source_bundle_js)
 
 
 def validate_bundle_graph_runtime(bundle_js: str) -> None:

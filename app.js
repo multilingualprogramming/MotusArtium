@@ -1008,13 +1008,27 @@
         }
         window.renderStoryTier = renderStoryTier;
 
-function setActiveTier(tier) {
+        function updateTierInUrl(tier) {
+            if (!window.history || typeof window.history.replaceState !== "function") {
+                return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            params.set("tier", tier);
+            const query = params.toString();
+            window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
+        }
+
+function setActiveTier(tier, options = {}) {
             const validTiers = ["story", "explorer", "observatory"];
             if (!validTiers.includes(tier)) return;
 
             document.body.dataset.tier = tier;
             const tierButtons = Array.from(document.querySelectorAll(".tier-button"));
-            tierButtons.forEach((btn) => btn.classList.toggle("is-active", btn.dataset.tier === tier));
+            tierButtons.forEach((btn) => {
+                const isActive = btn.dataset.tier === tier;
+                btn.classList.toggle("is-active", isActive);
+                btn.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
 
             const observatorySubtabs = document.getElementById("observatory-subtabs");
             if (observatorySubtabs) {
@@ -1038,7 +1052,25 @@ function setActiveTier(tier) {
                     applyShellMode("observatory", { updateUrl: false });
                 }
             }
+
+            if (options.updateUrl !== false) {
+                updateTierInUrl(tier);
+            }
         }
+
+        window.setActiveTier = setActiveTier;
+
+        function applyTierFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const tier = params.get("tier");
+            if (tier) {
+                setActiveTier(tier, { updateUrl: false });
+                return true;
+            }
+            return false;
+        }
+
+        window.applyTierFromUrl = applyTierFromUrl;
 
         async function initializePolyglotStudioVisualization(entityId) {
             try {
@@ -4405,6 +4437,9 @@ function setActiveTier(tier) {
                 return false;
             }
             await applyShellMode(mode, { updateUrl: false });
+            if (!params.get("tier")) {
+                setActiveTier(mode === "recit" ? "story" : "observatory", { updateUrl: false });
+            }
             return true;
         }
 
@@ -4546,35 +4581,61 @@ function setActiveTier(tier) {
 
         // Search mode toggle in Explorer panel
         let currentSearchMode = "entity";
+        window.getActiveSearchMode = function getActiveSearchMode() {
+            return currentSearchMode;
+        };
+
+        function updateSearchModeSurface(mode) {
+            document.querySelectorAll(".search-mode-btn").forEach((button) => {
+                const isActive = button.dataset.searchMode === mode;
+                button.classList.toggle("is-active", isActive);
+                button.setAttribute("aria-pressed", isActive ? "true" : "false");
+            });
+            const hintEl = document.getElementById("search-mode-hint");
+            const searchInput = document.getElementById("search-input");
+            const hints = {
+                entity: "Search for any movement, artist, artwork, museum, or theme.",
+                subject: "Enter a subject such as dog, cat, flower, sea, or portrait to find artworks depicting it.",
+                nationality: "Enter a country to discover artists from that place. This guided query is staged next.",
+                material: "Enter a material or technique such as oil, marble, bronze, or watercolor. This guided query is staged next."
+            };
+            const placeholders = {
+                entity: "Search movements, artists, works...",
+                subject: "Artworks depicting dog, cat, flower...",
+                nationality: "Artists from France, Japan, Mexico...",
+                material: "Works made with oil, marble, bronze..."
+            };
+            if (hintEl) {
+                hintEl.textContent = hints[mode] || hints.entity;
+            }
+            if (searchInput) {
+                searchInput.placeholder = placeholders[mode] || placeholders.entity;
+            }
+        }
+
         document.addEventListener("click", (e) => {
             const btn = e.target.closest(".search-mode-btn");
             if (!btn) return;
             const mode = btn.dataset.searchMode;
             if (!mode) return;
             currentSearchMode = mode;
-            document.querySelectorAll(".search-mode-btn").forEach((b) => {
-                b.classList.toggle("is-active", b.dataset.searchMode === mode);
-            });
-            const hintEl = document.getElementById("search-mode-hint");
-            const hints = {
-                entity: "Search for any movement, artist, or artwork",
-                "artworks-of": "Enter an artist name to see their artworks",
-                "artists-from": "Enter a country to discover its artists",
-                "by-material": "Enter a material (oil, marble, bronze…)"
-            };
-            if (hintEl) hintEl.textContent = hints[mode] || "";
+            updateSearchModeSurface(mode);
         });
 
         window.searchEntities = async function searchEntities(query) {
             if (!query || query.length < 2) return [];
             const lang = runtimeState.currentLanguage || "fr";
+            const mode = typeof window.getActiveSearchMode === "function" ? window.getActiveSearchMode() : currentSearchMode;
             const queryLower = query.toLowerCase();
             const seen = new Set();
             const results = [];
-            for (const node of browserAdapterState.graphe.noeuds.values()) {
-                if (node.etiquette && node.etiquette.toLowerCase().includes(queryLower)) {
-                    seen.add(node.id);
-                    results.push({ id: node.id, label: node.etiquette, description: "(dans le graphe chargé)", entityType: node.type || "" });
+
+            if (mode === "entity") {
+                for (const node of browserAdapterState.graphe.noeuds.values()) {
+                    if (node.etiquette && node.etiquette.toLowerCase().includes(queryLower)) {
+                        seen.add(node.id);
+                        results.push({ id: node.id, label: node.etiquette, description: "(dans le graphe chargé)", entityType: node.type || "", primaryAction: "Open" });
+                    }
                 }
             }
             try {
@@ -4585,7 +4646,21 @@ function setActiveTier(tier) {
                     const id = item.id || "";
                     if (id && !seen.has(id)) {
                         seen.add(id);
-                        results.push({ id, label: item.label || id, description: item.description || "", entityType: "" });
+                        let entityType = "";
+                        let primaryAction = "Open";
+                        let description = item.description || "";
+                        if (mode === "subject") {
+                            entityType = "subject";
+                            primaryAction = "Find artworks";
+                            description = description ? description + " · subject search" : "Subject search";
+                        } else if (mode === "nationality") {
+                            primaryAction = "Use as country";
+                            description = description ? description + " · artists-by-place is next" : "Artists-by-place is next";
+                        } else if (mode === "material") {
+                            primaryAction = "Use as material";
+                            description = description ? description + " · material query is next" : "Material query is next";
+                        }
+                        results.push({ id, label: item.label || id, description, entityType, searchMode: mode, primaryAction });
                     }
                 }
             } catch (e) {
@@ -4597,5 +4672,7 @@ function setActiveTier(tier) {
         buildShellFilter();
         loadQueryInventory();
         updateLanguageSurface("fr");
+        updateSearchModeSurface(currentSearchMode);
         // Render Story tier content on load (body starts as data-tier="story")
         renderStoryTier();
+        applyTierFromUrl();

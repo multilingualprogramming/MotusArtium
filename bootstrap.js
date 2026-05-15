@@ -15,13 +15,20 @@
 
         window.renderComparisonPanel = function() {
             const container = document.getElementById("comparison-panel-container");
-            const root = document.getElementById("__ml_comparison_root");
-            if (!container || !root) return;
+            const roots = [
+                document.getElementById("__ml_comparison_root"),
+                document.getElementById("__ml_explorer_comparison_root")
+            ].filter(Boolean);
+            if (!roots.length) return;
             try {
                 const render = window.ui?.composants?.panneau_comparaison?.rendre_panneau_comparaison;
                 const html = typeof render === "function" ? render() || "" : "";
-                root.innerHTML = html;
-                container.hidden = !html;
+                roots.forEach((root) => {
+                    root.innerHTML = html;
+                });
+                if (container) {
+                    container.hidden = !html;
+                }
             } catch (e) {
                 console.warn("comparison panel render error:", e);
             }
@@ -29,13 +36,20 @@
 
         window.renderTrajectoirePanel = function() {
             const container = document.getElementById("trajectoire-panel-container");
-            const root = document.getElementById("__ml_trajectoire_root");
-            if (!container || !root) return;
+            const roots = [
+                document.getElementById("__ml_trajectoire_root"),
+                document.getElementById("__ml_explorer_trajectoire_root")
+            ].filter(Boolean);
+            if (!roots.length) return;
             try {
                 const render = window.ui?.composants?.trajectoire?.rendre_trajectoire;
                 const html = typeof render === "function" ? render() || "" : "";
-                root.innerHTML = html;
-                container.hidden = !html;
+                roots.forEach((root) => {
+                    root.innerHTML = html;
+                });
+                if (container) {
+                    container.hidden = !html;
+                }
             } catch (e) {
                 console.warn("trajectoire panel render error:", e);
             }
@@ -289,12 +303,15 @@
                             if (results.length > 0) {
                                 const markup = results.slice(0, 8).map(item => {
                                     const entityType = item.entityType || inferSearchResultType(item);
+                                    const mode = item.searchMode || "";
+                                    const primaryAction = item.primaryAction || "Open";
                                     const trajBtn = (entityType === "artist" || entityType === "artiste")
                                         ? `<button class="trajectoire-btn" data-action="trajectoire" data-traj-id="${item.id}" data-traj-label="${(item.label || item.id).replace(/"/g, '&quot;')}" aria-label="Trajectoire ${item.label || item.id}">+ Trajectoire</button>`
                                         : "";
-                                    return `<div class="search-result-item" data-entity-id="${item.id}" data-entity-type="${entityType}">
+                                    return `<div class="search-result-item" data-entity-id="${item.id}" data-entity-type="${entityType}" data-search-mode="${mode}">
                                         <strong>${item.label || item.id}</strong>
                                         <small>${item.description || entityType}</small>
+                                        <span class="search-primary-action">${primaryAction}</span>
                                         <button class="compare-btn" data-action="comparer" data-compare-id="${item.id}" data-compare-type="${entityType}" aria-label="Comparer ${item.label || item.id}">+ Comparer</button>
                                         ${trajBtn}
                                     </div>`
@@ -338,7 +355,13 @@
                                         const entityId = this.getAttribute("data-entity-id");
                                         const hintedType = this.getAttribute("data-entity-type") || "movement";
                                         const label = this.querySelector("strong").textContent;
-                                        const entityType = await resoudre_type_entite(entityId, hintedType);
+                                        const mode = this.getAttribute("data-search-mode") || "";
+                                        if (mode === "nationality" || mode === "material") {
+                                            searchDropdown.classList.add("is-active");
+                                            searchDropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted);">This guided query is staged next. Switch back to Find entity to open this result directly.</div>';
+                                            return;
+                                        }
+                                        const entityType = mode === "subject" ? "subject" : await resoudre_type_entite(entityId, hintedType);
                                         searchInput.value = label;
                                         searchDropdown.classList.remove("is-active");
                                         try {
@@ -426,4 +449,3 @@
             }
 
         }
-

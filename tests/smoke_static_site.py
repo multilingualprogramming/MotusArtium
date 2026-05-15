@@ -168,11 +168,11 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
 
 def validate_bundle_graph_runtime(bundle_js: str) -> None:
     """Check the generated graph-loading path used by the main display."""
+    quote_normalized_bundle_js = bundle_js.replace('"', "'")
     expected_markers = [
         "async function obtenir_graphe_mouvement(mouvement_id, limite = 50)",
         "async function obtenir_artistes_mouvement(mouvement_id, limite = 50)",
         "var POINT_TERMINAL_WIKIDATA_GRAPHQL =",
-        "var LANGUE_PAR_DEFAUT = 'fr'",
         "var CACHE_DOCUMENTS_GRAPHQL = {}",
         "setIndex(index, value)",
         "_engine.get('cache_entites').setIndex(entite_id, donnees)",
@@ -187,7 +187,10 @@ def validate_bundle_graph_runtime(bundle_js: str) -> None:
         "return (Object.keys(this.noeuds)).length",
     ]
     for marker in expected_markers:
-        assert_contains(bundle_js, marker, "bundle.js graph runtime")
+        assert_contains(quote_normalized_bundle_js, marker, "bundle.js graph runtime")
+
+    if "var LANGUE_PAR_DEFAUT = 'fr'" not in quote_normalized_bundle_js:
+        raise AssertionError("bundle.js graph runtime does not contain LANGUE_PAR_DEFAUT = fr")
 
     if "if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) ||" in bundle_js:
         raise AssertionError("bundle.js lowers the movement loaded guard with ||")
@@ -216,6 +219,7 @@ def validate_graph_display_contract(site_root: pathlib.Path) -> None:
     app_js = (site_root / "app.js").read_text(encoding="utf-8")
     bootstrap_js = (site_root / "bootstrap.js").read_text(encoding="utf-8")
     bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
+    quote_normalized_bundle_js = bundle_js.replace('"', "'")
 
     html_markers = [
         'id="constellation-links"',
@@ -237,7 +241,7 @@ def validate_graph_display_contract(site_root: pathlib.Path) -> None:
         "__ml_add(relations_json",
     ]
     for marker in bundle_markers:
-        assert_contains(bundle_js, marker, "bundle.js graph snapshot")
+        assert_contains(quote_normalized_bundle_js, marker, "bundle.js graph snapshot")
 
     app_markers = [
         'document.getElementById("constellation-nodes")',

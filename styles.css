@@ -385,6 +385,20 @@
             margin-top: 4px;
         }
 
+        .search-primary-action {
+            display: inline-flex;
+            margin-top: 8px;
+            padding: 3px 8px;
+            border: 1px solid var(--line-soft);
+            border-radius: 999px;
+            color: var(--accent-cyan);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: rgba(110, 243, 255, 0.08);
+        }
+
         .detail-section {
             padding: 22px 24px;
             border-bottom: 1px solid var(--line-soft);

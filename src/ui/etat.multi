@@ -99,6 +99,10 @@ asynchrone déf _rafraichir_etiquettes_multilingues(entite_id: chaine):
     etiquettes_multilingues[entite_id] = {"fr": "", "en": ""}
 
 
+déf obtenir_noeud_graphe(entite_id: chaine) -> dictionnaire:
+    retour graphe.obtenir_noeud(entite_id)
+
+
 déf _ajouter_noeud(entite_id: chaine, type_noeud: chaine, etiquette: chaine, donnees: dictionnaire = {}):
     si non entite_id:
         retour
@@ -945,8 +949,11 @@ asynchrone déf charger_musee(musee_id: chaine):
 
     essayer:
         oeuvres = attendre donnees.requetes.obtenir_oeuvres_musee(musee_id, 20)
-        etiquette_musee = musee_id
-        noeud_musee = {"museumLabel": {"value": musee_id}}
+        etiquette_info = attendre donnees.requetes.obtenir_etiquette_entite(musee_id)
+        etiquette_musee = etiquette_info.obtenir("label", musee_id)
+        si non etiquette_musee:
+            etiquette_musee = musee_id
+        noeud_musee = {"museumLabel": {"value": etiquette_musee}}
         _mettre_en_cache(musee_id, noeud_musee)
         _ajouter_noeud(musee_id, "musee", etiquette_musee, noeud_musee)
 
@@ -979,8 +986,11 @@ asynchrone déf charger_sujet(sujet_id: chaine):
 
     essayer:
         oeuvres = attendre donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20)
-        etiquette_sujet = sujet_id
-        noeud_sujet = {"subjectLabel": {"value": sujet_id}}
+        etiquette_info = attendre donnees.requetes.obtenir_etiquette_entite(sujet_id)
+        etiquette_sujet = etiquette_info.obtenir("label", sujet_id)
+        si non etiquette_sujet:
+            etiquette_sujet = sujet_id
+        noeud_sujet = {"subjectLabel": {"value": etiquette_sujet}}
         _mettre_en_cache(sujet_id, noeud_sujet)
         _ajouter_noeud(sujet_id, "sujet", etiquette_sujet, noeud_sujet)
 

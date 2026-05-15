@@ -3161,6 +3161,11 @@
             flex-wrap: wrap;
         }
 
+        /* hidden attribute must beat display:flex */
+        .observatory-subtabs[hidden] {
+            display: none;
+        }
+
         /* mode-switcher becomes a column when subtabs are visible */
         #mode-switcher {
             display: flex;

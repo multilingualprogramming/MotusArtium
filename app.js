@@ -1006,8 +1006,9 @@
                 console.warn("theme grid render error:", e);
             }
         }
+        window.renderStoryTier = renderStoryTier;
 
-        function setActiveTier(tier) {
+function setActiveTier(tier) {
             const validTiers = ["story", "explorer", "observatory"];
             if (!validTiers.includes(tier)) return;
 
@@ -4002,6 +4003,20 @@
                 browserAdapterState.expandedMuseumId = museeId;
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();
+
+                // Mirror loaded artworks to reactive engine so rendre_recit can read them
+                const _reAdd = window.ui.etat._ajouter_noeud;
+                const _reRel = window.ui.etat._ajouter_relation;
+                if (typeof _reAdd === "function") {
+                    window.ui.etat._mettre_a_jour_selection?.(museeId, "musee");
+                    _reAdd(museeId, "musee", museumLabel, {museumLabel: museumLabel, id: museeId});
+                    relatedTargets(museeId, "houses_work").forEach((workId) => {
+                        const wd = browserAdapterState.cache_entites[workId] || {};
+                        _reAdd(workId, "oeuvre", wd.artworkLabel || wd.label || workId, wd);
+                        if (typeof _reRel === "function") _reRel(museeId, workId, "expose");
+                    });
+                }
+
                 return browserAdapterState.cache_entites[museeId];
             },
 
@@ -4054,6 +4069,22 @@
                 browserAdapterState.expandedSubjectId = sujetId;
                 browserAdapterState.affichage_chargement = false;
                 applyAdapterStateToShell();
+
+                // Mirror loaded artworks to reactive engine so rendre_recit can read them
+                const _reAddS = window.ui.etat._ajouter_noeud;
+                const _reRelS = window.ui.etat._ajouter_relation;
+                if (typeof _reAddS === "function") {
+                    window.ui.etat._mettre_a_jour_selection?.(sujetId, "sujet");
+                    _reAddS(sujetId, "sujet", subjectLabel, {subjectLabel: subjectLabel, id: sujetId});
+                    edges.slice(0, 24).forEach((edge) => {
+                        const node = edge && edge.node ? edge.node : {};
+                        if (node.id) {
+                            _reAddS(node.id, "oeuvre", node.artworkLabel || node.label || node.id, node);
+                            if (typeof _reRelS === "function") _reRelS(sujetId, node.id, "represente");
+                        }
+                    });
+                }
+
                 return browserAdapterState.cache_entites[sujetId];
             },
 
@@ -4467,8 +4498,11 @@
             if (!step) return;
             const id = step.dataset.entityId;
             const type = step.dataset.entityType;
-            const label = step.dataset.label;
+            const label = step.dataset.entityLabel || step.dataset.label || id;
             if (!id || !type) return;
+            // Mark active step
+            document.querySelectorAll(".journey-step").forEach((s) => s.classList.remove("is-active"));
+            step.classList.add("is-active");
             try {
                 if (typeof window.loadSearchSelection === "function") {
                     await window.loadSearchSelection(id, type, label);
@@ -4479,10 +4513,56 @@
                 } else if (type === "museum" && typeof window.charger_musee === "function") {
                     await window.charger_musee(id);
                 }
+                syncShellFromSnapshot(readRuntimeSnapshot());
+                renderConstellation();
+                renderRuntimeState();
+                await refreshMultilingualEntityLabels();
+                window.renderDetailPanel?.();
                 renderStoryTier();
             } catch (err) {
                 console.warn("journey step error:", err);
             }
+        });
+
+        // Theme tile delegation — data-action="charger-sujet"
+        document.addEventListener("click", async (e) => {
+            const tile = e.target.closest("[data-action='charger-sujet']");
+            if (!tile) return;
+            const sujetId = tile.dataset.sujetId;
+            if (!sujetId) return;
+            try {
+                if (typeof charger_sujet === "function") {
+                    await charger_sujet(sujetId);
+                }
+                renderConstellation();
+                renderRuntimeState();
+                await refreshMultilingualEntityLabels();
+                window.renderDetailPanel?.();
+                window.renderStoryTier?.();
+            } catch (err) {
+                console.warn("charger-sujet error:", err);
+            }
+        });
+
+        // Search mode toggle in Explorer panel
+        let currentSearchMode = "entity";
+        document.addEventListener("click", (e) => {
+            const btn = e.target.closest(".search-mode-btn");
+            if (!btn) return;
+            const mode = btn.dataset.searchMode;
+            if (!mode) return;
+            currentSearchMode = mode;
+            document.querySelectorAll(".search-mode-btn").forEach((b) => {
+                b.classList.toggle("is-active", b.dataset.searchMode === mode);
+            });
+            const hintEl = document.getElementById("search-mode-hint");
+            const hints = {
+                entity: "Search for any movement, artist, or artwork",
+                "artworks-of": "Enter an artist name to see their artworks",
+                "artists-from": "Enter a country to discover its artists",
+                "by-material": "Enter a material (oil, marble, bronze…)"
+            };
+            if (hintEl) hintEl.textContent = hints[mode] || "";
         });
 
         window.searchEntities = async function searchEntities(query) {

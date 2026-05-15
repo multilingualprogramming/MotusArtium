@@ -29,6 +29,10 @@ déf rendre_recit() -> chaine:
         retour _rendre_recit_artiste(entite)
     sinon si type_entite == "oeuvre":
         retour _rendre_recit_oeuvre(entite)
+    sinon si type_entite == "musee":
+        retour _rendre_recit_musee(entite)
+    sinon si type_entite == "sujet":
+        retour _rendre_recit_sujet(entite)
     sinon:
         retour _rendre_recit_generique(entite)
 
@@ -49,7 +53,7 @@ déf _rendre_recit_mouvement(entite: dictionnaire) -> chaine:
     artistes_ids = ui.etat._obtenir_cibles_relations(entite_id, "contient_artiste")
     noms_artistes = []
     pour artiste_id dans artistes_ids[0:5]:
-        noeud = ui.etat.graphe.obtenir_noeud(artiste_id)
+        noeud = ui.etat.obtenir_noeud_graphe(artiste_id)
         si noeud:
             noms_artistes.ajouter(noeud.etiquette)
 
@@ -134,7 +138,7 @@ déf _rendre_recit_artiste(entite: dictionnaire) -> chaine:
     oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, "a_cree")
     noms_oeuvres = []
     pour oeuvre_id dans oeuvres_ids[0:4]:
-        noeud = ui.etat.graphe.obtenir_noeud(oeuvre_id)
+        noeud = ui.etat.obtenir_noeud_graphe(oeuvre_id)
         si noeud:
             noms_oeuvres.ajouter(noeud.etiquette)
 
@@ -253,6 +257,91 @@ déf _rendre_recit_oeuvre(entite: dictionnaire) -> chaine:
     html = html + '</footer>'
     html = html + '</article>'
 
+    retour html
+
+
+déf _rendre_recit_musee(entite: dictionnaire) -> chaine:
+    """Récit pour un musée — liste des oeuvres exposées"""
+    entite_id = entite.obtenir("id", "")
+    donnees = entite.obtenir("donnees", {})
+
+    # Try to get a display label from the graph node
+    noeud = ui.etat.obtenir_noeud_graphe(entite_id)
+    label = ""
+    si noeud:
+        label = noeud.etiquette
+    si non label ou label == entite_id:
+        label = donnees.obtenir("museumLabel", {}).obtenir("value", entite_id)
+
+    oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, "expose")
+
+    html = '<article class="recit-card recit-musee">'
+    html = html + '<header class="recit-header">'
+    html = html + '<span class="recit-badge">Museum</span>'
+    html = html + '<h2 class="recit-titre">' + label + '</h2>'
+    html = html + '</header>'
+    html = html + '<div class="recit-corps">'
+
+    si oeuvres_ids:
+        html = html + '<p class="recit-intro">Works in this collection:</p>'
+        html = html + '<ul class="recit-liste-oeuvres">'
+        pour oeuvre_id dans oeuvres_ids[0:8]:
+            noeud_oeuvre = ui.etat.obtenir_noeud_graphe(oeuvre_id)
+            si noeud_oeuvre:
+                html = html + '<li class="recit-oeuvre">' + noeud_oeuvre.etiquette + '</li>'
+        si len(oeuvres_ids) > 8:
+            html = html + '<li class="recit-plus">... and ' + chaine(len(oeuvres_ids) - 8) + ' more works.</li>'
+        html = html + '</ul>'
+    sinon:
+        html = html + '<p class="recit-intro">Loading works from this collection...</p>'
+
+    html = html + '</div>'
+    html = html + '<footer class="recit-footer">'
+    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Explore in constellation</button>'
+    html = html + '</footer>'
+    html = html + '</article>'
+    retour html
+
+
+déf _rendre_recit_sujet(entite: dictionnaire) -> chaine:
+    """Récit pour un sujet thématique — oeuvres représentant ce thème"""
+    entite_id = entite.obtenir("id", "")
+    donnees = entite.obtenir("donnees", {})
+
+    noeud = ui.etat.obtenir_noeud_graphe(entite_id)
+    label = ""
+    si noeud:
+        label = noeud.etiquette
+    si non label ou label == entite_id:
+        label = donnees.obtenir("subjectLabel", {}).obtenir("value", entite_id)
+
+    oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, "represente")
+
+    html = '<article class="recit-card recit-sujet">'
+    html = html + '<header class="recit-header">'
+    html = html + '<span class="recit-badge">Theme</span>'
+    html = html + '<h2 class="recit-titre">' + label + '</h2>'
+    html = html + '</header>'
+    html = html + '<div class="recit-corps">'
+
+    si oeuvres_ids:
+        html = html + '<p class="recit-intro">Artworks on this theme:</p>'
+        html = html + '<ul class="recit-liste-oeuvres">'
+        pour oeuvre_id dans oeuvres_ids[0:8]:
+            noeud_oeuvre = ui.etat.obtenir_noeud_graphe(oeuvre_id)
+            si noeud_oeuvre:
+                html = html + '<li class="recit-oeuvre">' + noeud_oeuvre.etiquette + '</li>'
+        si len(oeuvres_ids) > 8:
+            html = html + '<li class="recit-plus">... and ' + chaine(len(oeuvres_ids) - 8) + ' more artworks.</li>'
+        html = html + '</ul>'
+    sinon:
+        html = html + '<p class="recit-intro">Loading artworks for this theme...</p>'
+
+    html = html + '</div>'
+    html = html + '<footer class="recit-footer">'
+    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Explore in constellation</button>'
+    html = html + '</footer>'
+    html = html + '</article>'
     retour html
 
 

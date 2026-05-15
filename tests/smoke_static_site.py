@@ -383,15 +383,19 @@ def validate_three_tier_contract(site_root: pathlib.Path) -> None:
     for marker in app_markers:
         assert_contains(app_js, marker, "app.js three-tier")
 
-    # bootstrap.js: theme tile delegation, search mode toggle
-    bootstrap_markers = [
+    # bootstrap.js: loadSearchSelection bridge
+    assert_contains(bootstrap_js, "window.loadSearchSelection", "bootstrap.js three-tier")
+
+    # app.js: theme tile and search mode (moved from bootstrap.js to avoid bloat)
+    # renderThemeStoryCard removed — story card HTML is now generated in recit.multi
+    app_tier_markers = [
         "charger-sujet",
         "currentSearchMode",
         "search-mode-btn",
-        "window.loadSearchSelection",
+        "renderStoryTier",
     ]
-    for marker in bootstrap_markers:
-        assert_contains(bootstrap_js, marker, "bootstrap.js three-tier")
+    for marker in app_tier_markers:
+        assert_contains(app_js, marker, "app.js three-tier delegation")
 
     # bundle.js: grille_themes component exported
     bundle_markers = [

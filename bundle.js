@@ -1012,6 +1012,10 @@ async function _rafraichir_etiquettes_multilingues(entite_id) {
   _engine.get('etiquettes_multilingues').setIndex(entite_id, {['fr']: '', ['en']: ''});
 }
 
+function obtenir_noeud_graphe(entite_id) {
+  return _engine.get('graphe').get().obtenir_noeud(entite_id);
+}
+
 function _ajouter_noeud(entite_id, type_noeud, etiquette, donnees = {}) {
   if ((!__ml_truthy(entite_id))) {
     return;
@@ -1796,8 +1800,12 @@ async function charger_musee(musee_id) {
   _mettre_a_jour_selection(musee_id, 'musee');
   try {
     var oeuvres = await donnees.requetes.obtenir_oeuvres_musee(musee_id, 20);
-    var etiquette_musee = musee_id;
-    var noeud_musee = {['museumLabel']: {['value']: musee_id}};
+    var etiquette_info = await donnees.requetes.obtenir_etiquette_entite(musee_id);
+    var etiquette_musee = ((etiquette_info)?.['label'] ?? musee_id);
+    if ((!__ml_truthy(etiquette_musee))) {
+      etiquette_musee = musee_id;
+    }
+    var noeud_musee = {['museumLabel']: {['value']: etiquette_musee}};
     _mettre_en_cache(musee_id, noeud_musee);
     _ajouter_noeud(musee_id, 'musee', etiquette_musee, noeud_musee);
     for (const oeuvre of __ml_iterate(oeuvres)) {
@@ -1829,8 +1837,12 @@ async function charger_sujet(sujet_id) {
   _mettre_a_jour_selection(sujet_id, 'sujet');
   try {
     var oeuvres = await donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20);
-    var etiquette_sujet = sujet_id;
-    var noeud_sujet = {['subjectLabel']: {['value']: sujet_id}};
+    var etiquette_info = await donnees.requetes.obtenir_etiquette_entite(sujet_id);
+    var etiquette_sujet = ((etiquette_info)?.['label'] ?? sujet_id);
+    if ((!__ml_truthy(etiquette_sujet))) {
+      etiquette_sujet = sujet_id;
+    }
+    var noeud_sujet = {['subjectLabel']: {['value']: etiquette_sujet}};
     _mettre_en_cache(sujet_id, noeud_sujet);
     _ajouter_noeud(sujet_id, 'sujet', etiquette_sujet, noeud_sujet);
     for (const oeuvre of __ml_iterate(oeuvres)) {
@@ -1878,7 +1890,7 @@ async function reinitialiser_etat() {
 
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
-Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, charger_musee: charger_musee, charger_sujet: charger_sujet, reinitialiser_etat: reinitialiser_etat});
+Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, obtenir_noeud_graphe: obtenir_noeud_graphe, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, charger_musee: charger_musee, charger_sujet: charger_sujet, reinitialiser_etat: reinitialiser_etat});
 })();
 
 (() => {
@@ -2356,6 +2368,12 @@ function rendre_recit() {
   else if (__ml_truthy((type_entite == 'oeuvre'))) {
     return _rendre_recit_oeuvre(entite);
   }
+  else if (__ml_truthy((type_entite == 'musee'))) {
+    return _rendre_recit_musee(entite);
+  }
+  else if (__ml_truthy((type_entite == 'sujet'))) {
+    return _rendre_recit_sujet(entite);
+  }
   else {
     return _rendre_recit_generique(entite);
   }
@@ -2374,7 +2392,7 @@ function _rendre_recit_mouvement(entite) {
   var artistes_ids = ui.etat._obtenir_cibles_relations(entite_id, 'contient_artiste');
   var noms_artistes = [];
   for (const artiste_id of __ml_iterate(artistes_ids.slice(0, 5))) {
-    var noeud = ui.etat.graphe.obtenir_noeud(artiste_id);
+    var noeud = ui.etat.obtenir_noeud_graphe(artiste_id);
     if (__ml_truthy(noeud)) {
       __ml_add(noms_artistes, noeud.etiquette);
     }
@@ -2457,7 +2475,7 @@ function _rendre_recit_artiste(entite) {
   var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, 'a_cree');
   var noms_oeuvres = [];
   for (const oeuvre_id of __ml_iterate(oeuvres_ids.slice(0, 4))) {
-    var noeud = ui.etat.graphe.obtenir_noeud(oeuvre_id);
+    var noeud = ui.etat.obtenir_noeud_graphe(oeuvre_id);
     if (__ml_truthy(noeud)) {
       __ml_add(noms_oeuvres, noeud.etiquette);
     }
@@ -2577,6 +2595,94 @@ function _rendre_recit_oeuvre(entite) {
   return html;
 }
 
+function _rendre_recit_musee(entite) {
+  'Récit pour un musée — liste des oeuvres exposées';
+  var entite_id = ((entite)?.['id'] ?? '');
+  var donnees = ((entite)?.['donnees'] ?? {});
+  var noeud = ui.etat.obtenir_noeud_graphe(entite_id);
+  var label = '';
+  if (__ml_truthy(noeud)) {
+    label = noeud.etiquette;
+  }
+  if (((!__ml_truthy(label)) || __ml_truthy((label == entite_id)))) {
+    label = ((((donnees)?.['museumLabel'] ?? {}))?.['value'] ?? entite_id);
+  }
+  var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, 'expose');
+  var html = '<article class="recit-card recit-musee">';
+  html = (html + '<header class="recit-header">');
+  html = (html + '<span class="recit-badge">Museum</span>');
+  html = (((html + '<h2 class="recit-titre">') + label) + '</h2>');
+  html = (html + '</header>');
+  html = (html + '<div class="recit-corps">');
+  if (__ml_truthy(oeuvres_ids)) {
+    html = (html + '<p class="recit-intro">Works in this collection:</p>');
+    html = (html + '<ul class="recit-liste-oeuvres">');
+    for (const oeuvre_id of __ml_iterate(oeuvres_ids.slice(0, 8))) {
+      var noeud_oeuvre = ui.etat.obtenir_noeud_graphe(oeuvre_id);
+      if (__ml_truthy(noeud_oeuvre)) {
+        html = (((html + '<li class="recit-oeuvre">') + noeud_oeuvre.etiquette) + '</li>');
+      }
+    }
+    if (__ml_truthy(((oeuvres_ids).length > 8))) {
+      html = (((html + '<li class="recit-plus">... and ') + String(((oeuvres_ids).length - 8))) + ' more works.</li>');
+    }
+    html = (html + '</ul>');
+  }
+  else {
+    html = (html + '<p class="recit-intro">Loading works from this collection...</p>');
+  }
+  html = (html + '</div>');
+  html = (html + '<footer class="recit-footer">');
+  html = (html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Explore in constellation</button>');
+  html = (html + '</footer>');
+  html = (html + '</article>');
+  return html;
+}
+
+function _rendre_recit_sujet(entite) {
+  'Récit pour un sujet thématique — oeuvres représentant ce thème';
+  var entite_id = ((entite)?.['id'] ?? '');
+  var donnees = ((entite)?.['donnees'] ?? {});
+  var noeud = ui.etat.obtenir_noeud_graphe(entite_id);
+  var label = '';
+  if (__ml_truthy(noeud)) {
+    label = noeud.etiquette;
+  }
+  if (((!__ml_truthy(label)) || __ml_truthy((label == entite_id)))) {
+    label = ((((donnees)?.['subjectLabel'] ?? {}))?.['value'] ?? entite_id);
+  }
+  var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, 'represente');
+  var html = '<article class="recit-card recit-sujet">';
+  html = (html + '<header class="recit-header">');
+  html = (html + '<span class="recit-badge">Theme</span>');
+  html = (((html + '<h2 class="recit-titre">') + label) + '</h2>');
+  html = (html + '</header>');
+  html = (html + '<div class="recit-corps">');
+  if (__ml_truthy(oeuvres_ids)) {
+    html = (html + '<p class="recit-intro">Artworks on this theme:</p>');
+    html = (html + '<ul class="recit-liste-oeuvres">');
+    for (const oeuvre_id of __ml_iterate(oeuvres_ids.slice(0, 8))) {
+      var noeud_oeuvre = ui.etat.obtenir_noeud_graphe(oeuvre_id);
+      if (__ml_truthy(noeud_oeuvre)) {
+        html = (((html + '<li class="recit-oeuvre">') + noeud_oeuvre.etiquette) + '</li>');
+      }
+    }
+    if (__ml_truthy(((oeuvres_ids).length > 8))) {
+      html = (((html + '<li class="recit-plus">... and ') + String(((oeuvres_ids).length - 8))) + ' more artworks.</li>');
+    }
+    html = (html + '</ul>');
+  }
+  else {
+    html = (html + '<p class="recit-intro">Loading artworks for this theme...</p>');
+  }
+  html = (html + '</div>');
+  html = (html + '<footer class="recit-footer">');
+  html = (html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Explore in constellation</button>');
+  html = (html + '</footer>');
+  html = (html + '</article>');
+  return html;
+}
+
 function _rendre_recit_generique(entite) {
   'Récit générique pour les entités sans type connu';
   var entite_id = ((entite)?.['id'] ?? '');
@@ -2596,7 +2702,7 @@ function _rendre_recit_generique(entite) {
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.recit = window.ui.composants.recit || {};
-Object.assign(window.ui.composants.recit, {_extraire_annee: _extraire_annee, rendre_recit: rendre_recit, _rendre_recit_mouvement: _rendre_recit_mouvement, _rendre_recit_artiste: _rendre_recit_artiste, _rendre_recit_oeuvre: _rendre_recit_oeuvre, _rendre_recit_generique: _rendre_recit_generique});
+Object.assign(window.ui.composants.recit, {_extraire_annee: _extraire_annee, rendre_recit: rendre_recit, _rendre_recit_mouvement: _rendre_recit_mouvement, _rendre_recit_artiste: _rendre_recit_artiste, _rendre_recit_oeuvre: _rendre_recit_oeuvre, _rendre_recit_musee: _rendre_recit_musee, _rendre_recit_sujet: _rendre_recit_sujet, _rendre_recit_generique: _rendre_recit_generique});
 })();
 
 (() => {

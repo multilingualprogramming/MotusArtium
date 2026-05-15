@@ -3621,8 +3621,8 @@
         }
 
         window.ui = window.ui || {};
-        if (!window.ui.etat) {
-            window.ui.etat = {
+        window.ui.etat = window.ui.etat || {};
+        Object.assign(window.ui.etat, {
             amorcer_entite(entityId, entityType, label) {
                 if (!entityId) {
                     return;
@@ -4070,8 +4070,7 @@
                 resetGraphState();
                 applyAdapterStateToShell();
             }
-            };
-        }
+        });
 
         function recordDocumentActivity(documentName, documentText) {
             runtimeState.currentDocument = documentName;

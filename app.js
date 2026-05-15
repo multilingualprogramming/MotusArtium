@@ -170,276 +170,95 @@
 
         const modeSummaries = {
             observatory: {
-                explanation: "Observatory mode keeps the semantic field central while the Query Mirror remains continuously visible.",
-                lens: "Influence-aware, movement-centered, French surface"
+                explanationKey: "modeSummary.observatory.explanation",
+                lensKey: "modeSummary.observatory.lens"
             },
             "query-theater": {
-                explanation: "Query Theater makes the GraphQL document itself a primary storytelling surface for demos and teaching.",
-                lens: "Query-visible, document-forward, demonstrative surface"
+                explanationKey: "modeSummary.query-theater.explanation",
+                lensKey: "modeSummary.query-theater.lens"
             },
             "polyglot-studio": {
-                explanation: "Polyglot Studio foregrounds language variation, multilingual labels, and source-aware semantic surfaces.",
-                lens: "Language-contrasting, label-sensitive, multilingual surface"
+                explanationKey: "modeSummary.polyglot-studio.explanation",
+                lensKey: "modeSummary.polyglot-studio.lens"
             },
             "temporal-river": {
-                explanation: "Temporal River will privilege chronology, succession, and influence flow while reusing the same GraphQL backbone.",
-                lens: "Time-weighted, succession-focused, river narrative surface"
+                explanationKey: "modeSummary.temporal-river.explanation",
+                lensKey: "modeSummary.temporal-river.lens"
             },
             "recit": {
-                explanation: "Récit mode presents the selected entity as a readable narrative — no graph required, designed for all audiences.",
-                lens: "Story-first, prose-driven, accessible narrative surface"
+                explanationKey: "modeSummary.recit.explanation",
+                lensKey: "modeSummary.recit.lens"
             }
-        };
-
-        const languageSurfaces = {
-            fr: [
-                { code: "FR", text: "Rechercher un mouvement, un artiste, une oeuvre..." },
-                { code: "EN", text: "Trace a movement, artist, work, or place..." }
-            ],
-            en: [
-                { code: "EN", text: "Trace a movement, artist, work, or place..." },
-                { code: "FR", text: "Explorer un courant, un createur, une oeuvre..." }
-            ]
         };
 
         const heroActionContent = {
-            observatory: {
-                fr: [
-                    {
-                        title: "Lire la constellation",
-                        copy: "Commencez par cliquer un mouvement, un artiste ou une oeuvre au centre. Interpretez cette vue comme le champ semantique principal : les noeuds montrent les entites visibles et les liens montrent les relations actives."
-                    },
-                    {
-                        title: "Passer au Theatre GraphQL",
-                        copy: "Utilisez ce mode quand vous voulez comprendre la requete en direct. Lisez la colonne Query Mirror comme une trace d'execution : document, variables, forme de reponse, puis mise a jour du graphe."
-                    },
-                    {
-                        title: "Passer a Temporal River",
-                        copy: "Utilisez ce mode pour interpreter le graphe par periodes, successions et influences. La rail temporelle montre la fenetre active et la constellation met en avant les entites qui appartiennent a cette tranche."
-                    }
-                ],
-                en: [
-                    {
-                        title: "Read the Constellation",
-                        copy: "Start by clicking a movement, artist, or work in the center. Read this view as the main semantic field: nodes are the visible entities and links are the active relationships."
-                    },
-                    {
-                        title: "Switch to Query Theater",
-                        copy: "Use this mode when you want to understand the live query. Read the Query Mirror as an execution trace: document, variables, response shape, then graph update."
-                    },
-                    {
-                        title: "Switch to Temporal River",
-                        copy: "Use this mode to interpret the graph through periods, succession, and influence. The temporal rail shows the active window and the constellation highlights the entities that belong to that slice."
-                    }
-                ]
-            },
-            "query-theater": {
-                fr: [
-                    {
-                        title: "Choisir une entite",
-                        copy: "Cliquez une entite dans la constellation pour declencher une requete. Le centre reste la scene principale, mais l'attention se deplace vers le document GraphQL active."
-                    },
-                    {
-                        title: "Lire la trace de requete",
-                        copy: "Interpretez les panneaux de gauche comme une trace pedagogique : Session Flow montre l'ordre des appels, Variables montre l'entree, et Response Shape montre la structure retournee."
-                    },
-                    {
-                        title: "Interpreter la mise a jour",
-                        copy: "Comparez le document actif avec les nouveaux noeuds et liens. Si le graphe change, cela signifie que la requete a ouvert une nouvelle branche semantique dans l'observatoire."
-                    }
-                ],
-                en: [
-                    {
-                        title: "Choose an Entity",
-                        copy: "Click an entity in the constellation to trigger a query. The center stays the main stage, but attention shifts to the active GraphQL document."
-                    },
-                    {
-                        title: "Read the Query Trace",
-                        copy: "Interpret the left panels as a teaching trace: Session Flow shows call order, Variables shows the input, and Response Shape shows the returned structure."
-                    },
-                    {
-                        title: "Interpret the Update",
-                        copy: "Compare the active document with the new nodes and links. When the graph changes, the query has opened a new semantic branch in the observatory."
-                    }
-                ]
-            },
-            "temporal-river": {
-                fr: [
-                    {
-                        title: "Fixer une periode",
-                        copy: "Selectionnez un mouvement, un artiste ou une oeuvre datee pour etablir une fenetre temporelle. La rail inferieure devient le repere principal pour lire la scene."
-                    },
-                    {
-                        title: "Lire le flux",
-                        copy: "Interpretez Temporal Focus, Active Entities et Flow comme un resume chronologique. Ils montrent la plage active, les entites contemporaines et les successions ou influences visibles."
-                    },
-                    {
-                        title: "Comparer centre et temps",
-                        copy: "Les noeuds lumineux appartiennent a la fenetre active, les noeuds attenues restent hors plage. Lisez donc la constellation comme une carte temporelle plutot que comme un simple graphe general."
-                    }
-                ],
-                en: [
-                    {
-                        title: "Set a Time Window",
-                        copy: "Select a movement, artist, or dated work to establish a time window. The lower rail becomes the main reference for reading the scene."
-                    },
-                    {
-                        title: "Read the Flow",
-                        copy: "Interpret Temporal Focus, Active Entities, and Flow as a chronological summary. They show the active range, overlapping entities, and visible succession or influence paths."
-                    },
-                    {
-                        title: "Compare Center and Time",
-                        copy: "Bright nodes belong to the active window, while muted nodes sit outside it. Read the constellation as a temporal map rather than only a general graph."
-                    }
-                ]
-            },
-            "polyglot-studio": {
-                fr: [
-                    {
-                        title: "Comparer les langues",
-                        copy: "Basculez entre FR et EN pour voir comment les memes entites changent de surface linguistique sans changer d'identite Wikidata."
-                    },
-                    {
-                        title: "Lire les etiquettes",
-                        copy: "Interpretez les cartes polyglottes comme plusieurs lectures de la meme source. La variation de libelle n'indique pas une nouvelle entite, mais une nouvelle surface de lecture."
-                    },
-                    {
-                        title: "Relier langue et source",
-                        copy: "Gardez un oeil sur le document GraphQL actif pendant que la langue change. Cela montre que la couche multilingue et la couche de requete travaillent ensemble."
-                    }
-                ],
-                en: [
-                    {
-                        title: "Compare Languages",
-                        copy: "Switch between FR and EN to see how the same entities change linguistic surface without changing Wikidata identity."
-                    },
-                    {
-                        title: "Read the Labels",
-                        copy: "Interpret the polyglot cards as multiple readings of the same source. A label change does not mean a new entity, only a new reading surface."
-                    },
-                    {
-                        title: "Relate Language and Source",
-                        copy: "Keep an eye on the active GraphQL document while the language changes. This shows the multilingual layer and the query layer working together."
-                    }
-                ]
-            }
+            observatory: [1, 2, 3].map((index) => ({
+                titleKey: "heroAction.observatory." + index + ".title",
+                copyKey: "heroAction.observatory." + index + ".copy"
+            })),
+            "query-theater": [1, 2, 3].map((index) => ({
+                titleKey: "heroAction.query-theater." + index + ".title",
+                copyKey: "heroAction.query-theater." + index + ".copy"
+            })),
+            "temporal-river": [1, 2, 3].map((index) => ({
+                titleKey: "heroAction.temporal-river." + index + ".title",
+                copyKey: "heroAction.temporal-river." + index + ".copy"
+            })),
+            "polyglot-studio": [1, 2, 3].map((index) => ({
+                titleKey: "heroAction.polyglot-studio." + index + ".title",
+                copyKey: "heroAction.polyglot-studio." + index + ".copy"
+            }))
         };
 
         const compassLensContent = {
             movement: {
-                fr: {
-                    title: "Mouvement",
-                    summary: "Vue ancree dans les mouvements, successions et branches artistiques.",
-                    copy: "Le compas met les mouvements au premier plan: privilegiez les noeuds de mouvement et les lignes de succession pour lire l'evolution des courants."
-                },
-                en: {
-                    title: "Movement",
-                    summary: "Movement-anchored view for succession, schools, and artistic branches.",
-                    copy: "The compass brings movements forward: prioritize movement nodes and succession lines to read the evolution of styles."
-                }
+                titleKey: "compassLens.movement.title",
+                summaryKey: "compassLens.movement.summary",
+                copyKey: "compassLens.movement.copy"
             },
             artist: {
-                fr: {
-                    title: "Artiste",
-                    summary: "Vue centree sur les createurs, influences et trajectoires d'oeuvres.",
-                    copy: "Mettez l'accent sur les artistes pour suivre qui cree, qui influence, et comment les branches d'oeuvres se deploient."
-                },
-                en: {
-                    title: "Artist",
-                    summary: "Creator-centered view for influence and artwork trajectories.",
-                    copy: "Emphasize artists to follow who creates, who influences, and how artwork branches unfold."
-                }
+                titleKey: "compassLens.artist.title",
+                summaryKey: "compassLens.artist.summary",
+                copyKey: "compassLens.artist.copy"
             },
             work: {
-                fr: {
-                    title: "Oeuvre",
-                    summary: "Vue concentree sur les oeuvres, sujets, materiaux et lieux d'exposition.",
-                    copy: "Cette lentille fait remonter les oeuvres et leurs attaches concretes: sujets, materiaux, musees et relations de creation."
-                },
-                en: {
-                    title: "Work",
-                    summary: "Work-focused view for subjects, materials, and display locations.",
-                    copy: "This lens brings works and their concrete attachments forward: subjects, materials, museums, and creation links."
-                }
+                titleKey: "compassLens.work.title",
+                summaryKey: "compassLens.work.summary",
+                copyKey: "compassLens.work.copy"
             },
             place: {
-                fr: {
-                    title: "Lieu",
-                    summary: "Vue pour les musees, lieux d'exposition et ancrages geographiques.",
-                    copy: "Utilisez cette lentille pour lire ou les oeuvres se situent et ou les branches du graphe rencontrent les lieux."
-                },
-                en: {
-                    title: "Place",
-                    summary: "Place-oriented view for museums, display contexts, and geography.",
-                    copy: "Use this lens to read where works are situated and where graph branches meet places."
-                }
+                titleKey: "compassLens.place.title",
+                summaryKey: "compassLens.place.summary",
+                copyKey: "compassLens.place.copy"
             },
             time: {
-                fr: {
-                    title: "Temps",
-                    summary: "Vue privilegiee pour les entites datees, chevauchements et periodes.",
-                    copy: "La lentille temporelle fait ressortir les noeuds dates pour prefigurer la lecture de Temporal River meme en mode observatoire."
-                },
-                en: {
-                    title: "Time",
-                    summary: "Time-weighted view for dated entities, overlap, and period reading.",
-                    copy: "The time lens highlights dated nodes so the observatory already hints at Temporal River style reading."
-                }
+                titleKey: "compassLens.time.title",
+                summaryKey: "compassLens.time.summary",
+                copyKey: "compassLens.time.copy"
             },
             influence: {
-                fr: {
-                    title: "Influence",
-                    summary: "Vue pour les chaines d'influence, de succession et de transmission.",
-                    copy: "Choisissez cette lentille pour privilegier les liens d'influence et les successions entre mouvements et artistes."
-                },
-                en: {
-                    title: "Influence",
-                    summary: "Influence-first view for lineage, succession, and transmission.",
-                    copy: "Choose this lens to foreground influence links and succession between movements and artists."
-                }
+                titleKey: "compassLens.influence.title",
+                summaryKey: "compassLens.influence.summary",
+                copyKey: "compassLens.influence.copy"
             }
         };
 
         const lensPresetContent = {
             lineage: {
-                fr: {
-                    summary: "Preset actif: Lineage. Mouvements, influences et successions deviennent la lecture principale.",
-                    copy: "Lineage rassemble les trajectoires de mouvements et d'influence pour raconter comment une branche en precede ou en nourrit une autre."
-                },
-                en: {
-                    summary: "Active preset: Lineage. Movements, influence, and succession become the main reading.",
-                    copy: "Lineage gathers movement and influence trajectories to show how one branch precedes or feeds another."
-                }
+                summaryKey: "lensPreset.lineage.summary",
+                copyKey: "lensPreset.lineage.copy"
             },
             geography: {
-                fr: {
-                    summary: "Preset actif: Geography. Musees, lieux et diffusion reorientent la lecture.",
-                    copy: "Geography fait remonter les lieux et collections pour lire la circulation des oeuvres et les ancrages du graphe."
-                },
-                en: {
-                    summary: "Active preset: Geography. Museums, places, and diffusion reframe the reading.",
-                    copy: "Geography surfaces places and collections to read circulation and spatial anchors across the graph."
-                }
+                summaryKey: "lensPreset.geography.summary",
+                copyKey: "lensPreset.geography.copy"
             },
             materials: {
-                fr: {
-                    summary: "Preset actif: Materials. Oeuvres, sujets et materiaux structurent la scene.",
-                    copy: "Materials privilegie les ramifications concretes des oeuvres: ce qu'elles representent, de quoi elles sont faites et ou elles sont vues."
-                },
-                en: {
-                    summary: "Active preset: Materials. Works, subjects, and materials structure the scene.",
-                    copy: "Materials favors the concrete branches of works: what they depict, what they are made of, and where they are seen."
-                }
+                summaryKey: "lensPreset.materials.summary",
+                copyKey: "lensPreset.materials.copy"
             },
             "cross-language": {
-                fr: {
-                    summary: "Preset actif: Cross-Language. Les etiquettes multilingues deviennent un outil de comparaison.",
-                    copy: "Cross-Language ne filtre pas severement le graphe: il vous invite surtout a comparer les surfaces FR et EN pour les memes entites."
-                },
-                en: {
-                    summary: "Active preset: Cross-Language. Multilingual labels become the comparison surface.",
-                    copy: "Cross-Language does not aggressively filter the graph: it mainly invites you to compare FR and EN surfaces for the same entities."
-                }
+                summaryKey: "lensPreset.cross-language.summary",
+                copyKey: "lensPreset.cross-language.copy"
             }
         };
 
@@ -692,8 +511,7 @@
         }
 
         function renderHeroActions(languageCode, mode) {
-            const cards = heroActionContent[mode] || heroActionContent.observatory;
-            const localizedCards = cards[languageCode] || cards.en || cards.fr || [];
+            const localizedCards = heroActionContent[mode] || heroActionContent.observatory || [];
             const targets = [
                 { titleId: "entry-movements-title", copyId: "entry-movements-copy" },
                 { titleId: "entry-artists-title", copyId: "entry-artists-copy" },
@@ -707,8 +525,8 @@
                 if (!titleEl || !copyEl || !card) {
                     return;
                 }
-                titleEl.textContent = card.title;
-                copyEl.textContent = card.copy;
+                titleEl.textContent = traduireInterface(card.titleKey, {}, languageCode);
+                copyEl.textContent = traduireInterface(card.copyKey, {}, languageCode);
             });
         }
 
@@ -1655,10 +1473,22 @@ function setActiveTier(tier, options = {}) {
         function selectedLensConfig(languageCode) {
             const activePreset = browserAdapterState.activeLensPreset;
             if (activePreset && lensPresetContent[activePreset]) {
-                return lensPresetContent[activePreset][languageCode] || lensPresetContent[activePreset].en;
+                const presetConfig = lensPresetContent[activePreset];
+                return {
+                    summary: traduireInterface(presetConfig.summaryKey, {}, languageCode),
+                    copy: traduireInterface(presetConfig.copyKey, {}, languageCode)
+                };
             }
             const activeLens = browserAdapterState.activeCompassLens || "movement";
-            return (compassLensContent[activeLens] && (compassLensContent[activeLens][languageCode] || compassLensContent[activeLens].en)) || null;
+            const lensConfig = compassLensContent[activeLens];
+            if (!lensConfig) {
+                return null;
+            }
+            return {
+                title: traduireInterface(lensConfig.titleKey, {}, languageCode),
+                summary: traduireInterface(lensConfig.summaryKey, {}, languageCode),
+                copy: traduireInterface(lensConfig.copyKey, {}, languageCode)
+            };
         }
 
         function relationMatchesLensType(relationType, lens) {
@@ -4435,6 +4265,15 @@ function setActiveTier(tier, options = {}) {
             await loadQueryPreview(docs[0]);
         }
 
+        function obtenirLignesSurfaceLangue(languageCode) {
+            const langue = languageCode === "en" ? "en" : "fr";
+            const codes = langue === "en" ? ["EN", "FR"] : ["FR", "EN"];
+            return codes.map((code, index) => ({
+                code,
+                textKey: "languageSurface." + langue + "." + (index === 0 ? "primary" : "secondary")
+            }));
+        }
+
         function updateLanguageSurface(languageCode) {
             runtimeState.currentLanguage = languageCode;
             activeLanguageChipEl.textContent = languageCode;
@@ -4443,7 +4282,7 @@ function setActiveTier(tier, options = {}) {
                 languageCode: languageCode
             };
 
-            const lines = languageSurfaces[languageCode] || languageSurfaces.fr;
+            const lines = obtenirLignesSurfaceLangue(languageCode);
             if (polyglotPreviewEl) {
                 polyglotPreviewEl.innerHTML = "";
                 lines.forEach((line) => {
@@ -4454,7 +4293,7 @@ function setActiveTier(tier, options = {}) {
                     left.textContent = line.code;
 
                     const right = document.createElement("code");
-                    right.textContent = line.text;
+                    right.textContent = traduireInterface(line.textKey, {}, languageCode);
 
                     wrapper.appendChild(left);
                     wrapper.appendChild(right);
@@ -4518,8 +4357,8 @@ function setActiveTier(tier, options = {}) {
 
             const config = modeSummaries[normalisedMode];
             if (config) {
-                queryExplanationEl.textContent = config.explanation;
-                lensSummaryEl.textContent = config.lens;
+                queryExplanationEl.textContent = traduireInterface(config.explanationKey);
+                lensSummaryEl.textContent = traduireInterface(config.lensKey);
             }
 
             try {

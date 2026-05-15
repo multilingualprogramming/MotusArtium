@@ -142,6 +142,18 @@ const _engine = new ReactiveEngine();
 const __ml_signals = _engine.signals;
 
 (() => {
+var POINT_TERMINAL_WIKIDATA_GRAPHQL = 'https://www.wikidata.org/w/api.php?action=wbgraphql&format=json&origin=*';
+
+var LANGUE_PAR_DEFAUT = 'fr';
+
+var TYPE_MOUVEMENT_ARTISTIQUE = 'Q968159';
+
+var TYPE_ETRE_HUMAIN = 'Q5';
+
+var TYPE_OEUVRE_ART = 'Q3305213';
+
+var CACHE_DOCUMENTS_GRAPHQL = {};
+
 async function charger_document_graphql(nom_document) {
   'Charger un document GraphQL dédié depuis le dépôt statique';
   if (__ml_contains(CACHE_DOCUMENTS_GRAPHQL, nom_document)) {
@@ -157,7 +169,7 @@ async function charger_document_graphql(nom_document) {
   return document;
 }
 
-async function executer_requete_graphql(nom_document, variables) {
+async function executer_requete_graphql(nom_document, variables = {}) {
   "Exécuter une requête GraphQL Wikidata à partir d'un document dédié";
   var document = await charger_document_graphql(nom_document);
   var corps = JSON.stringify({['query']: document, ['variables']: variables});
@@ -196,6 +208,8 @@ function _champ_entite(entite_id) {
   }
   return {['value']: uri};
 }
+
+var uri = _uri_entite(entite_id);
 
 function _extraire_temps(entrees) {
   for (const entree of (entrees || [])) {
@@ -242,12 +256,14 @@ function _extraire_items(entrees) {
   return resultats;
 }
 
+var resultats = [];
+
 function _extraire_coordonnees(entrees) {
   for (const entree of (entrees || [])) {
     var valeur = ((entree)?.['value'] ?? {});
     var latitude = ((valeur)?.['latitude'] ?? null);
     var longitude = ((valeur)?.['longitude'] ?? null);
-    if (((latitude != null) || (longitude != null))) {
+    if (((latitude != null) && (longitude != null))) {
       return {['latitude']: latitude, ['longitude']: longitude};
     }
   }
@@ -261,12 +277,24 @@ function _normaliser_mouvement_detail(item) {
   return {['movement']: _champ_entite(((item)?.['id'] ?? '')), ['movementLabel']: _champ_valeur(((item)?.['movementLabel'] ?? '')), ['startTime']: _champ_valeur(_extraire_temps(((item)?.['startTime'] ?? []))), ['endTime']: _champ_valeur(_extraire_temps(((item)?.['endTime'] ?? []))), ['country']: _champ_entite(((pays)?.['id'] ?? '')), ['countryLabel']: _champ_valeur(((pays)?.['label'] ?? '')), ['follows']: _champ_entite(((precedent)?.['id'] ?? '')), ['followsLabel']: _champ_valeur(((precedent)?.['label'] ?? '')), ['followedBy']: _champ_entite(((suivant)?.['id'] ?? '')), ['followedByLabel']: _champ_valeur(((suivant)?.['label'] ?? ''))};
 }
 
+var pays = _extraire_item(((item)?.['country'] ?? []));
+
+var precedent = _extraire_item(((item)?.['follows'] ?? []));
+
+var suivant = _extraire_item(((item)?.['followedBy'] ?? []));
+
 function _normaliser_artiste_detail(item) {
   var lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
   var lieu_deces = _extraire_item(((item)?.['deathplace'] ?? []));
   var mouvement = _extraire_item(((item)?.['movement'] ?? []));
   return {['artist']: _champ_entite(((item)?.['id'] ?? '')), ['artistLabel']: _champ_valeur(((item)?.['artistLabel'] ?? '')), ['birthDate']: _champ_valeur(_extraire_temps(((item)?.['birthDate'] ?? []))), ['deathDate']: _champ_valeur(_extraire_temps(((item)?.['deathDate'] ?? []))), ['birthplace']: _champ_entite(((lieu_naissance)?.['id'] ?? '')), ['birthplaceLabel']: _champ_valeur(((lieu_naissance)?.['label'] ?? '')), ['deathplace']: _champ_entite(((lieu_deces)?.['id'] ?? '')), ['deathplaceLabel']: _champ_valeur(((lieu_deces)?.['label'] ?? '')), ['movement']: _champ_entite(((mouvement)?.['id'] ?? '')), ['movementLabel']: _champ_valeur(((mouvement)?.['label'] ?? ''))};
 }
+
+var lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
+
+var lieu_deces = _extraire_item(((item)?.['deathplace'] ?? []));
+
+var mouvement = _extraire_item(((item)?.['movement'] ?? []));
 
 function _normaliser_oeuvre_detail(item) {
   var createur = _extraire_item(((item)?.['creator'] ?? []));
@@ -276,10 +304,20 @@ function _normaliser_oeuvre_detail(item) {
   return {['artwork']: _champ_entite(((item)?.['id'] ?? '')), ['artworkLabel']: _champ_valeur(((item)?.['artworkLabel'] ?? '')), ['creator']: _champ_entite(((createur)?.['id'] ?? '')), ['creatorLabel']: _champ_valeur(((createur)?.['label'] ?? '')), ['inceptionDate']: _champ_valeur(_extraire_temps(((item)?.['inceptionDate'] ?? []))), ['museum']: _champ_entite(((musee)?.['id'] ?? '')), ['museumLabel']: _champ_valeur(((musee)?.['label'] ?? '')), ['depicts']: _champ_entite(((sujet)?.['id'] ?? '')), ['depictsLabel']: _champ_valeur(((sujet)?.['label'] ?? '')), ['material']: _champ_entite(((materiau)?.['id'] ?? '')), ['materialLabel']: _champ_valeur(((materiau)?.['label'] ?? '')), ['image']: _champ_valeur(_extraire_texte(((item)?.['image'] ?? [])))};
 }
 
+var createur = _extraire_item(((item)?.['creator'] ?? []));
+
+var musee = _extraire_item(((item)?.['museum'] ?? []));
+
+var sujet = _extraire_item(((item)?.['depicts'] ?? []));
+
+var materiau = _extraire_item(((item)?.['material'] ?? []));
+
 function _normaliser_artiste_resume(item) {
   var lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
   return {['artist']: _champ_entite(((item)?.['id'] ?? '')), ['artistLabel']: _champ_valeur(((item)?.['artistLabel'] ?? '')), ['birthDate']: _champ_valeur(_extraire_temps(((item)?.['birthDate'] ?? []))), ['deathDate']: _champ_valeur(_extraire_temps(((item)?.['deathDate'] ?? []))), ['birthplace']: _champ_entite(((lieu_naissance)?.['id'] ?? '')), ['birthplaceLabel']: _champ_valeur(((lieu_naissance)?.['label'] ?? ''))};
 }
+
+lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
 
 function _normaliser_oeuvre_resume(item) {
   var createur = _extraire_item(((item)?.['creator'] ?? []));
@@ -287,6 +325,12 @@ function _normaliser_oeuvre_resume(item) {
   var sujet = _extraire_item(((item)?.['subject'] ?? []));
   return {['artwork']: _champ_entite(((item)?.['id'] ?? '')), ['artworkLabel']: _champ_valeur(((item)?.['artworkLabel'] ?? '')), ['creator']: _champ_entite(((createur)?.['id'] ?? '')), ['creatorLabel']: _champ_valeur(((createur)?.['label'] ?? '')), ['inceptionDate']: _champ_valeur(_extraire_temps(((item)?.['inceptionDate'] ?? []))), ['museum']: _champ_entite(((musee)?.['id'] ?? '')), ['museumLabel']: _champ_valeur(((musee)?.['label'] ?? '')), ['subject']: _champ_entite(((sujet)?.['id'] ?? '')), ['subjectLabel']: _champ_valeur(((sujet)?.['label'] ?? ''))};
 }
+
+createur = _extraire_item(((item)?.['creator'] ?? []));
+
+musee = _extraire_item(((item)?.['museum'] ?? []));
+
+sujet = _extraire_item(((item)?.['subject'] ?? []));
 
 function _normaliser_chronologie(item) {
   return {['movement']: _champ_entite(((item)?.['id'] ?? '')), ['movementLabel']: _champ_valeur(((item)?.['movementLabel'] ?? '')), ['startTime']: _champ_valeur(_extraire_temps(((item)?.['startTime'] ?? []))), ['endTime']: _champ_valeur(_extraire_temps(((item)?.['endTime'] ?? [])))};
@@ -306,6 +350,8 @@ function _annee_depuis_temps(temps) {
     return 0;
   }
 }
+
+var texte = temps;
 
 async function _recuperer_mouvements_catalogue() {
   var donnees = await executer_requete_graphql('movements_catalog.graphql', {['languageCode']: LANGUE_PAR_DEFAUT});
@@ -338,7 +384,7 @@ async function obtenir_mouvements_par_periode(debut_annee, fin_annee) {
     var entree = _normaliser_chronologie(mouvement);
     var debut = _annee_depuis_temps(((((entree)?.['startTime'] ?? {}))?.['value'] ?? ''));
     var fin = _annee_depuis_temps(((((entree)?.['endTime'] ?? {}))?.['value'] ?? ''));
-    if ((debut || fin || (debut >= debut_annee) || (fin <= fin_annee))) {
+    if ((debut && fin && (debut >= debut_annee) && (fin <= fin_annee))) {
       __ml_add(resultats, entree);
     }
   }
@@ -365,14 +411,14 @@ async function obtenir_artiste_details(artiste_id) {
   return {};
 }
 
-async function obtenir_artistes_mouvement(mouvement_id, limite) {
+async function obtenir_artistes_mouvement(mouvement_id, limite = 50) {
   'Récupère les artistes associés à un mouvement via GraphQL';
   var donnees = await executer_requete_graphql('artists_by_movement.graphql', {['movementId']: mouvement_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud || ((resultats).length < limite))) {
+    if ((noeud && ((resultats).length < limite))) {
       __ml_add(resultats, _normaliser_artiste_resume(noeud));
     }
   }
@@ -398,28 +444,28 @@ async function obtenir_oeuvre_details(oeuvre_id) {
   return {};
 }
 
-async function obtenir_oeuvres_artiste(artiste_id, limite) {
+async function obtenir_oeuvres_artiste(artiste_id, limite = 50) {
   "Récupère les œuvres notables d'un artiste via GraphQL";
   var donnees = await executer_requete_graphql('artworks_by_artist.graphql', {['artistId']: artiste_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud || ((resultats).length < limite))) {
+    if ((noeud && ((resultats).length < limite))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
     }
   }
   return resultats;
 }
 
-async function obtenir_oeuvres_par_sujet(sujet_id, limite) {
+async function obtenir_oeuvres_par_sujet(sujet_id, limite = 50) {
   'Récupère les œuvres qui dépeignent un sujet via GraphQL';
   var donnees = await executer_requete_graphql('artworks_by_subject.graphql', {['subjectId']: sujet_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud || ((resultats).length < limite))) {
+    if ((noeud && ((resultats).length < limite))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -459,14 +505,14 @@ async function obtenir_diffusion_geographique(mouvement_id) {
   return resultats;
 }
 
-async function obtenir_oeuvres_musee(musee_id, limite) {
+async function obtenir_oeuvres_musee(musee_id, limite = 50) {
   "Récupère les œuvres d'un musée via GraphQL";
   var donnees = await executer_requete_graphql('artworks_by_museum.graphql', {['museumId']: musee_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud || ((resultats).length < limite))) {
+    if ((noeud && ((resultats).length < limite))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -481,21 +527,21 @@ async function obtenir_chronologie_mouvements(debut, fin) {
     var entree = _normaliser_chronologie(mouvement);
     var debut_mouvement = _annee_depuis_temps(((((entree)?.['startTime'] ?? {}))?.['value'] ?? ''));
     var fin_mouvement = _annee_depuis_temps(((((entree)?.['endTime'] ?? {}))?.['value'] ?? ''));
-    if ((debut_mouvement || fin_mouvement || (debut_mouvement >= debut) || (fin_mouvement <= fin))) {
+    if ((debut_mouvement && fin_mouvement && (debut_mouvement >= debut) && (fin_mouvement <= fin))) {
       __ml_add(resultats, entree);
     }
   }
   return resultats;
 }
 
-async function obtenir_etiquette_entite(entite_id, langue) {
+async function obtenir_etiquette_entite(entite_id, langue = LANGUE_PAR_DEFAUT) {
   'Recuperer une etiquette simple pour une entite.';
   var donnees = await executer_requete_graphql('entity_label.graphql', {['id']: entite_id, ['languageCode']: langue});
   var item = ((donnees)?.['item'] ?? {});
   return {['id']: ((item)?.['id'] ?? ''), ['label']: ((item)?.['label'] ?? '')};
 }
 
-async function obtenir_etiquettes_entite(entite_id, langues) {
+async function obtenir_etiquettes_entite(entite_id, langues = ['fr', 'en']) {
   "Recuperer plusieurs etiquettes d'une meme entite.";
   var etiquettes = {};
   for (const langue of (langues || [])) {
@@ -508,14 +554,14 @@ async function obtenir_etiquettes_entite(entite_id, langues) {
   return etiquettes;
 }
 
-async function obtenir_graphe_mouvement(mouvement_id, limite) {
+async function obtenir_graphe_mouvement(mouvement_id, limite = 50) {
   'Retourner le contrat de graphe canonique pour un mouvement.';
   var mouvement = await obtenir_mouvement_details(mouvement_id);
   var artistes = await obtenir_artistes_mouvement(mouvement_id, limite);
   return {['mouvement']: mouvement, ['artistes']: artistes};
 }
 
-async function obtenir_graphe_artiste(artiste_id, limite) {
+async function obtenir_graphe_artiste(artiste_id, limite = 50) {
   'Retourner le contrat de graphe canonique pour un artiste.';
   var artiste = await obtenir_artiste_details(artiste_id);
   var oeuvres = await obtenir_oeuvres_artiste(artiste_id, limite);
@@ -534,7 +580,7 @@ async function obtenir_graphe_oeuvre(oeuvre_id) {
   return {['oeuvre']: oeuvre, ['musee']: _extraire_item(((item)?.['museum'] ?? [])), ['musees']: _extraire_items(((item)?.['museum'] ?? [])), ['sujets']: _extraire_items(((item)?.['depicts'] ?? [])), ['materiaux']: _extraire_items(((item)?.['material'] ?? []))};
 }
 
-async function obtenir_artistes_mouvement_page(mouvement_id, premier, apres) {
+async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres = '') {
   "Récupère une page d'artistes pour un mouvement avec pagination curseur.";
   var variables = {['movementId']: mouvement_id, ['languageCode']: LANGUE_PAR_DEFAUT, ['first']: premier};
   if (apres) {
@@ -554,7 +600,7 @@ async function obtenir_artistes_mouvement_page(mouvement_id, premier, apres) {
   return {['artistes']: artistes, ['a_page_suivante']: ((page_info)?.['hasNextPage'] ?? false), ['curseur_fin']: ((page_info)?.['endCursor'] ?? '')};
 }
 
-async function obtenir_oeuvres_artiste_page(artiste_id, premier, apres) {
+async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = '') {
   "Récupère une page d'œuvres pour un artiste avec pagination curseur.";
   var variables = {['artistId']: artiste_id, ['languageCode']: LANGUE_PAR_DEFAUT, ['first']: premier};
   if (apres) {
@@ -574,7 +620,7 @@ async function obtenir_oeuvres_artiste_page(artiste_id, premier, apres) {
   return {['oeuvres']: oeuvres, ['a_page_suivante']: ((page_info)?.['hasNextPage'] ?? false), ['curseur_fin']: ((page_info)?.['endCursor'] ?? '')};
 }
 
-async function obtenir_oeuvres_musee_page(musee_id, premier, apres) {
+async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = '') {
   "Récupère une page d'œuvres pour un musée avec pagination curseur.";
   var variables = {['museumId']: musee_id, ['languageCode']: LANGUE_PAR_DEFAUT, ['first']: premier};
   if (apres) {
@@ -594,7 +640,7 @@ async function obtenir_oeuvres_musee_page(musee_id, premier, apres) {
   return {['oeuvres']: oeuvres, ['a_page_suivante']: ((page_info)?.['hasNextPage'] ?? false), ['curseur_fin']: ((page_info)?.['endCursor'] ?? '')};
 }
 
-async function rechercher_entites_wikidata(terme, langue) {
+async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
   'Rechercher des entités sur Wikidata par texte/mot-clé';
   if (((!terme) || ((terme).length < 2))) {
     return [];
@@ -641,7 +687,7 @@ Object.assign(window.donnees.requetes, {charger_document_graphql: charger_docume
 
 (() => {
 class NoeudGraphe {
-  constructor(id, type_noeud, etiquette, donnees) {
+  constructor(id, type_noeud, etiquette, donnees = {}) {
     this.id = id;
     this.type_noeud = type_noeud;
     this.etiquette = etiquette;
@@ -651,7 +697,7 @@ class NoeudGraphe {
 }
 
 class RelationGraphe {
-  constructor(source_id, target_id, type_noeud, poids) {
+  constructor(source_id, target_id, type_noeud, poids = 1.0) {
     this.source_id = source_id;
     this.target_id = target_id;
     this.type_noeud = type_noeud;
@@ -664,7 +710,7 @@ class Graphe {
     this.noeuds = {};
     this.relations = [];
   }
-  ajouter_noeud(id, type_noeud, etiquette, donnees) {
+  ajouter_noeud(id, type_noeud, etiquette, donnees = {}) {
     'Ajouter ou mettre à jour un nœud';
     if ((!__ml_contains(this.noeuds, id))) {
       var noeud = new NoeudGraphe(id, type_noeud, etiquette, donnees);
@@ -675,13 +721,13 @@ class Graphe {
       this.noeuds[id].etiquette = etiquette;
     }
   }
-  ajouter_relation(source_id, target_id, type_noeud, poids) {
+  ajouter_relation(source_id, target_id, type_noeud, poids = 1.0) {
     'Ajouter une relation entre deux nœuds';
     if (((!__ml_contains(this.noeuds, source_id)) || (!__ml_contains(this.noeuds, target_id)))) {
       return;
     }
     for (const rel of this.relations) {
-      if (((rel.source_id == source_id) || (rel.target_id == target_id) || (rel.type_noeud == type_noeud))) {
+      if (((rel.source_id == source_id) && (rel.target_id == target_id) && (rel.type_noeud == type_noeud))) {
         rel.poids = poids;
         return;
       }
@@ -695,7 +741,7 @@ class Graphe {
     'Obtenir un nœud par ID';
     return ((this.noeuds)?.[id] ?? null);
   }
-  obtenir_voisins(noeud_id, type_relation) {
+  obtenir_voisins(noeud_id, type_relation = '') {
     'Obtenir les nœuds adjacents';
     var voisins = [];
     for (const relation of this.relations) {
@@ -724,7 +770,7 @@ class Graphe {
   }
   compter_noeuds() {
     'Compter le nombre de nœuds';
-    return (this.noeuds).length;
+    return (Object.keys(this.noeuds)).length;
   }
   compter_relations() {
     'Compter le nombre de relations';
@@ -775,7 +821,7 @@ class Graphe {
     }
     return [];
   }
-  obtenir_voisinage(noeud_id, profondeur) {
+  obtenir_voisinage(noeud_id, profondeur = 2) {
     "Obtenir le voisinage d'un nœud jusqu'à une certaine profondeur";
     var voisinage = {['centre']: noeud_id, ['couches']: []};
     var visites = new Set([noeud_id]);
@@ -934,6 +980,8 @@ function _extraire_id_entite(champ) {
   return valeur.replace('http://www.wikidata.org/entity/', '');
 }
 
+var valeur = ((champ)?.['value'] ?? '');
+
 function _etiquette_entite(entite, cles, etiquette_par_defaut) {
   for (const cle of (cles || [])) {
     var valeur = ((((entite)?.[cle] ?? {}))?.['value'] ?? '');
@@ -950,12 +998,20 @@ function _mettre_a_jour_selection(entite_id, entite_type) {
   _engine.get('panneau_detail_visible').set(true);
 }
 
+_engine.get('entite_selectionnee_id').set(entite_id);
+
+_engine.get('entite_selectionnee_type').set(entite_type);
+
+_engine.get('panneau_detail_visible').set(true);
+
 function _mettre_en_cache(entite_id, donnees) {
   if ((!entite_id)) {
     return;
   }
   _engine.get('cache_entites').setIndex(entite_id, donnees);
 }
+
+_engine.get('cache_entites').setIndex(entite_id, donnees);
 
 async function _rafraichir_etiquettes_multilingues(entite_id) {
   if ((!entite_id)) {
@@ -964,7 +1020,7 @@ async function _rafraichir_etiquettes_multilingues(entite_id) {
   _engine.get('etiquettes_multilingues').setIndex(entite_id, {['fr']: '', ['en']: ''});
 }
 
-function _ajouter_noeud(entite_id, type_noeud, etiquette, donnees) {
+function _ajouter_noeud(entite_id, type_noeud, etiquette, donnees = {}) {
   if ((!entite_id)) {
     return;
   }
@@ -989,7 +1045,7 @@ function _supprimer_entites_graphe(ids) {
   }
   var nouvelles_relations = [];
   for (const relation of _engine.get('graphe').get().relations) {
-    if (((!__ml_contains(ids, relation.source_id)) || (!__ml_contains(ids, relation.target_id)))) {
+    if (((!__ml_contains(ids, relation.source_id)) && (!__ml_contains(ids, relation.target_id)))) {
       __ml_add(nouvelles_relations, relation);
     }
   }
@@ -1005,15 +1061,21 @@ function _supprimer_entites_graphe(ids) {
   }
 }
 
+var nouvelles_relations = [];
+
+_engine.get('graphe').get().relations = nouvelles_relations;
+
 function _obtenir_cibles_relations(source_id, type_relation) {
   var ids = [];
   for (const relation of _engine.get('graphe').get().relations) {
-    if (((relation.source_id == source_id) || (relation.type == type_relation))) {
+    if (((relation.source_id == source_id) && (relation.type == type_relation))) {
       __ml_add(ids, relation.target_id);
     }
   }
   return ids;
 }
+
+var ids = [];
 
 function _reduire_branche_oeuvre(oeuvre_id) {
   var detail_ids = [];
@@ -1029,6 +1091,8 @@ function _reduire_branche_oeuvre(oeuvre_id) {
   }
 }
 
+var detail_ids = [];
+
 function _reduire_branche_artiste(artiste_id) {
   var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
   for (const oeuvre_id of oeuvres) {
@@ -1041,6 +1105,12 @@ function _reduire_branche_artiste(artiste_id) {
   _engine.get('oeuvre_etendue_id').set('');
   _engine.get('oeuvre_focus_id').set('');
 }
+
+var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
+
+_engine.get('oeuvre_etendue_id').set('');
+
+_engine.get('oeuvre_focus_id').set('');
 
 function _reduire_branche_mouvement(mouvement_id) {
   var artistes = _obtenir_cibles_relations(mouvement_id, 'contient_artiste');
@@ -1055,6 +1125,14 @@ function _reduire_branche_mouvement(mouvement_id) {
   _engine.get('oeuvre_etendue_id').set('');
   _engine.get('oeuvre_focus_id').set('');
 }
+
+var artistes = _obtenir_cibles_relations(mouvement_id, 'contient_artiste');
+
+_engine.get('artiste_etendu_id').set('');
+
+_engine.get('oeuvre_etendue_id').set('');
+
+_engine.get('oeuvre_focus_id').set('');
 
 function _focaliser_oeuvre_dans_branche_artiste(artiste_id, oeuvre_id) {
   if ((!artiste_id)) {
@@ -1072,6 +1150,12 @@ function _focaliser_oeuvre_dans_branche_artiste(artiste_id, oeuvre_id) {
   _engine.get('oeuvre_focus_id').set(oeuvre_id);
 }
 
+oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
+
+var oeuvres_a_supprimer = [];
+
+_engine.get('oeuvre_focus_id').set(oeuvre_id);
+
 function _ajouter_references_oeuvre(oeuvre_id, references, type_noeud, type_relation, etiquette_par_defaut) {
   for (const reference of (references || [])) {
     var reference_id = ((reference)?.['id'] ?? '');
@@ -1086,7 +1170,7 @@ function _ajouter_references_oeuvre(oeuvre_id, references, type_noeud, type_rela
 
 async function charger_mouvement(mouvement_id) {
   "Charger les details d'un mouvement et son branchement artiste.";
-  if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) || (_engine.get('entite_selectionnee_id').get() == mouvement_id))) {
+  if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) && (_engine.get('entite_selectionnee_id').get() == mouvement_id))) {
     _reduire_branche_mouvement(mouvement_id);
     _mettre_a_jour_selection(mouvement_id, 'mouvement');
     return obtenir_entite_selectionnee();
@@ -1094,7 +1178,7 @@ async function charger_mouvement(mouvement_id) {
   if (_engine.get('artiste_etendu_id').get()) {
     _reduire_branche_artiste(_engine.get('artiste_etendu_id').get());
   }
-  if ((_engine.get('mouvement_etendu_id').get() || (_engine.get('mouvement_etendu_id').get() != mouvement_id))) {
+  if ((_engine.get('mouvement_etendu_id').get() && (_engine.get('mouvement_etendu_id').get() != mouvement_id))) {
     _reduire_branche_mouvement(_engine.get('mouvement_etendu_id').get());
   }
   _engine.get('affichage_chargement').set(true);
@@ -1141,12 +1225,12 @@ async function charger_mouvement(mouvement_id) {
 
 async function charger_artiste(artiste_id) {
   "Charger les details d'un artiste et son branchement oeuvre.";
-  if (((_engine.get('artiste_etendu_id').get() == artiste_id) || (_engine.get('entite_selectionnee_id').get() == artiste_id))) {
+  if (((_engine.get('artiste_etendu_id').get() == artiste_id) && (_engine.get('entite_selectionnee_id').get() == artiste_id))) {
     _reduire_branche_artiste(artiste_id);
     _mettre_a_jour_selection(artiste_id, 'artiste');
     return obtenir_entite_selectionnee();
   }
-  if ((_engine.get('artiste_etendu_id').get() || (_engine.get('artiste_etendu_id').get() != artiste_id))) {
+  if ((_engine.get('artiste_etendu_id').get() && (_engine.get('artiste_etendu_id').get() != artiste_id))) {
     _reduire_branche_artiste(_engine.get('artiste_etendu_id').get());
   }
   _engine.get('affichage_chargement').set(true);
@@ -1200,12 +1284,12 @@ async function charger_artiste(artiste_id) {
 
 async function charger_oeuvre(oeuvre_id) {
   "Charger les details d'une oeuvre et ses noeuds de detail.";
-  if (((_engine.get('oeuvre_etendue_id').get() == oeuvre_id) || (_engine.get('entite_selectionnee_id').get() == oeuvre_id))) {
+  if (((_engine.get('oeuvre_etendue_id').get() == oeuvre_id) && (_engine.get('entite_selectionnee_id').get() == oeuvre_id))) {
     _reduire_branche_oeuvre(oeuvre_id);
     _mettre_a_jour_selection(oeuvre_id, 'oeuvre');
     return obtenir_entite_selectionnee();
   }
-  if ((_engine.get('oeuvre_etendue_id').get() || (_engine.get('oeuvre_etendue_id').get() != oeuvre_id))) {
+  if ((_engine.get('oeuvre_etendue_id').get() && (_engine.get('oeuvre_etendue_id').get() != oeuvre_id))) {
     _reduire_branche_oeuvre(_engine.get('oeuvre_etendue_id').get());
   }
   _engine.get('affichage_chargement').set(true);
@@ -1272,10 +1356,10 @@ async function basculer_visualisation(mode) {
   _engine.get('affichage_chargement').set(true);
   _engine.get('message_erreur').set('');
   try {
-    if (((mode == 'heatmap') || _engine.get('entite_selectionnee_id').get())) {
+    if (((mode == 'heatmap') && _engine.get('entite_selectionnee_id').get())) {
       await _charger_donnees_heatmap(_engine.get('entite_selectionnee_id').get());
     }
-    else if (((mode == 'galaxie') || _engine.get('entite_selectionnee_id').get())) {
+    else if (((mode == 'galaxie') && _engine.get('entite_selectionnee_id').get())) {
       await _initialiser_galaxie(_engine.get('entite_selectionnee_id').get());
     }
     else if ((mode == 'chronologie')) {
@@ -1284,7 +1368,7 @@ async function basculer_visualisation(mode) {
     else if ((mode == 'riviere')) {
       await charger_chronologie(_engine.get('plage_temporelle_debut').get(), _engine.get('plage_temporelle_fin').get());
     }
-    else if (((mode == 'polyglot-studio') || _engine.get('entite_selectionnee_id').get())) {
+    else if (((mode == 'polyglot-studio') && _engine.get('entite_selectionnee_id').get())) {
       await _charger_multilingue_complet(_engine.get('entite_selectionnee_id').get());
     }
     else if ((mode == 'graphe')) {
@@ -1331,7 +1415,7 @@ async function _charger_multilingue_complet(entite_id) {
   }
 }
 
-async function appliquer_filtre(lentille_semantique, mode_conjonction) {
+async function appliquer_filtre(lentille_semantique, mode_conjonction = true) {
   'Appliquer un filtre sémantique au graphe courant.';
 
   _engine.get('affichage_chargement').set(true);
@@ -1393,7 +1477,7 @@ async function basculer_langue(langue) {
     return;
   }
   _engine.get('mode_langue_actif').set(langue);
-  if (((_engine.get('mode_visualisation').get() == 'polyglot-studio') || _engine.get('entite_multilingue_focus').get())) {
+  if (((_engine.get('mode_visualisation').get() == 'polyglot-studio') && _engine.get('entite_multilingue_focus').get())) {
     await _charger_multilingue_complet(_engine.get('entite_multilingue_focus').get());
   }
   return obtenir_instantane_etat();
@@ -1405,6 +1489,8 @@ function basculer_affichage_surfaces() {
   return obtenir_instantane_etat();
 }
 
+_engine.get('afficher_surfaces_paralleles').set((!_engine.get('afficher_surfaces_paralleles').get()));
+
 function obtenir_entite_selectionnee() {
   "Obtenir l'entite actuellement selectionnee.";
   if ((!_engine.get('entite_selectionnee_id').get())) {
@@ -1414,6 +1500,10 @@ function obtenir_entite_selectionnee() {
   var labels = ((_engine.get('etiquettes_multilingues').get())?.[_engine.get('entite_selectionnee_id').get()] ?? {});
   return {['id']: _engine.get('entite_selectionnee_id').get(), ['type']: _engine.get('entite_selectionnee_type').get(), ['donnees']: entite, ['labels_multilingues']: labels};
 }
+
+var entite = ((_engine.get('cache_entites').get())?.[_engine.get('entite_selectionnee_id').get()] ?? {});
+
+var labels = ((_engine.get('etiquettes_multilingues').get())?.[_engine.get('entite_selectionnee_id').get()] ?? {});
 
 function obtenir_noeud_selectionne() {
   'Obtenir le noeud du graphe actuellement selectionne.';
@@ -1587,7 +1677,7 @@ async function charger_selection(entite_id, type_en, etiquette) {
   await naviguer_vers_entite(entite_id, type_fr);
 }
 
-async function explorer_voisinage(entite_id, profondeur) {
+async function explorer_voisinage(entite_id, profondeur = 2) {
   "Explorer le voisinage d'une entité";
   var noeud = ui.etat.graphe.obtenir_noeud(entite_id);
   if ((!noeud)) {
@@ -1610,7 +1700,7 @@ async function explorer_influences(artiste_id) {
   var voisins = ui.etat.graphe.obtenir_voisins(artiste_id, 'influence');
   for (const voisin_id of voisins) {
     var voisin = ui.etat.graphe.obtenir_noeud(voisin_id);
-    if ((voisin || (voisin.type == 'artiste'))) {
+    if ((voisin && (voisin.type == 'artiste'))) {
       passe;
     }
   }
@@ -1689,14 +1779,14 @@ async function lancer_recherche(requete) {
   var resultats_fusionnes = [];
   for (const resultat of resultats_cache) {
     var cle = ((resultat)?.['id'] ?? '');
-    if ((cle || (!__ml_contains(entites_vues, cle)))) {
+    if ((cle && (!__ml_contains(entites_vues, cle)))) {
       entites_vues[cle] = true;
       __ml_add(resultats_fusionnes, resultat);
     }
   }
   for (const resultat of resultats_wikidata) {
     cle = ((resultat)?.['id'] ?? '');
-    if ((cle || (!__ml_contains(entites_vues, cle)))) {
+    if ((cle && (!__ml_contains(entites_vues, cle)))) {
       entites_vues[cle] = true;
       __ml_add(resultats_fusionnes, resultat);
     }
@@ -1717,6 +1807,10 @@ function _rechercher_cache(requete) {
   }
   return resultats;
 }
+
+var resultats = [];
+
+var requete_bas = String(requete).toLowerCase();
 
 async function resoudre_type_entite(entite_id, type_par_defaut) {
   "Résoudre le type d'une entité via les claims Wikidata (P31/P279)";
@@ -1816,6 +1910,16 @@ function rendre_barre_recherche() {
   return html;
 }
 
+var html = '<div class="search-bar-container">';
+
+html = (html + '<input type="text" class="search-input" placeholder="Chercher..." />');
+
+html = (html + '<div class="search-results">');
+
+html = (html + '</div>');
+
+html = (html + '</div>');
+
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.barre_recherche = window.ui.composants.barre_recherche || {};
@@ -1857,6 +1961,10 @@ function rendre_panneau_detail() {
   }
 }
 
+var entite = ui.etat.obtenir_entite_selectionnee();
+
+var type_entite = ((entite)?.['type'] ?? '');
+
 function _rendre_detail_mouvement(entite) {
   "Rendre les détails d'un mouvement artistique";
   var donnees = ((entite)?.['donnees'] ?? {});
@@ -1886,6 +1994,24 @@ function _rendre_detail_mouvement(entite) {
   html = (html + '</div>');
   return html;
 }
+
+var donnees = ((entite)?.['donnees'] ?? {});
+
+var label = ((((donnees)?.['movementLabel'] ?? {}))?.['value'] ?? '');
+
+var debut = ((((donnees)?.['startTime'] ?? {}))?.['value'] ?? '');
+
+var fin = ((((donnees)?.['endTime'] ?? {}))?.['value'] ?? '');
+
+var pays = ((donnees)?.['country'] ?? {});
+
+var pays_label = '';
+
+var html = '<div class="detail-section">';
+
+html = (((html + '<h3>') + label) + '</h3>');
+
+html = (html + '</div>');
 
 function _rendre_detail_artiste(entite) {
   "Rendre les détails d'un artiste";
@@ -1917,6 +2043,24 @@ function _rendre_detail_artiste(entite) {
   return html;
 }
 
+donnees = ((entite)?.['donnees'] ?? {});
+
+label = ((((donnees)?.['artistLabel'] ?? {}))?.['value'] ?? '');
+
+var naissance = ((((donnees)?.['birthTime'] ?? {}))?.['value'] ?? '');
+
+var deces = ((((donnees)?.['deathTime'] ?? {}))?.['value'] ?? '');
+
+var lieu_naissance = ((donnees)?.['birthPlace'] ?? {});
+
+var lieu_naissance_label = '';
+
+html = '<div class="detail-section">';
+
+html = (((html + '<h3>') + label) + '</h3>');
+
+html = (html + '</div>');
+
 function _rendre_detail_oeuvre(entite) {
   "Rendre les détails d'une œuvre";
   var donnees = ((entite)?.['donnees'] ?? {});
@@ -1947,6 +2091,26 @@ function _rendre_detail_oeuvre(entite) {
   return html;
 }
 
+donnees = ((entite)?.['donnees'] ?? {});
+
+label = ((((donnees)?.['artworkLabel'] ?? {}))?.['value'] ?? '');
+
+var createur = ((donnees)?.['creator'] ?? {});
+
+var createur_label = '';
+
+var date = ((((donnees)?.['creationDate'] ?? {}))?.['value'] ?? '');
+
+var musee = ((donnees)?.['museum'] ?? {});
+
+var musee_label = '';
+
+html = '<div class="detail-section">';
+
+html = (((html + '<h3>') + label) + '</h3>');
+
+html = (html + '</div>');
+
 function _rendre_detail_generique(entite) {
   "Rendre les détails génériques pour tout autre type d'entité";
   var donnees = ((entite)?.['donnees'] ?? {});
@@ -1957,6 +2121,18 @@ function _rendre_detail_generique(entite) {
   html = (html + '</div>');
   return html;
 }
+
+donnees = ((entite)?.['donnees'] ?? {});
+
+var entite_id = ((entite)?.['id'] ?? '');
+
+html = '<div class="detail-section">';
+
+html = (((html + '<h3>') + entite_id) + '</h3>');
+
+html = (((html + '<p class="detail-row">Type: ') + ((entite)?.['type'] ?? 'inconnu')) + '</p>');
+
+html = (html + '</div>');
 
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};

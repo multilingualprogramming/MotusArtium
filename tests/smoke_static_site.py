@@ -134,6 +134,7 @@ def validate_files(site_root: pathlib.Path) -> None:
             assert_contains(query, expected, query_path)
 
     validate_bundle_exports(site_root)
+    validate_graph_display_contract(site_root)
 
 
 def validate_bundle_exports(site_root: pathlib.Path) -> None:
@@ -148,6 +149,86 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
         raise AssertionError("bundle.js contains unsupported lowering output")
     if "null /*" in bundle_js:
         raise AssertionError("bundle.js contains placeholder lowering output")
+    validate_bundle_graph_runtime(bundle_js)
+
+
+def validate_bundle_graph_runtime(bundle_js: str) -> None:
+    """Check the generated graph-loading path used by the main display."""
+    expected_markers = [
+        "async function obtenir_graphe_mouvement(mouvement_id, limite = 50)",
+        "async function obtenir_artistes_mouvement(mouvement_id, limite = 50)",
+        "var POINT_TERMINAL_WIKIDATA_GRAPHQL =",
+        "var LANGUE_PAR_DEFAUT = 'fr'",
+        "var CACHE_DOCUMENTS_GRAPHQL = {}",
+        "await donnees.requetes.obtenir_graphe_mouvement(mouvement_id)",
+        "_ajouter_noeud(mouvement_id, 'mouvement'",
+        "_ajouter_noeud(artiste_id, 'artiste'",
+        "_ajouter_relation(mouvement_id, artiste_id, 'contient_artiste')",
+        "if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) &&",
+        "return (Object.keys(this.noeuds)).length",
+    ]
+    for marker in expected_markers:
+        assert_contains(bundle_js, marker, "bundle.js graph runtime")
+
+    if "if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) ||" in bundle_js:
+        raise AssertionError("bundle.js lowers the movement loaded guard with ||")
+    if "async function obtenir_artistes_mouvement(mouvement_id, limite)" in bundle_js:
+        raise AssertionError("bundle.js dropped the artist query default limit")
+
+
+def validate_graph_display_contract(site_root: pathlib.Path) -> None:
+    """Check that loaded graph state can reach the constellation display."""
+    index_html = (site_root / "index.html").read_text(encoding="utf-8")
+    app_js = (site_root / "app.js").read_text(encoding="utf-8")
+    bootstrap_js = (site_root / "bootstrap.js").read_text(encoding="utf-8")
+    bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
+
+    html_markers = [
+        'id="constellation-links"',
+        'id="constellation-nodes"',
+        'class="constellation-links"',
+        'class="constellation-nodes"',
+    ]
+    for marker in html_markers:
+        assert_contains(index_html, marker, "index.html graph display")
+
+    bundle_markers = [
+        "function obtenir_instantane_etat()",
+        "['graphe']: _engine.get('graphe').get().exporter_json()",
+        "exporter_json()",
+        "return {['noeuds']: noeuds_json, ['relations']: relations_json",
+        "var noeuds_json = []",
+        "var relations_json = []",
+        "__ml_add(noeuds_json",
+        "__ml_add(relations_json",
+    ]
+    for marker in bundle_markers:
+        assert_contains(bundle_js, marker, "bundle.js graph snapshot")
+
+    app_markers = [
+        'document.getElementById("constellation-nodes")',
+        'document.getElementById("constellation-links")',
+        "function readRuntimeSnapshot()",
+        "window.ui.etat.obtenir_instantane_etat()",
+        "function getRenderableNodes()",
+        "const allNodes = (((snapshot.graphe || {}).noeuds) || []).slice()",
+        "function renderConstellation()",
+        "const nodes = getRenderableNodes()",
+        "const visibleNodeIds = new Set(nodes.map((node) => node.id))",
+        "constellationLinksEl.appendChild(link)",
+        "constellationNodesEl.appendChild(nodeEl)",
+    ]
+    for marker in app_markers:
+        assert_contains(app_js, marker, "app.js graph display")
+
+    bootstrap_markers = [
+        "await initialiser_application()",
+        "syncShellFromSnapshot(readRuntimeSnapshot())",
+        "renderConstellation()",
+        "renderRuntimeState()",
+    ]
+    for marker in bootstrap_markers:
+        assert_contains(bootstrap_js, marker, "bootstrap.js graph display")
 
 
 def validate_http(site_root: pathlib.Path) -> None:

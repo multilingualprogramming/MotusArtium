@@ -96,7 +96,7 @@ classe Graphe:
 
     déf compter_noeuds() -> nombre:
         """Compter le nombre de nœuds"""
-        retour len(self.noeuds)
+        retour len(self.noeuds.keys())
 
     déf compter_relations() -> nombre:
         """Compter le nombre de relations"""

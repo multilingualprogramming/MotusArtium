@@ -601,7 +601,9 @@ déf basculer_comparaison(entite_id: chaine, type_entite: chaine, etiquette: cha
     si len(entites_comparaison) >= 4:
         retour faux
 
-    entites_comparaison.ajouter({"id": entite_id, "type": type_entite, "label": etiquette})
+    nouvelles_entites = entites_comparaison
+    nouvelles_entites.ajouter({"id": entite_id, "type": type_entite, "label": etiquette})
+    entites_comparaison = nouvelles_entites
 
     # Pré-remplir depuis le cache de relations si déjà chargé
     artistes_ids = []

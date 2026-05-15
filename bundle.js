@@ -1451,7 +1451,13 @@ function basculer_comparaison(entite_id, type_entite, etiquette) {
   'Ajouter ou retirer une entité du panneau de comparaison. Retourne vrai si ajoutée.';
   for (const entite of _engine.get('entites_comparaison').get()) {
     if (__ml_truthy((((entite)?.['id'] ?? '') == entite_id))) {
-      _engine.get('entites_comparaison').get().retirer(entite);
+      var nouvelles = [];
+      for (const e of _engine.get('entites_comparaison').get()) {
+        if (__ml_truthy((((e)?.['id'] ?? '') != entite_id))) {
+          __ml_add(nouvelles, e);
+        }
+      }
+      _engine.get('entites_comparaison').set(nouvelles);
       if (__ml_truthy(__ml_contains(_engine.get('donnees_comparaison').get(), entite_id))) {
         delete _engine.get('donnees_comparaison').get()[entite_id];
       }
@@ -1461,7 +1467,9 @@ function basculer_comparaison(entite_id, type_entite, etiquette) {
   if (__ml_truthy(((_engine.get('entites_comparaison').get()).length >= 4))) {
     return false;
   }
-  __ml_add(_engine.get('entites_comparaison').get(), {['id']: entite_id, ['type']: type_entite, ['label']: etiquette});
+  var nouvelles_entites = _engine.get('entites_comparaison').get();
+  __ml_add(nouvelles_entites, {['id']: entite_id, ['type']: type_entite, ['label']: etiquette});
+  _engine.get('entites_comparaison').set(nouvelles_entites);
   var artistes_ids = [];
   var artistes_labels = {};
   if (__ml_truthy((type_entite == 'mouvement'))) {
@@ -1510,6 +1518,16 @@ async function charger_donnees_comparaison(entite_id, type_entite) {
       passe;
     }
   }
+}
+
+function obtenir_entites_comparaison() {
+  'Retourner la liste des entités du panneau de comparaison';
+  return _engine.get('entites_comparaison').get();
+}
+
+function obtenir_donnees_comparaison() {
+  'Retourner les données chargées pour le panneau de comparaison';
+  return _engine.get('donnees_comparaison').get();
 }
 
 function effacer_comparaison() {
@@ -1651,7 +1669,7 @@ async function reinitialiser_etat() {
 
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
-Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
+Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
 })();
 
 (() => {
@@ -2193,7 +2211,7 @@ function _rendre_recit_mouvement(entite) {
   }
   html = (html + '</div>');
   html = (html + '<footer class="recit-footer">');
-  html = (html + '<button class="recit-btn-explorer" onclick="document.querySelector(\\\'[data-mode=observatory]\\\').click()">Voir la constellation →</button>');
+  html = (html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Voir la constellation →</button>');
   html = (html + '</footer>');
   html = (html + '</article>');
   return html;
@@ -2270,7 +2288,7 @@ function _rendre_recit_artiste(entite) {
   }
   html = (html + '</div>');
   html = (html + '<footer class="recit-footer">');
-  html = (html + '<button class="recit-btn-explorer" onclick="document.querySelector(\\\'[data-mode=observatory]\\\').click()">Voir la constellation →</button>');
+  html = (html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Voir la constellation →</button>');
   html = (html + '</footer>');
   html = (html + '</article>');
   return html;
@@ -2313,19 +2331,19 @@ function _rendre_recit_oeuvre(entite) {
     html = (html + '<section class="recit-section">');
     html = (html + '<h3 class="recit-section-titre">Détails</h3>');
     if (__ml_truthy(musee_label)) {
-      html = (((html + '<p class="recit-relation">\\U0001f3db Conservée au <strong>') + musee_label) + '</strong></p>');
+      html = (((html + '<p class="recit-relation">🏛 Conservée au <strong>') + musee_label) + '</strong></p>');
     }
     if (__ml_truthy(sujet_label)) {
-      html = (((html + '<p class="recit-relation">\\U0001f3a8 Représente <strong>') + sujet_label) + '</strong></p>');
+      html = (((html + '<p class="recit-relation">🎨 Représente <strong>') + sujet_label) + '</strong></p>');
     }
     if (__ml_truthy(materiau_label)) {
-      html = (((html + '<p class="recit-relation">\\U0001f58c Réalisée en <strong>') + materiau_label) + '</strong></p>');
+      html = (((html + '<p class="recit-relation">🖌 Réalisée en <strong>') + materiau_label) + '</strong></p>');
     }
     html = (html + '</section>');
   }
   html = (html + '</div>');
   html = (html + '<footer class="recit-footer">');
-  html = (html + '<button class="recit-btn-explorer" onclick="document.querySelector(\\\'[data-mode=observatory]\\\').click()">Voir la constellation →</button>');
+  html = (html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">Voir la constellation →</button>');
   html = (html + '</footer>');
   html = (html + '</article>');
   return html;
@@ -2361,7 +2379,7 @@ function calculer_intersection_artistes(ids_entites) {
   }
   var ensemble_courant = null;
   for (const entite_id of ids_entites) {
-    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     var artistes = ensemble(((donnees)?.['artistes_ids'] ?? []));
     if (__ml_truthy((ensemble_courant === null))) {
       ensemble_courant = artistes;
@@ -2383,7 +2401,7 @@ function calculer_artistes_uniques(ids_entites) {
   }
   var ensembles = {};
   for (const entite_id of ids_entites) {
-    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     ensembles[entite_id] = ensemble(((donnees)?.['artistes_ids'] ?? []));
   }
   var resultats = {};
@@ -2402,7 +2420,7 @@ function calculer_artistes_uniques(ids_entites) {
 function obtenir_etiquette_artiste(artiste_id, ids_entites) {
   "Chercher l'étiquette d'un artiste dans les données de comparaison chargées";
   for (const entite_id of ids_entites) {
-    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     var labels = ((donnees)?.['artistes_labels'] ?? {});
     var label = ((labels)?.[artiste_id] ?? '');
     if (__ml_truthy(label)) {
@@ -2425,7 +2443,7 @@ function obtenir_statistiques(ids_entites) {
   var artistes_uniques = calculer_artistes_uniques(ids_entites);
   var total_par_entite = {};
   for (const entite_id of ids_entites) {
-    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
     total_par_entite[entite_id] = (((donnees)?.['artistes_ids'] ?? [])).length;
   }
   var uniques_par_entite = {};
@@ -2443,7 +2461,7 @@ Object.assign(window.semantique.intersections, {calculer_intersection_artistes: 
 (() => {
 function rendre_panneau_comparaison() {
   'Rendre le panneau de comparaison entre entités sélectionnées';
-  var entites = ui.etat.entites_comparaison;
+  var entites = ui.etat.obtenir_entites_comparaison();
   if ((!__ml_truthy(entites))) {
     return '';
   }
@@ -2471,8 +2489,8 @@ function rendre_panneau_comparaison() {
   var stats = semantique.intersections.obtenir_statistiques(ids_entites);
   var toutes_chargees = true;
   for (const entite_id of ids_entites) {
-    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
-    if ((!__ml_truthy((((donnees)?.['artistes_ids'] ?? null) === null)))) {
+    var donnees = ((ui.etat.obtenir_donnees_comparaison())?.[entite_id] ?? {});
+    if (__ml_truthy((((donnees)?.['artistes_ids'] ?? null) === null))) {
       toutes_chargees = false;
     }
   }
@@ -2555,7 +2573,10 @@ function _rendre_pastilles(entites) {
     html = (html + '<span class="comparaison-pastille">');
     html = (html + entite_label);
     html = (html + '<button class="comparaison-pastille-retirer"');
-    html = (((((((html + ' onclick="window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(\\\'') + entite_id) + "\\',\\'") + entite_type) + "\\',\\'") + entite_label) + '\\\'),window.renderComparisonPanel())"');
+    html = (((html + ' data-cmp-id="') + entite_id) + '"');
+    html = (((html + ' data-cmp-type="') + entite_type) + '"');
+    html = (((html + ' data-cmp-label="') + entite_label) + '"');
+    html = (html + ' onclick="var b=this;window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(b.dataset.cmpId,b.dataset.cmpType,b.dataset.cmpLabel),window.renderComparisonPanel())"');
     html = (((html + ' aria-label="Retirer ') + entite_label) + '">×</button>');
     html = (html + '</span>');
   }

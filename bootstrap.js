@@ -285,7 +285,11 @@
                                         if (compareBtn) {
                                             evt.stopPropagation();
                                             const compareId = compareBtn.dataset.compareId;
-                                            const compareType = compareBtn.dataset.compareType || "mouvement";
+                                            const compareTypeRaw = compareBtn.dataset.compareType || "mouvement";
+                                            const compareType = (compareTypeRaw === "movement" || compareTypeRaw === "mouvement") ? "mouvement" :
+                                                                (compareTypeRaw === "artist" || compareTypeRaw === "artiste") ? "artiste" :
+                                                                (compareTypeRaw === "artwork" || compareTypeRaw === "oeuvre") ? "oeuvre" :
+                                                                (compareTypeRaw === "museum" || compareTypeRaw === "musee") ? "musee" : compareTypeRaw;
                                             const compareLabel = this.querySelector("strong")?.textContent || compareId;
                                             if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_comparaison === "function") {
                                                 window.ui.etat.basculer_comparaison(compareId, compareType, compareLabel);

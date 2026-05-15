@@ -1,0 +1,23 @@
+query ArtistsByNationality($countryId: String!, $languageCode: LanguageCode!, $first: Int = 20, $after: String) {
+  searchItems(
+    query: {
+      and: [
+        { property: "P31", value: "Q5" }
+        { property: "P27", value: $countryId }
+      ]
+    }
+    first: $first
+    after: $after
+  ) {
+    edges {
+      node {
+        id
+        artistLabel: label(languageCode: $languageCode)
+      }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+  }
+}

@@ -3092,3 +3092,461 @@
             padding: 12px 0;
         }
         }
+
+        /* ================================================================= */
+        /* THREE-TIER NAVIGATION                                              */
+        /* ================================================================= */
+
+        .tier-nav {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .tier-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 6px 14px;
+            background: var(--bg-soft);
+            border: 1.5px solid var(--line-soft);
+            border-radius: var(--radius-sm);
+            color: var(--text-soft);
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .tier-button small.tier-hint {
+            font-size: 0.62rem;
+            font-weight: 400;
+            text-transform: lowercase;
+            letter-spacing: 0;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        .tier-button.is-active {
+            background: var(--accent-teal);
+            border-color: var(--accent-teal);
+            color: #fff;
+        }
+
+        .tier-button.is-active small.tier-hint {
+            color: rgba(255,255,255,0.75);
+        }
+
+        .tier-button:hover:not(.is-active) {
+            background: var(--bg-panel-strong);
+            border-color: var(--accent-teal);
+            color: var(--text-main);
+        }
+
+        .tier-button:focus-visible {
+            outline: var(--focus-ring);
+            outline-offset: var(--focus-ring-offset);
+        }
+
+        .observatory-subtabs {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid var(--line-soft);
+            flex-wrap: wrap;
+        }
+
+        /* mode-switcher becomes a column when subtabs are visible */
+        #mode-switcher {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        /* Compass pole sub-labels */
+        .compass-pole {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .compass-pole .pole-name {
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .compass-pole .pole-hint {
+            font-size: 0.58rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .compass-pole.is-primary .pole-hint,
+        .compass-pole[aria-pressed="true"] .pole-hint {
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ================================================================= */
+        /* STORY PANEL — Tier 1                                               */
+        /* ================================================================= */
+
+        body[data-tier="story"] .top-dashboard,
+        body[data-tier="story"] .workspace,
+        body[data-tier="story"] .footer-rail {
+            display: none;
+        }
+
+        body[data-tier="story"] #story-panel {
+            display: block;
+        }
+
+        #story-panel {
+            padding: 24px 28px;
+        }
+
+        .story-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .story-layout { grid-template-columns: 1fr; }
+        }
+
+        .story-header {
+            margin-bottom: 18px;
+        }
+
+        .story-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 6px 0 8px;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .story-header p {
+            font-size: 0.95rem;
+            color: var(--text-soft);
+            margin: 0;
+        }
+
+        .story-recit-area {
+            min-height: 180px;
+            border: 1.5px solid var(--line-soft);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            background: var(--bg-soft);
+        }
+
+        .story-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Featured Journey */
+        .story-journey {
+            margin-bottom: 24px;
+        }
+
+        .journey-steps {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .journey-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 10px 14px;
+            background: var(--bg-soft);
+            border: 1.5px solid var(--line-soft);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition-fast), border-color var(--transition-fast);
+            color: var(--text-main);
+            min-width: 90px;
+        }
+
+        .journey-step.is-active {
+            border-color: var(--accent-gold);
+            background: rgba(219, 178, 94, 0.12);
+        }
+
+        .journey-step:hover:not(.is-active) {
+            border-color: var(--accent-teal);
+            background: var(--bg-panel-strong);
+        }
+
+        .journey-step:focus-visible {
+            outline: var(--focus-ring);
+            outline-offset: var(--focus-ring-offset);
+        }
+
+        .step-num {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .step-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .journey-step small {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .journey-arrow {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        /* Theme grid */
+        .story-themes { margin-top: 4px; }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .theme-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .theme-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 14px 10px;
+            background: var(--bg-soft);
+            border: 1.5px solid var(--line-soft);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-align: center;
+            transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+            color: var(--text-main);
+        }
+
+        .theme-tile:hover {
+            border-color: var(--accent-teal);
+            background: var(--bg-panel-strong);
+            transform: translateY(-2px);
+        }
+
+        .theme-tile:focus-visible {
+            outline: var(--focus-ring);
+            outline-offset: var(--focus-ring-offset);
+        }
+
+        .theme-tile-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .theme-tile-detail {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        /* ================================================================= */
+        /* EXPLORER PANEL — Tier 2                                            */
+        /* ================================================================= */
+
+        body[data-tier="explorer"] .top-dashboard,
+        body[data-tier="explorer"] .workspace,
+        body[data-tier="explorer"] .footer-rail {
+            display: none;
+        }
+
+        body[data-tier="explorer"] #explorer-panel {
+            display: block;
+        }
+
+        #explorer-panel {
+            padding: 24px 28px;
+        }
+
+        .explorer-header {
+            margin-bottom: 18px;
+        }
+
+        .explorer-header h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 6px 0 0;
+            color: var(--text-main);
+        }
+
+        /* Search mode tabs */
+        .search-modes {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .search-mode-btn {
+            padding: 6px 14px;
+            background: var(--bg-soft);
+            border: 1.5px solid var(--line-soft);
+            border-radius: var(--radius-sm);
+            color: var(--text-soft);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .search-mode-btn.is-active {
+            background: var(--accent-teal);
+            border-color: var(--accent-teal);
+            color: #fff;
+        }
+
+        .search-mode-btn:hover:not(.is-active) {
+            border-color: var(--accent-teal);
+            background: var(--bg-panel-strong);
+            color: var(--text-main);
+        }
+
+        .search-mode-btn:focus-visible {
+            outline: var(--focus-ring);
+            outline-offset: var(--focus-ring-offset);
+        }
+
+        .search-mode-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin: 0 0 18px;
+        }
+
+        /* Explorer layout */
+        .explorer-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .explorer-layout { grid-template-columns: 1fr; }
+        }
+
+        .explorer-themes .theme-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .explorer-inline-section {
+            border: 1.5px solid var(--line-soft);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            background: var(--bg-soft);
+        }
+
+        .explorer-section-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin: 4px 0 10px;
+        }
+
+        /* ================================================================= */
+        /* OBSERVATORY GUIDE OVERLAY                                          */
+        /* ================================================================= */
+
+        .observatory-guide-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 16, 25, 0.72);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+        }
+
+        .observatory-guide-overlay[hidden] {
+            display: none;
+        }
+
+        .observatory-guide-card {
+            background: var(--bg-panel-strong);
+            border: 2px solid var(--accent-teal);
+            border-radius: var(--radius-lg);
+            padding: 32px 36px;
+            max-width: 520px;
+            width: 90%;
+            box-shadow: var(--shadow-panel), 0 0 60px rgba(90, 197, 184, 0.2);
+        }
+
+        .observatory-guide-card h3 {
+            font-size: 1.3rem;
+            margin: 0 0 14px;
+            color: var(--accent-teal);
+        }
+
+        .observatory-guide-card p {
+            font-size: 1rem;
+            color: var(--text-soft);
+            line-height: 1.65;
+            margin: 0 0 22px;
+        }
+
+        .observatory-guide-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ================================================================= */
+        /* TIER VISIBILITY: Observatory shows full existing layout            */
+        /* ================================================================= */
+
+        /* Story/Explorer: hide detail and comparison overlays (they live in their panels) */
+        body[data-tier="story"] .detail-panel-overlay,
+        body[data-tier="story"] .comparison-panel-overlay,
+        body[data-tier="story"] .trajectoire-panel-overlay,
+        body[data-tier="explorer"] .detail-panel-overlay,
+        body[data-tier="explorer"] .comparison-panel-overlay,
+        body[data-tier="explorer"] .trajectoire-panel-overlay {
+            display: none;
+        }
+
+        /* Mirror panel hidden in Story and Explorer tiers */
+        body[data-tier="story"] .mirror.panel,
+        body[data-tier="explorer"] .mirror.panel {
+            display: none;
+        }
+
+        /* Search results dropdown: always visible when active */
+        .search-results-dropdown.is-active {
+            display: block;
+        }

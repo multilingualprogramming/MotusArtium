@@ -1,0 +1,23 @@
+query ArtworksByMaterial($materialId: String!, $languageCode: LanguageCode!, $first: Int = 20, $after: String) {
+  searchItems(
+    query: {
+      and: [
+        { property: "P31", value: "Q3305213" }
+        { property: "P186", value: $materialId }
+      ]
+    }
+    first: $first
+    after: $after
+  ) {
+    edges {
+      node {
+        id
+        artworkLabel: label(languageCode: $languageCode)
+      }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+  }
+}

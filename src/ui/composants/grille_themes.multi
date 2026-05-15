@@ -1,0 +1,25 @@
+# Grille de themes pour le mode Story — tuiles de decouverte sans recherche
+
+déf _tuile_theme(sujet_id: chaine, label: chaine, detail: chaine) -> chaine:
+    """Rendre une tuile thematique cliquable."""
+    html = '<button class="theme-tile" role="listitem" data-action="charger-sujet" data-sujet-id="'
+    html = html + sujet_id + '" data-sujet-label="' + label + '" aria-label="Browse ' + label + '">'
+    html = html + '<span class="theme-tile-label">' + label + '</span>'
+    html = html + '<span class="theme-tile-detail">' + detail + '</span>'
+    html = html + '</button>'
+    retour html
+
+
+déf rendre_grille_themes() -> chaine:
+    """Rendre la grille de 8 tuiles thematiques pour la decouverte Story."""
+    html = '<div class="theme-grid" role="list" aria-label="Browse artworks by theme">'
+    html = html + _tuile_theme("Q441",    "Nature",    "landscapes, plants, animals")
+    html = html + _tuile_theme("Q34379",  "Mythology", "gods, heroes, legends")
+    html = html + _tuile_theme("Q45621",  "Religion",  "sacred art, devotion")
+    html = html + _tuile_theme("Q134307", "Portrait",  "faces, people, identity")
+    html = html + _tuile_theme("Q515",    "City",      "urban life, architecture")
+    html = html + _tuile_theme("Q9415",   "Love",      "romance, relationships")
+    html = html + _tuile_theme("Q1221",   "Sea",       "ocean, ships, coasts")
+    html = html + _tuile_theme("Q198",    "War",       "battles, conflict, history")
+    html = html + '</div>'
+    retour html

@@ -28,6 +28,9 @@ REQUIRED_FILES = [
     "graphql/artworks_by_museum.graphql",
     "graphql/museum_details.graphql",
     "graphql/movements_catalog.graphql",
+    "graphql/artists_by_nationality.graphql",
+    "graphql/artworks_by_material.graphql",
+    "graphql/movements_by_country.graphql",
 ]
 
 DEEP_LINKS = [
@@ -74,6 +77,10 @@ BUNDLE_EXPORTS = [
     "charger_selection",
     # Récit + Comparison panel (Priority 1 & 3)
     "charger_donnees_comparaison",
+    # Three-tier interface additions
+    "charger_musee",
+    "charger_sujet",
+    "rendre_grille_themes",
 ]
 
 # Every entity-loader in bundle.js must delegate to ui.etat, not re-implement.
@@ -140,6 +147,7 @@ def validate_files(site_root: pathlib.Path) -> None:
     validate_bundle_exports(site_root)
     validate_graph_display_contract(site_root)
     validate_recit_comparaison_contract(site_root)
+    validate_three_tier_contract(site_root)
 
 
 def validate_bundle_exports(site_root: pathlib.Path) -> None:
@@ -264,9 +272,8 @@ def validate_recit_comparaison_contract(site_root: pathlib.Path) -> None:
     bootstrap_js = (site_root / "bootstrap.js").read_text(encoding="utf-8")
     bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
 
-    # index.html: mode button + mounting containers
+    # index.html: recit visualization container + comparison containers
     html_markers = [
-        'data-mode="recit"',
         'id="recit-visualization"',
         'id="comparison-panel-container"',
         'id="__ml_recit_root"',
@@ -338,6 +345,71 @@ def validate_recit_comparaison_contract(site_root: pathlib.Path) -> None:
         src = comparaison_multi.read_text(encoding="utf-8")
         assert_contains(src, "déf rendre_panneau_comparaison()", "panneau_comparaison.multi")
         assert_contains(src, "effacer_comparaison", "panneau_comparaison.multi")
+
+
+def validate_three_tier_contract(site_root: pathlib.Path) -> None:
+    """Check that the three-tier Story/Explorer/Observatory system is wired up."""
+    index_html = (site_root / "index.html").read_text(encoding="utf-8")
+    app_js = (site_root / "app.js").read_text(encoding="utf-8")
+    bootstrap_js = (site_root / "bootstrap.js").read_text(encoding="utf-8")
+    bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
+
+    # index.html: tier nav, panels, guide, journey steps, search modes
+    html_markers = [
+        'data-tier="story"',
+        'id="tier-nav"',
+        'id="story-panel"',
+        'id="explorer-panel"',
+        'id="observatory-subtabs"',
+        'id="observatory-guide"',
+        'class="journey-step"',
+        'class="search-mode-btn"',
+        'id="__ml_themes_root"',
+        'id="__ml_story_recit_root"',
+        'id="__ml_explorer_themes_root"',
+    ]
+    for marker in html_markers:
+        assert_contains(index_html, marker, "index.html three-tier")
+
+    # app.js: tier switching logic
+    app_markers = [
+        "setActiveTier",
+        "renderStoryTier",
+        'data-tier',
+        "observatory-guide-seen",
+        "observatory-guide-dismiss",
+        "pole-name",
+    ]
+    for marker in app_markers:
+        assert_contains(app_js, marker, "app.js three-tier")
+
+    # bootstrap.js: theme tile delegation, search mode toggle
+    bootstrap_markers = [
+        "charger-sujet",
+        "currentSearchMode",
+        "search-mode-btn",
+        "window.loadSearchSelection",
+    ]
+    for marker in bootstrap_markers:
+        assert_contains(bootstrap_js, marker, "bootstrap.js three-tier")
+
+    # bundle.js: grille_themes component exported
+    bundle_markers = [
+        "window.ui.composants.grille_themes",
+        "rendre_grille_themes",
+        "charger_musee",
+        "charger_sujet",
+    ]
+    for marker in bundle_markers:
+        assert_contains(bundle_js, marker, "bundle.js three-tier")
+
+    # grille_themes.multi source
+    grille_multi = site_root / "src/ui/composants/grille_themes.multi"
+    if grille_multi.exists():
+        src = grille_multi.read_text(encoding="utf-8")
+        assert_contains(src, "déf rendre_grille_themes()", "grille_themes.multi")
+        assert_contains(src, "data-action", "grille_themes.multi")
+        assert_contains(src, "theme-tile", "grille_themes.multi")
 
 
 def validate_http(site_root: pathlib.Path) -> None:

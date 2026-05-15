@@ -1789,6 +1789,69 @@ async function charger_musee_oeuvres_page_suivante() {
   }
 }
 
+async function charger_musee(musee_id) {
+  "Charger les oeuvres d'un musee et les ajouter au graphe.";
+  _engine.get('affichage_chargement').set(true);
+  _engine.get('message_erreur').set('');
+  _mettre_a_jour_selection(musee_id, 'musee');
+  try {
+    var oeuvres = await donnees.requetes.obtenir_oeuvres_musee(musee_id, 20);
+    var etiquette_musee = musee_id;
+    var noeud_musee = {['museumLabel']: {['value']: musee_id}};
+    _mettre_en_cache(musee_id, noeud_musee);
+    _ajouter_noeud(musee_id, 'musee', etiquette_musee, noeud_musee);
+    for (const oeuvre of __ml_iterate(oeuvres)) {
+      var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
+      var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
+      if (__ml_truthy(oeuvre_id)) {
+        _mettre_en_cache(oeuvre_id, oeuvre);
+        _ajouter_noeud(oeuvre_id, 'oeuvre', oeuvre_label, oeuvre);
+        _ajouter_relation(musee_id, oeuvre_id, 'expose');
+      }
+    }
+    _engine.get('source_id_oeuvres_musee').set(musee_id);
+    _engine.get('curseur_oeuvres_musee').set('');
+    _engine.get('a_page_suivante_oeuvres_musee').set(((oeuvres).length >= 20));
+    _engine.get('affichage_chargement').set(false);
+    await _rafraichir_etiquettes_multilingues(musee_id);
+    return {};
+  } catch (erreur) {
+    _engine.get('message_erreur').set(String(erreur));
+    _engine.get('affichage_chargement').set(false);
+    return {};
+  }
+}
+
+async function charger_sujet(sujet_id) {
+  'Charger les oeuvres representant un sujet donne et les ajouter au graphe.';
+  _engine.get('affichage_chargement').set(true);
+  _engine.get('message_erreur').set('');
+  _mettre_a_jour_selection(sujet_id, 'sujet');
+  try {
+    var oeuvres = await donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20);
+    var etiquette_sujet = sujet_id;
+    var noeud_sujet = {['subjectLabel']: {['value']: sujet_id}};
+    _mettre_en_cache(sujet_id, noeud_sujet);
+    _ajouter_noeud(sujet_id, 'sujet', etiquette_sujet, noeud_sujet);
+    for (const oeuvre of __ml_iterate(oeuvres)) {
+      var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
+      var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
+      if (__ml_truthy(oeuvre_id)) {
+        _mettre_en_cache(oeuvre_id, oeuvre);
+        _ajouter_noeud(oeuvre_id, 'oeuvre', oeuvre_label, oeuvre);
+        _ajouter_relation(sujet_id, oeuvre_id, 'represente');
+      }
+    }
+    _engine.get('affichage_chargement').set(false);
+    await _rafraichir_etiquettes_multilingues(sujet_id);
+    return {};
+  } catch (erreur) {
+    _engine.get('message_erreur').set(String(erreur));
+    _engine.get('affichage_chargement').set(false);
+    return {};
+  }
+}
+
 async function reinitialiser_etat() {
   "Reinitialiser l'etat global sans recreer la structure reactive.";
   _engine.get('entite_selectionnee_id').set('');
@@ -1815,7 +1878,7 @@ async function reinitialiser_etat() {
 
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
-Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
+Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, charger_musee: charger_musee, charger_sujet: charger_sujet, reinitialiser_etat: reinitialiser_etat});
 })();
 
 (() => {
@@ -2868,9 +2931,53 @@ window.ui.composants.trajectoire = window.ui.composants.trajectoire || {};
 Object.assign(window.ui.composants.trajectoire, {rendre_trajectoire: rendre_trajectoire, _rendre_borne: _rendre_borne, _rendre_chemin: _rendre_chemin});
 })();
 
+(() => {
+function _tuile_theme(sujet_id, label, detail) {
+  'Rendre une tuile thematique cliquable.';
+  var html = '<button class="theme-tile" role="listitem" data-action="charger-sujet" data-sujet-id="';
+  html = ((((((html + sujet_id) + '" data-sujet-label="') + label) + '" aria-label="Browse ') + label) + '">');
+  html = (((html + '<span class="theme-tile-label">') + label) + '</span>');
+  html = (((html + '<span class="theme-tile-detail">') + detail) + '</span>');
+  html = (html + '</button>');
+  return html;
+}
+
+function rendre_grille_themes() {
+  'Rendre la grille de 8 tuiles thematiques pour la decouverte Story.';
+  var html = '<div class="theme-grid" role="list" aria-label="Browse artworks by theme">';
+  html = (html + _tuile_theme('Q441', 'Nature', 'landscapes, plants, animals'));
+  html = (html + _tuile_theme('Q34379', 'Mythology', 'gods, heroes, legends'));
+  html = (html + _tuile_theme('Q45621', 'Religion', 'sacred art, devotion'));
+  html = (html + _tuile_theme('Q134307', 'Portrait', 'faces, people, identity'));
+  html = (html + _tuile_theme('Q515', 'City', 'urban life, architecture'));
+  html = (html + _tuile_theme('Q9415', 'Love', 'romance, relationships'));
+  html = (html + _tuile_theme('Q1221', 'Sea', 'ocean, ships, coasts'));
+  html = (html + _tuile_theme('Q198', 'War', 'battles, conflict, history'));
+  html = (html + '</div>');
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.grille_themes = window.ui.composants.grille_themes || {};
+Object.assign(window.ui.composants.grille_themes, {_tuile_theme: _tuile_theme, rendre_grille_themes: rendre_grille_themes});
+})();
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);
+  ui.etat.obtenir_entite_selectionnee();
+}
+
+async function charger_musee(musee_id) {
+  "Charger un musée et retour l'entité sélectionnée";
+  await ui.etat.charger_musee(musee_id);
+  ui.etat.obtenir_entite_selectionnee();
+}
+
+async function charger_sujet(sujet_id) {
+  "Charger les oeuvres d'un sujet thematique";
+  await ui.etat.charger_sujet(sujet_id);
   ui.etat.obtenir_entite_selectionnee();
 }
 
@@ -3044,4 +3151,9 @@ async function trouver_trajectoire_influence(depart_id, arrivee_id) {
 function effacer_trajectoire() {
   "Vider la trajectoire d'influence";
   ui.etat.effacer_trajectoire();
+}
+
+function rendre_grille_themes() {
+  'Rendre la grille de tuiles thematiques pour le mode Story';
+  return ui.composants.grille_themes.rendre_grille_themes();
 }

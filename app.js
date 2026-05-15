@@ -893,7 +893,12 @@
             };
             compassPoleButtons.forEach((button) => {
                 const labels = compassLabels[languageCode] || compassLabels.en;
-                button.textContent = labels[button.dataset.lens] || button.textContent;
+                const nameSpan = button.querySelector(".pole-name");
+                if (nameSpan) {
+                    nameSpan.textContent = labels[button.dataset.lens] || nameSpan.textContent;
+                } else {
+                    button.textContent = labels[button.dataset.lens] || button.textContent;
+                }
             });
 
             const presetLabels = {
@@ -973,6 +978,63 @@
                 // Initialize polyglot studio visualization when entering mode
                 if (isPolyglotMode && runtimeState.selectedEntity && runtimeState.selectedEntity.id) {
                     initializePolyglotStudioVisualization(runtimeState.selectedEntity.id);
+                }
+            }
+        }
+
+        function renderStoryTier() {
+            try {
+                const renderRecit = window.ui?.composants?.recit?.rendre_recit;
+                const storyRoot = document.getElementById("__ml_story_recit_root");
+                if (storyRoot && typeof renderRecit === "function") {
+                    storyRoot.innerHTML = renderRecit() || "";
+                }
+            } catch (e) {
+                console.warn("story recit render error:", e);
+            }
+            try {
+                const renderThemes = window.ui?.composants?.grille_themes?.rendre_grille_themes;
+                const themesRoot = document.getElementById("__ml_themes_root");
+                if (themesRoot && typeof renderThemes === "function" && !themesRoot.hasChildNodes()) {
+                    themesRoot.innerHTML = renderThemes() || "";
+                }
+                const explorerThemesRoot = document.getElementById("__ml_explorer_themes_root");
+                if (explorerThemesRoot && typeof renderThemes === "function" && !explorerThemesRoot.hasChildNodes()) {
+                    explorerThemesRoot.innerHTML = renderThemes() || "";
+                }
+            } catch (e) {
+                console.warn("theme grid render error:", e);
+            }
+        }
+
+        function setActiveTier(tier) {
+            const validTiers = ["story", "explorer", "observatory"];
+            if (!validTiers.includes(tier)) return;
+
+            document.body.dataset.tier = tier;
+            const tierButtons = Array.from(document.querySelectorAll(".tier-button"));
+            tierButtons.forEach((btn) => btn.classList.toggle("is-active", btn.dataset.tier === tier));
+
+            const observatorySubtabs = document.getElementById("observatory-subtabs");
+            if (observatorySubtabs) {
+                observatorySubtabs.hidden = (tier !== "observatory");
+            }
+
+            if (tier === "story") {
+                renderStoryTier();
+                if (runtimeState.currentMode !== "recit") {
+                    applyShellMode("recit", { updateUrl: false });
+                }
+            } else if (tier === "explorer") {
+                renderStoryTier();
+            } else if (tier === "observatory") {
+                const guideKey = "observatory-guide-seen";
+                if (!localStorage.getItem(guideKey)) {
+                    const guide = document.getElementById("observatory-guide");
+                    if (guide) guide.removeAttribute("hidden");
+                }
+                if (runtimeState.currentMode === "recit") {
+                    applyShellMode("observatory", { updateUrl: false });
                 }
             }
         }
@@ -4362,6 +4424,67 @@
             });
         }
 
+        // Tier navigation
+        const tierButtons = Array.from(document.querySelectorAll(".tier-button"));
+        tierButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setActiveTier(button.dataset.tier);
+            });
+        });
+
+        // Observatory guide dismiss
+        const observatoryGuideDismissEl = document.getElementById("observatory-guide-dismiss");
+        if (observatoryGuideDismissEl) {
+            observatoryGuideDismissEl.addEventListener("click", () => {
+                localStorage.setItem("observatory-guide-seen", "1");
+                const guide = document.getElementById("observatory-guide");
+                if (guide) guide.hidden = true;
+            });
+        }
+        const observatoryGuideStoryEl = document.getElementById("observatory-guide-story");
+        if (observatoryGuideStoryEl) {
+            observatoryGuideStoryEl.addEventListener("click", () => {
+                localStorage.setItem("observatory-guide-seen", "1");
+                const guide = document.getElementById("observatory-guide");
+                if (guide) guide.hidden = true;
+                setActiveTier("story");
+            });
+        }
+
+        // Story panel tier-switch buttons
+        const storyToExplorerEl = document.getElementById("story-to-explorer");
+        if (storyToExplorerEl) {
+            storyToExplorerEl.addEventListener("click", () => setActiveTier("explorer"));
+        }
+        const storyToObservatoryEl = document.getElementById("story-to-observatory");
+        if (storyToObservatoryEl) {
+            storyToObservatoryEl.addEventListener("click", () => setActiveTier("observatory"));
+        }
+
+        // Featured journey steps
+        document.addEventListener("click", async (e) => {
+            const step = e.target.closest(".journey-step");
+            if (!step) return;
+            const id = step.dataset.entityId;
+            const type = step.dataset.entityType;
+            const label = step.dataset.label;
+            if (!id || !type) return;
+            try {
+                if (typeof window.loadSearchSelection === "function") {
+                    await window.loadSearchSelection(id, type, label);
+                } else if (type === "movement" && typeof window.charger_mouvement === "function") {
+                    await window.charger_mouvement(id);
+                } else if (type === "artist" && typeof window.charger_artiste === "function") {
+                    await window.charger_artiste(id);
+                } else if (type === "museum" && typeof window.charger_musee === "function") {
+                    await window.charger_musee(id);
+                }
+                renderStoryTier();
+            } catch (err) {
+                console.warn("journey step error:", err);
+            }
+        });
+
         window.searchEntities = async function searchEntities(query) {
             if (!query || query.length < 2) return [];
             const lang = runtimeState.currentLanguage || "fr";
@@ -4394,3 +4517,5 @@
         buildShellFilter();
         loadQueryInventory();
         updateLanguageSurface("fr");
+        // Render Story tier content on load (body starts as data-tier="story")
+        renderStoryTier();

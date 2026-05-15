@@ -256,6 +256,8 @@
                 await charger_selection(entityId, entityType, displayLabel);
             }
 
+            window.loadSearchSelection = loadSearchSelection;
+
 
             function positionDropdown() {
                 const rect = searchInput.getBoundingClientRect();
@@ -423,3 +425,47 @@
             }
 
         }
+
+        // Theme tile delegation — data-action="charger-sujet" on theme grid buttons
+        document.addEventListener("click", async (e) => {
+            const tile = e.target.closest("[data-action='charger-sujet']");
+            if (!tile) return;
+            const sujetId = tile.dataset.sujetId;
+            const sujetLabel = tile.dataset.sujetLabel || sujetId;
+            if (!sujetId) return;
+            try {
+                if (typeof charger_sujet === "function") {
+                    await charger_sujet(sujetId);
+                } else if (window.ui && window.ui.etat && typeof window.ui.etat.charger_sujet === "function") {
+                    await window.ui.etat.charger_sujet(sujetId);
+                }
+                syncShellFromSnapshot(readRuntimeSnapshot());
+                renderConstellation();
+                renderRuntimeState();
+                await refreshMultilingualEntityLabels();
+                window.renderDetailPanel();
+            } catch (err) {
+                console.warn("charger-sujet error:", err);
+            }
+        });
+
+        // Search mode toggle in Explorer panel
+        window.currentSearchMode = "entity";
+        document.addEventListener("click", (e) => {
+            const btn = e.target.closest(".search-mode-btn");
+            if (!btn) return;
+            const mode = btn.dataset.searchMode;
+            if (!mode) return;
+            window.currentSearchMode = mode;
+            document.querySelectorAll(".search-mode-btn").forEach((b) => {
+                b.classList.toggle("is-active", b.dataset.searchMode === mode);
+            });
+            const hintEl = document.getElementById("search-mode-hint");
+            const hints = {
+                entity: "Search for any movement, artist, or artwork",
+                "artworks-of": "Enter an artist name to see their artworks",
+                "artists-from": "Enter a country to discover its artists",
+                "by-material": "Enter a material (oil, marble, bronze…)"
+            };
+            if (hintEl) hintEl.textContent = hints[mode] || "";
+        });

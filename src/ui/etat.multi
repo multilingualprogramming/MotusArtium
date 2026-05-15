@@ -937,6 +937,71 @@ asynchrone déf charger_musee_oeuvres_page_suivante():
         retour nul
 
 
+asynchrone déf charger_musee(musee_id: chaine):
+    """Charger les oeuvres d'un musee et les ajouter au graphe."""
+    affichage_chargement = vrai
+    message_erreur = ""
+    _mettre_a_jour_selection(musee_id, "musee")
+
+    essayer:
+        oeuvres = attendre donnees.requetes.obtenir_oeuvres_musee(musee_id, 20)
+        etiquette_musee = musee_id
+        noeud_musee = {"museumLabel": {"value": musee_id}}
+        _mettre_en_cache(musee_id, noeud_musee)
+        _ajouter_noeud(musee_id, "musee", etiquette_musee, noeud_musee)
+
+        pour oeuvre dans oeuvres:
+            oeuvre_id = _extraire_id_entite(oeuvre.obtenir("artwork", {}))
+            oeuvre_label = _etiquette_entite(oeuvre, ["artworkLabel"], "Oeuvre inconnue")
+            si oeuvre_id:
+                _mettre_en_cache(oeuvre_id, oeuvre)
+                _ajouter_noeud(oeuvre_id, "oeuvre", oeuvre_label, oeuvre)
+                _ajouter_relation(musee_id, oeuvre_id, "expose")
+
+        source_id_oeuvres_musee = musee_id
+        curseur_oeuvres_musee = ""
+        a_page_suivante_oeuvres_musee = len(oeuvres) >= 20
+        affichage_chargement = faux
+        attendre _rafraichir_etiquettes_multilingues(musee_id)
+        retour {}
+
+    sauf erreur:
+        message_erreur = chaine(erreur)
+        affichage_chargement = faux
+        retour {}
+
+
+asynchrone déf charger_sujet(sujet_id: chaine):
+    """Charger les oeuvres representant un sujet donne et les ajouter au graphe."""
+    affichage_chargement = vrai
+    message_erreur = ""
+    _mettre_a_jour_selection(sujet_id, "sujet")
+
+    essayer:
+        oeuvres = attendre donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20)
+        etiquette_sujet = sujet_id
+        noeud_sujet = {"subjectLabel": {"value": sujet_id}}
+        _mettre_en_cache(sujet_id, noeud_sujet)
+        _ajouter_noeud(sujet_id, "sujet", etiquette_sujet, noeud_sujet)
+
+        pour oeuvre dans oeuvres:
+            oeuvre_id = _extraire_id_entite(oeuvre.obtenir("artwork", {}))
+            oeuvre_label = _etiquette_entite(oeuvre, ["artworkLabel"], "Oeuvre inconnue")
+            si oeuvre_id:
+                _mettre_en_cache(oeuvre_id, oeuvre)
+                _ajouter_noeud(oeuvre_id, "oeuvre", oeuvre_label, oeuvre)
+                _ajouter_relation(sujet_id, oeuvre_id, "represente")
+
+        affichage_chargement = faux
+        attendre _rafraichir_etiquettes_multilingues(sujet_id)
+        retour {}
+
+    sauf erreur:
+        message_erreur = chaine(erreur)
+        affichage_chargement = faux
+        retour {}
+
+
 asynchrone déf reinitialiser_etat():
     """Reinitialiser l'etat global sans recreer la structure reactive."""
     entite_selectionnee_id = ""

@@ -19,7 +19,7 @@
         </style>
     </head>
 
-    <body data-mode="observatory">
+    <body data-mode="story" data-tier="story">
         <a href="#main-content" class="sr-only-focusable">Skip to main content</a>
         <div class="shell" id="app-shell">
             <header class="topbar panel" role="banner">
@@ -30,17 +30,26 @@
                         influence across art history.</p>
                 </div>
 
-                <nav class="mode-switcher" aria-label="Application visualization modes" id="mode-switcher" role="tablist">
-                    <button type="button" class="mode-button is-active" data-mode="observatory"
-                        title="Observatory - Graph constellation exploration" role="tab" aria-selected="true">Observatory</button>
-                    <button type="button" class="mode-button" data-mode="query-theater"
-                        title="Query Theater - Live GraphQL query editor" role="tab" aria-selected="false">Query Theater</button>
-                    <button type="button" class="mode-button" data-mode="polyglot-studio"
-                        title="Polyglot Studio - Multilingual entity surfaces" role="tab" aria-selected="false">Polyglot Studio</button>
-                    <button type="button" class="mode-button" data-mode="temporal-river"
-                        title="Temporal River - Timeline and chronological analysis" role="tab" aria-selected="false">Temporal River</button>
-                    <button type="button" class="mode-button" data-mode="recit"
-                        title="Récit - Narrative story view for all users" role="tab" aria-selected="false">Récit</button>
+                <nav class="mode-switcher" aria-label="Experience level and visualization modes" id="mode-switcher">
+                    <!-- Tier navigation (always visible) -->
+                    <div class="tier-nav" id="tier-nav" role="tablist" aria-label="Experience level">
+                        <button type="button" class="tier-button is-active" data-tier="story" role="tab" aria-selected="true" title="Story — read narratives, browse themes">
+                            <span class="tier-label">Story</span><small class="tier-hint">read &amp; discover</small>
+                        </button>
+                        <button type="button" class="tier-button" data-tier="explorer" role="tab" aria-selected="false" title="Explorer — search, compare, find connections">
+                            <span class="tier-label">Explorer</span><small class="tier-hint">search &amp; compare</small>
+                        </button>
+                        <button type="button" class="tier-button" data-tier="observatory" role="tab" aria-selected="false" title="Observatory — graph constellation and data tools">
+                            <span class="tier-label">Observatory</span><small class="tier-hint">graphs &amp; data</small>
+                        </button>
+                    </div>
+                    <!-- Observatory sub-modes (hidden until Observatory tier is active) -->
+                    <div class="observatory-subtabs" id="observatory-subtabs" hidden role="tablist" aria-label="Observatory sub-modes">
+                        <button type="button" class="mode-button is-active" data-mode="observatory" role="tab" aria-selected="true" title="Constellation graph exploration">Constellation</button>
+                        <button type="button" class="mode-button" data-mode="query-theater" role="tab" aria-selected="false" title="Live GraphQL query editor">Query Lab</button>
+                        <button type="button" class="mode-button" data-mode="polyglot-studio" role="tab" aria-selected="false" title="Multilingual entity surfaces">Languages</button>
+                        <button type="button" class="mode-button" data-mode="temporal-river" role="tab" aria-selected="false" title="Timeline and chronological analysis">Timeline</button>
+                    </div>
                 </nav>
 
                 <div class="search-bar-inline" role="search">
@@ -74,6 +83,98 @@
                     </button>
                 </div>
             </header>
+
+            <!-- ============================================================ -->
+            <!-- STORY PANEL — Tier 1 default view                           -->
+            <!-- ============================================================ -->
+            <section id="story-panel" class="story-panel panel" hidden aria-label="Story — narrative discovery mode">
+                <div class="story-layout">
+                    <!-- Left: narrative card -->
+                    <div class="story-recit-col">
+                        <div class="story-header">
+                            <span class="eyebrow">Discover</span>
+                            <h2 id="story-heading">Read the story of any artwork, artist, or movement.</h2>
+                            <p id="story-subheading">Click a theme tile or a journey step to begin. No graph, no jargon — just the story.</p>
+                        </div>
+                        <div class="story-recit-area" id="story-recit-area">
+                            <div id="__ml_story_recit_root"></div>
+                        </div>
+                        <div class="story-actions">
+                            <button type="button" class="ghost-button" id="story-to-explorer">Explore deeper →</button>
+                            <button type="button" class="ghost-button" id="story-to-observatory">See the constellation →</button>
+                        </div>
+                    </div>
+                    <!-- Right: discovery tools -->
+                    <div class="story-discovery-col">
+                        <!-- Featured Journey -->
+                        <section class="story-journey" aria-label="Featured journey walkthrough">
+                            <h3 class="section-title">Featured Journey</h3>
+                            <div class="journey-steps" id="journey-steps" role="group" aria-label="Guided art journey steps">
+                                <button type="button" class="journey-step is-active" data-entity-id="Q40415" data-entity-type="movement" data-entity-label="Impressionism" aria-label="Step 1: Impressionism movement">
+                                    <span class="step-num">1</span>
+                                    <span class="step-label">Impressionism</span>
+                                    <small>movement</small>
+                                </button>
+                                <span class="journey-arrow" aria-hidden="true">→</span>
+                                <button type="button" class="journey-step" data-entity-id="Q296" data-entity-type="artist" data-entity-label="Claude Monet" aria-label="Step 2: Claude Monet, artist">
+                                    <span class="step-num">2</span>
+                                    <span class="step-label">Claude Monet</span>
+                                    <small>artist</small>
+                                </button>
+                                <span class="journey-arrow" aria-hidden="true">→</span>
+                                <button type="button" class="journey-step" data-entity-id="Q23387" data-entity-type="museum" data-entity-label="Musée d'Orsay" aria-label="Step 3: Musée d'Orsay, museum">
+                                    <span class="step-num">3</span>
+                                    <span class="step-label">Musée d'Orsay</span>
+                                    <small>museum</small>
+                                </button>
+                            </div>
+                        </section>
+                        <!-- Theme discovery grid -->
+                        <section class="story-themes" aria-label="Browse artworks by theme">
+                            <h3 class="section-title">Browse by Theme</h3>
+                            <div id="__ml_themes_root" aria-label="Theme tiles"></div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- EXPLORER PANEL — Tier 2 search and compare view             -->
+            <!-- ============================================================ -->
+            <section id="explorer-panel" class="explorer-panel panel" hidden aria-label="Explorer — search, compare, and filter">
+                <div class="explorer-header">
+                    <span class="eyebrow">Explorer</span>
+                    <h2>Search, compare, and find connections.</h2>
+                </div>
+                <!-- Search mode selector -->
+                <div class="search-modes" role="group" aria-label="Choose search type">
+                    <button type="button" class="search-mode-btn is-active" data-search-mode="entity" title="Search for any named entity">Find entity</button>
+                    <button type="button" class="search-mode-btn" data-search-mode="subject" title="Find artworks that depict a subject">Artworks of&hellip;</button>
+                    <button type="button" class="search-mode-btn" data-search-mode="nationality" title="Find artists by nationality">Artists from&hellip;</button>
+                    <button type="button" class="search-mode-btn" data-search-mode="material" title="Find artworks by material or technique">By material&hellip;</button>
+                </div>
+                <p class="search-mode-hint" id="search-mode-hint" role="status" aria-live="polite">Search for a movement, artist, or artwork using the bar above.</p>
+
+                <div class="explorer-layout">
+                    <!-- Theme grid for zero-typing discovery -->
+                    <section class="explorer-themes" aria-label="Browse by theme">
+                        <h3 class="section-title">Browse by Theme</h3>
+                        <div id="__ml_explorer_themes_root"></div>
+                    </section>
+                    <!-- Promoted comparison panel -->
+                    <section class="explorer-inline-section" id="explorer-comparison-section" aria-label="Comparison panel">
+                        <h3 class="section-title">Compare</h3>
+                        <p class="explorer-section-hint">Use <em>+ Compare</em> in search results to add entities here.</p>
+                        <div id="__ml_explorer_comparison_root"></div>
+                    </section>
+                    <!-- Promoted trajectory panel -->
+                    <section class="explorer-inline-section" id="explorer-trajectory-section" aria-label="Influence trajectory">
+                        <h3 class="section-title">Influence Path</h3>
+                        <p class="explorer-section-hint">Use <em>+ Trajectory</em> on artist results to trace influence paths.</p>
+                        <div id="__ml_explorer_trajectoire_root"></div>
+                    </section>
+                </div>
+            </section>
 
             <section class="top-dashboard">
                 <section class="hero panel">
@@ -131,12 +232,12 @@
                                 <div class="compass-core">
                                     <span class="compass-core-label" id="compass-label">Lens</span>
                                 </div>
-                                <button type="button" class="compass-pole is-primary" data-position="top" data-lens="movement" aria-label="Movement lens - emphasize art movements and schools" aria-pressed="true">Movement</button>
-                                <button type="button" class="compass-pole" data-position="top-right" data-lens="artist" aria-label="Artist lens - emphasize artists and creators" aria-pressed="false">Artist</button>
-                                <button type="button" class="compass-pole" data-position="bottom-right" data-lens="work" aria-label="Work lens - emphasize artworks and creations" aria-pressed="false">Work</button>
-                                <button type="button" class="compass-pole" data-position="bottom" data-lens="place" aria-label="Place lens - emphasize geography and locations" aria-pressed="false">Place</button>
-                                <button type="button" class="compass-pole" data-position="bottom-left" data-lens="time" aria-label="Time lens - emphasize temporal periods" aria-pressed="false">Time</button>
-                                <button type="button" class="compass-pole" data-position="top-left" data-lens="influence" aria-label="Influence lens - emphasize artistic influences and connections" aria-pressed="false">Influence</button>
+                                <button type="button" class="compass-pole is-primary" data-position="top" data-lens="movement" aria-label="Movement lens — what style or school?" aria-pressed="true"><span class="pole-name">Movement</span><span class="pole-hint">style/school</span></button>
+                                <button type="button" class="compass-pole" data-position="top-right" data-lens="artist" aria-label="Artist lens — who made it?" aria-pressed="false"><span class="pole-name">Artist</span><span class="pole-hint">who made it?</span></button>
+                                <button type="button" class="compass-pole" data-position="bottom-right" data-lens="work" aria-label="Work lens — what was created?" aria-pressed="false"><span class="pole-name">Work</span><span class="pole-hint">what was created?</span></button>
+                                <button type="button" class="compass-pole" data-position="bottom" data-lens="place" aria-label="Place lens — where?" aria-pressed="false"><span class="pole-name">Place</span><span class="pole-hint">where?</span></button>
+                                <button type="button" class="compass-pole" data-position="bottom-left" data-lens="time" aria-label="Time lens — when?" aria-pressed="false"><span class="pole-name">Time</span><span class="pole-hint">when?</span></button>
+                                <button type="button" class="compass-pole" data-position="top-left" data-lens="influence" aria-label="Influence lens — who inspired whom?" aria-pressed="false"><span class="pole-name">Influence</span><span class="pole-hint">who inspired?</span></button>
                             </div>
                         </fieldset>
                         <p id="compass-copy">The semantic compass replaces flat filters with interactive lenses: emphasize movement, artist, work,
@@ -368,6 +469,17 @@
                     <span class="chip is-live" id="status-chip">GraphQL Live - 0 docs</span>
                 </section>
             </footer>
+            <!-- Observatory guide overlay — first-time tooltip for constellation view -->
+            <div id="observatory-guide" class="observatory-guide-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="observatory-guide-title">
+                <div class="observatory-guide-card">
+                    <h3 id="observatory-guide-title">Welcome to the Observatory</h3>
+                    <p>Each dot is an artist, artwork, or movement. Lines show influence and succession. Scroll to zoom, drag to pan. Click any dot to load its story.</p>
+                    <div class="observatory-guide-actions">
+                        <button type="button" id="observatory-guide-dismiss" class="ghost-button">Got it, let me explore</button>
+                        <button type="button" id="observatory-guide-story" class="entry-card" style="display:inline-flex">Back to Story mode</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Global search results dropdown (positioned via JS) -->

@@ -5,6 +5,7 @@ importer ui.composants.panneau_detail
 importer ui.composants.recit
 importer ui.composants.panneau_comparaison
 importer ui.composants.trajectoire
+importer ui.composants.grille_themes
 importer ui.interactions.recherche
 importer ui.interactions.navigation
 importer ui.etat
@@ -18,6 +19,18 @@ importer semantique.intersections
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retour l'entité sélectionnée"""
     attendre ui.etat.charger_mouvement(mouvement_id)
+    ui.etat.obtenir_entite_selectionnee()
+
+
+asynchrone déf charger_musee(musee_id):
+    """Charger un musée et retour l'entité sélectionnée"""
+    attendre ui.etat.charger_musee(musee_id)
+    ui.etat.obtenir_entite_selectionnee()
+
+
+asynchrone déf charger_sujet(sujet_id):
+    """Charger les oeuvres d'un sujet thematique"""
+    attendre ui.etat.charger_sujet(sujet_id)
     ui.etat.obtenir_entite_selectionnee()
 
 
@@ -219,3 +232,12 @@ asynchrone déf trouver_trajectoire_influence(depart_id: chaine, arrivee_id: cha
 déf effacer_trajectoire():
     """Vider la trajectoire d'influence"""
     ui.etat.effacer_trajectoire()
+
+
+# ============================================================================
+# Grille de themes — re-export depuis ui.composants.grille_themes
+# ============================================================================
+
+déf rendre_grille_themes():
+    """Rendre la grille de tuiles thematiques pour le mode Story"""
+    retour ui.composants.grille_themes.rendre_grille_themes()

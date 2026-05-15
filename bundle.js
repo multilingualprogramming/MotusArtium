@@ -632,40 +632,19 @@ async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = '') {
 }
 
 async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
-  'Rechercher des entités sur Wikidata par texte/mot-clé';
+  "Rechercher des entités sur Wikidata via l'API REST wbsearchentities";
   if (((!__ml_truthy(terme)) || __ml_truthy(((terme).length < 2)))) {
     return [];
   }
-  var donnees = await executer_requete_graphql('recherche_par_texte.graphql', {['terme']: terme, ['languageCode']: langue});
-  var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
+  var url = ((((('https://www.wikidata.org/w/api.php?action=wbsearchentities' + '&search=') + encodeURIComponent(terme)) + '&language=') + langue) + '&format=json&origin=*&limit=20');
+  var reponse = await fetch(url);
+  var corps = await reponse.json();
+  var entrees = ((corps)?.['search'] ?? []);
   var resultats = [];
-  for (const edge of edges) {
-    var noeud = ((edge)?.['node'] ?? {});
-    if ((!__ml_truthy(noeud))) {
-      passe;
-    }
-    var entite_id = ((noeud)?.['id'] ?? '');
-    var etiquette = ((noeud)?.['label'] ?? '');
-    var description = ((noeud)?.['description'] ?? '');
-    var instance_of = _extraire_items(((noeud)?.['instanceOf'] ?? []));
-    var type_entite = 'entite';
-    for (const instance of instance_of) {
-      var instance_id = ((instance)?.['id'] ?? '');
-      if (__ml_truthy((instance_id == TYPE_MOUVEMENT_ARTISTIQUE))) {
-        type_entite = 'mouvement';
-        break;
-      }
-      else if (__ml_truthy((instance_id == TYPE_ETRE_HUMAIN))) {
-        type_entite = 'artiste';
-        break;
-      }
-      else if (__ml_truthy((instance_id == TYPE_OEUVRE_ART))) {
-        type_entite = 'oeuvre';
-        break;
-      }
-    }
+  for (const entree of entrees) {
+    var entite_id = ((entree)?.['id'] ?? '');
     if (__ml_truthy(entite_id)) {
-      __ml_add(resultats, {['id']: entite_id, ['label']: etiquette, ['description']: description, ['type']: type_entite});
+      __ml_add(resultats, {['id']: entite_id, ['label']: ((entree)?.['label'] ?? ''), ['description']: ((entree)?.['description'] ?? ''), ['type']: 'entite'});
     }
   }
   return resultats;
@@ -944,6 +923,12 @@ __ml_signals['zoom_constellation'] = _engine.declare('zoom_constellation', 1);
 __ml_signals['pan_constellation_x'] = _engine.declare('pan_constellation_x', 0);
 
 __ml_signals['pan_constellation_y'] = _engine.declare('pan_constellation_y', 0);
+
+__ml_signals['mode_recit'] = _engine.declare('mode_recit', false);
+
+__ml_signals['entites_comparaison'] = _engine.declare('entites_comparaison', []);
+
+__ml_signals['donnees_comparaison'] = _engine.declare('donnees_comparaison', {});
 
 __ml_signals['curseur_artistes_mouvement'] = _engine.declare('curseur_artistes_mouvement', '');
 
@@ -1327,6 +1312,9 @@ async function basculer_visualisation(mode) {
     else if (__ml_truthy((mode == 'graphe'))) {
       passe;
     }
+    else if (__ml_truthy((mode == 'recit'))) {
+      passe;
+    }
     _engine.get('mode_visualisation').set(mode);
     _engine.get('affichage_chargement').set(false);
     return obtenir_instantane_etat();
@@ -1440,6 +1428,94 @@ function basculer_affichage_surfaces() {
   "Basculer entre l'affichage cote a cote et par onglets.";
   _engine.get('afficher_surfaces_paralleles').set((!__ml_truthy(_engine.get('afficher_surfaces_paralleles').get())));
   return obtenir_instantane_etat();
+}
+
+function obtenir_artistes_mouvement(mouvement_id) {
+  "Extraire les IDs d'artistes d'un mouvement depuis le cache de relations";
+  var contrat = ((_engine.get('cache_relations').get())?.[mouvement_id] ?? {});
+  var artistes_bruts = ((contrat)?.['artistes'] ?? []);
+  var ids = [];
+  for (const artiste of artistes_bruts) {
+    var uri = ((((artiste)?.['artist'] ?? {}))?.['value'] ?? '');
+    if (__ml_truthy(uri)) {
+      var artiste_id = uri.replace('http://www.wikidata.org/entity/', '');
+      if (__ml_truthy(artiste_id)) {
+        __ml_add(ids, artiste_id);
+      }
+    }
+  }
+  return ids;
+}
+
+function basculer_comparaison(entite_id, type_entite, etiquette) {
+  'Ajouter ou retirer une entité du panneau de comparaison. Retourne vrai si ajoutée.';
+  for (const entite of _engine.get('entites_comparaison').get()) {
+    if (__ml_truthy((((entite)?.['id'] ?? '') == entite_id))) {
+      _engine.get('entites_comparaison').get().retirer(entite);
+      if (__ml_truthy(__ml_contains(_engine.get('donnees_comparaison').get(), entite_id))) {
+        delete _engine.get('donnees_comparaison').get()[entite_id];
+      }
+      return false;
+    }
+  }
+  if (__ml_truthy(((_engine.get('entites_comparaison').get()).length >= 4))) {
+    return false;
+  }
+  __ml_add(_engine.get('entites_comparaison').get(), {['id']: entite_id, ['type']: type_entite, ['label']: etiquette});
+  var artistes_ids = [];
+  var artistes_labels = {};
+  if (__ml_truthy((type_entite == 'mouvement'))) {
+    artistes_ids = obtenir_artistes_mouvement(entite_id);
+    for (const artiste_id of artistes_ids) {
+      var noeud = _engine.get('graphe').get().obtenir_noeud(artiste_id);
+      if (__ml_truthy(noeud)) {
+        artistes_labels[artiste_id] = noeud.etiquette;
+      }
+    }
+  }
+  _engine.get('donnees_comparaison').setIndex(entite_id, {['label']: etiquette, ['artistes_ids']: artistes_ids, ['artistes_labels']: artistes_labels});
+  return true;
+}
+
+async function charger_donnees_comparaison(entite_id, type_entite) {
+  "Charger les données d'une entité pour la comparaison sans modifier le graphe principal";
+  var existantes = ((_engine.get('donnees_comparaison').get())?.[entite_id] ?? {});
+  if (__ml_truthy(((existantes)?.['artistes_ids'] ?? []))) {
+    return;
+  }
+  if (__ml_truthy((type_entite == 'mouvement'))) {
+    try {
+      var contrat = await donnees.requetes.obtenir_graphe_mouvement(entite_id);
+      var artistes_bruts = ((contrat)?.['artistes'] ?? []);
+      var ids = [];
+      var labels = {};
+      for (const artiste of artistes_bruts) {
+        var uri = ((((artiste)?.['artist'] ?? {}))?.['value'] ?? '');
+        var label_art = ((((artiste)?.['artistLabel'] ?? {}))?.['value'] ?? '');
+        if (__ml_truthy(uri)) {
+          var artiste_id = uri.replace('http://www.wikidata.org/entity/', '');
+          if (__ml_truthy(artiste_id)) {
+            __ml_add(ids, artiste_id);
+            if (__ml_truthy(label_art)) {
+              labels[artiste_id] = label_art;
+            }
+          }
+        }
+      }
+      var donnees_courantes = ((_engine.get('donnees_comparaison').get())?.[entite_id] ?? {});
+      donnees_courantes['artistes_ids'] = ids;
+      donnees_courantes['artistes_labels'] = labels;
+      _engine.get('donnees_comparaison').setIndex(entite_id, donnees_courantes);
+    } catch (erreur) {
+      passe;
+    }
+  }
+}
+
+function effacer_comparaison() {
+  'Vider entièrement le panneau de comparaison';
+  _engine.get('entites_comparaison').set([]);
+  _engine.get('donnees_comparaison').set({});
 }
 
 function obtenir_entite_selectionnee() {
@@ -1575,7 +1651,7 @@ async function reinitialiser_etat() {
 
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
-Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
+Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, reinitialiser_etat: reinitialiser_etat});
 })();
 
 (() => {
@@ -2001,6 +2077,504 @@ window.ui.composants.panneau_detail = window.ui.composants.panneau_detail || {};
 Object.assign(window.ui.composants.panneau_detail, {ouvrir_panneau_detail: ouvrir_panneau_detail, fermer_panneau_detail: fermer_panneau_detail, rendre_panneau_detail: rendre_panneau_detail, _rendre_detail_mouvement: _rendre_detail_mouvement, _rendre_detail_artiste: _rendre_detail_artiste, _rendre_detail_oeuvre: _rendre_detail_oeuvre, _rendre_detail_generique: _rendre_detail_generique});
 })();
 
+(() => {
+function _extraire_annee(temps) {
+  "Extraire l'année depuis une chaîne de temps Wikidata (ex: +1860-00-00T00:00:00Z)";
+  if (((!__ml_truthy(temps)) || __ml_truthy(((temps).length < 4)))) {
+    return '';
+  }
+  var debut = 0;
+  if ((__ml_truthy((temps[0] == '+')) || __ml_truthy((temps[0] == '-')))) {
+    debut = 1;
+  }
+  var annee = temps.slice(debut, (debut + 4));
+  if (__ml_truthy((annee == '0000'))) {
+    return '';
+  }
+  return annee;
+}
+
+function rendre_recit() {
+  "Rendre le récit narratif de l'entité sélectionnée";
+  var entite = ui.etat.obtenir_entite_selectionnee();
+  if (((!__ml_truthy(entite)) || (!__ml_truthy(((entite)?.['id'] ?? ''))))) {
+    return '<div class="recit-vide"><p>Sélectionnez un mouvement, un artiste ou une œuvre pour lire son récit.</p></div>';
+  }
+  var type_entite = ((entite)?.['type'] ?? '');
+  if (__ml_truthy((type_entite == 'mouvement'))) {
+    return _rendre_recit_mouvement(entite);
+  }
+  else if (__ml_truthy((type_entite == 'artiste'))) {
+    return _rendre_recit_artiste(entite);
+  }
+  else if (__ml_truthy((type_entite == 'oeuvre'))) {
+    return _rendre_recit_oeuvre(entite);
+  }
+  else {
+    return _rendre_recit_generique(entite);
+  }
+}
+
+function _rendre_recit_mouvement(entite) {
+  "Générer le récit narratif d'un mouvement artistique";
+  var donnees = ((entite)?.['donnees'] ?? {});
+  var entite_id = ((entite)?.['id'] ?? '');
+  var label = ((((donnees)?.['movementLabel'] ?? {}))?.['value'] ?? 'Ce mouvement');
+  var debut = _extraire_annee(((((donnees)?.['startTime'] ?? {}))?.['value'] ?? ''));
+  var fin = _extraire_annee(((((donnees)?.['endTime'] ?? {}))?.['value'] ?? ''));
+  var pays_label = ((((donnees)?.['countryLabel'] ?? {}))?.['value'] ?? '');
+  var suit_label = ((((donnees)?.['followsLabel'] ?? {}))?.['value'] ?? '');
+  var suivi_par_label = ((((donnees)?.['followedByLabel'] ?? {}))?.['value'] ?? '');
+  var artistes_ids = ui.etat._obtenir_cibles_relations(entite_id, 'contient_artiste');
+  var noms_artistes = [];
+  for (const artiste_id of artistes_ids.slice(0, 5)) {
+    var noeud = ui.etat.graphe.obtenir_noeud(artiste_id);
+    if (__ml_truthy(noeud)) {
+      __ml_add(noms_artistes, noeud.etiquette);
+    }
+  }
+  var html = '<article class="recit-card recit-mouvement">';
+  html = (html + '<header class="recit-header">');
+  html = (html + '<span class="recit-badge">Mouvement artistique</span>');
+  html = (((html + '<h2 class="recit-titre">') + label) + '</h2>');
+  if ((__ml_truthy(debut) || __ml_truthy(fin))) {
+    var periode = '';
+    if ((__ml_truthy(debut) && __ml_truthy(fin))) {
+      periode = ((debut + '–') + fin);
+    }
+    else if (__ml_truthy(debut)) {
+      periode = ('à partir de ' + debut);
+    }
+    else {
+      periode = ("jusqu'en " + fin);
+    }
+    html = (((html + '<p class="recit-periode">') + periode) + '</p>');
+  }
+  html = (html + '</header>');
+  html = (html + '<div class="recit-corps">');
+  var phrase = label;
+  if ((__ml_truthy(debut) && __ml_truthy(pays_label))) {
+    phrase = (((((phrase + ' prend forme en ') + pays_label) + ' vers ') + debut) + '.');
+  }
+  else if (__ml_truthy(debut)) {
+    phrase = (((phrase + ' émerge vers ') + debut) + '.');
+  }
+  else if (__ml_truthy(pays_label)) {
+    phrase = (((phrase + ' est un mouvement artistique né en ') + pays_label) + '.');
+  }
+  else {
+    phrase = (phrase + " est un mouvement artistique majeur de l'histoire de l'art.");
+  }
+  html = (((html + '<p class="recit-intro">') + phrase) + '</p>');
+  if ((__ml_truthy(suit_label) || __ml_truthy(suivi_par_label))) {
+    html = (html + '<section class="recit-section">');
+    html = (html + '<h3 class="recit-section-titre">Filiation</h3>');
+    if (__ml_truthy(suit_label)) {
+      html = (((html + '<p class="recit-relation">← Succède à <strong>') + suit_label) + '</strong></p>');
+    }
+    if (__ml_truthy(suivi_par_label)) {
+      html = (((html + '<p class="recit-relation">→ Prépare <strong>') + suivi_par_label) + '</strong></p>');
+    }
+    html = (html + '</section>');
+  }
+  if (__ml_truthy(noms_artistes)) {
+    html = (html + '<section class="recit-section">');
+    html = (html + '<h3 class="recit-section-titre">Artistes représentatifs</h3>');
+    html = (html + '<p class="recit-artistes">');
+    html = (html + (noms_artistes).join(', '));
+    if (__ml_truthy(((artistes_ids).length > 5))) {
+      html = (((html + ' et ') + String(((artistes_ids).length - 5))) + ' autres.');
+    }
+    else {
+      html = (html + '.');
+    }
+    html = (html + '</p>');
+    html = (html + '</section>');
+  }
+  html = (html + '</div>');
+  html = (html + '<footer class="recit-footer">');
+  html = (html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>');
+  html = (html + '</footer>');
+  html = (html + '</article>');
+  return html;
+}
+
+function _rendre_recit_artiste(entite) {
+  "Générer le récit narratif d'un artiste";
+  var donnees = ((entite)?.['donnees'] ?? {});
+  var entite_id = ((entite)?.['id'] ?? '');
+  var label = ((((donnees)?.['artistLabel'] ?? {}))?.['value'] ?? 'Cet artiste');
+  var naissance = _extraire_annee(((((donnees)?.['birthDate'] ?? {}))?.['value'] ?? ''));
+  var deces = _extraire_annee(((((donnees)?.['deathDate'] ?? {}))?.['value'] ?? ''));
+  var lieu_label = ((((donnees)?.['birthplaceLabel'] ?? {}))?.['value'] ?? '');
+  var mouvement_label = ((((donnees)?.['movementLabel'] ?? {}))?.['value'] ?? '');
+  var oeuvres_ids = ui.etat._obtenir_cibles_relations(entite_id, 'a_cree');
+  var noms_oeuvres = [];
+  for (const oeuvre_id of oeuvres_ids.slice(0, 4)) {
+    var noeud = ui.etat.graphe.obtenir_noeud(oeuvre_id);
+    if (__ml_truthy(noeud)) {
+      __ml_add(noms_oeuvres, noeud.etiquette);
+    }
+  }
+  var html = '<article class="recit-card recit-artiste">';
+  html = (html + '<header class="recit-header">');
+  html = (html + '<span class="recit-badge">Artiste</span>');
+  html = (((html + '<h2 class="recit-titre">') + label) + '</h2>');
+  if ((__ml_truthy(naissance) || __ml_truthy(deces))) {
+    var vie = '';
+    if ((__ml_truthy(naissance) && __ml_truthy(deces))) {
+      vie = ((naissance + '–') + deces);
+    }
+    else if (__ml_truthy(naissance)) {
+      vie = ('né(e) en ' + naissance);
+    }
+    else {
+      vie = ('décédé(e) en ' + deces);
+    }
+    html = (((html + '<p class="recit-periode">') + vie) + '</p>');
+  }
+  html = (html + '</header>');
+  html = (html + '<div class="recit-corps">');
+  var phrase = label;
+  if ((__ml_truthy(naissance) && __ml_truthy(lieu_label))) {
+    phrase = (((((phrase + ', né(e) en ') + naissance) + ' à ') + lieu_label) + '.');
+  }
+  else if (__ml_truthy(lieu_label)) {
+    phrase = (((phrase + ' est originaire de ') + lieu_label) + '.');
+  }
+  else if (__ml_truthy(naissance)) {
+    phrase = (((phrase + ' naît en ') + naissance) + '.');
+  }
+  else {
+    phrase = (phrase + " est un artiste majeur de l'histoire de l'art.");
+  }
+  html = (((html + '<p class="recit-intro">') + phrase) + '</p>');
+  if (__ml_truthy(mouvement_label)) {
+    html = (html + '<section class="recit-section">');
+    html = (html + '<h3 class="recit-section-titre">Mouvement</h3>');
+    html = (((html + '<p class="recit-relation">Associé au <strong>') + mouvement_label) + '</strong></p>');
+    html = (html + '</section>');
+  }
+  if (__ml_truthy(noms_oeuvres)) {
+    html = (html + '<section class="recit-section">');
+    html = (html + '<h3 class="recit-section-titre">Œuvres chargées</h3>');
+    html = (html + '<ul class="recit-liste">');
+    for (const nom_oeuvre of noms_oeuvres) {
+      html = (((html + '<li>') + nom_oeuvre) + '</li>');
+    }
+    if (__ml_truthy(((oeuvres_ids).length > 4))) {
+      html = (((html + '<li class="recit-plus">+ ') + String(((oeuvres_ids).length - 4))) + ' autres</li>');
+    }
+    html = (html + '</ul>');
+    html = (html + '</section>');
+  }
+  html = (html + '</div>');
+  html = (html + '<footer class="recit-footer">');
+  html = (html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>');
+  html = (html + '</footer>');
+  html = (html + '</article>');
+  return html;
+}
+
+function _rendre_recit_oeuvre(entite) {
+  "Générer le récit narratif d'une œuvre";
+  var donnees = ((entite)?.['donnees'] ?? {});
+  var label = ((((donnees)?.['artworkLabel'] ?? {}))?.['value'] ?? 'Cette œuvre');
+  var createur_label = ((((donnees)?.['creatorLabel'] ?? {}))?.['value'] ?? '');
+  var date_brute = ((((donnees)?.['inceptionDate'] ?? {}))?.['value'] ?? '');
+  var date = _extraire_annee(date_brute);
+  var musee_label = ((((donnees)?.['museumLabel'] ?? {}))?.['value'] ?? '');
+  var sujet_label = ((((donnees)?.['depictsLabel'] ?? {}))?.['value'] ?? '');
+  var materiau_label = ((((donnees)?.['materialLabel'] ?? {}))?.['value'] ?? '');
+  var html = '<article class="recit-card recit-oeuvre">';
+  html = (html + '<header class="recit-header">');
+  html = (html + '<span class="recit-badge">Œuvre</span>');
+  html = (((html + '<h2 class="recit-titre">') + label) + '</h2>');
+  if (__ml_truthy(date)) {
+    html = (((html + '<p class="recit-periode">') + date) + '</p>');
+  }
+  html = (html + '</header>');
+  html = (html + '<div class="recit-corps">');
+  var phrase = label;
+  if ((__ml_truthy(createur_label) && __ml_truthy(date))) {
+    phrase = (((((phrase + ' est une œuvre de ') + createur_label) + ', réalisée en ') + date) + '.');
+  }
+  else if (__ml_truthy(createur_label)) {
+    phrase = (((phrase + ' est une œuvre de ') + createur_label) + '.');
+  }
+  else if (__ml_truthy(date)) {
+    phrase = (((phrase + ' date de ') + date) + '.');
+  }
+  else {
+    phrase = (phrase + " est une œuvre remarquable de l'histoire de l'art.");
+  }
+  html = (((html + '<p class="recit-intro">') + phrase) + '</p>');
+  if ((__ml_truthy(musee_label) || __ml_truthy(sujet_label) || __ml_truthy(materiau_label))) {
+    html = (html + '<section class="recit-section">');
+    html = (html + '<h3 class="recit-section-titre">Détails</h3>');
+    if (__ml_truthy(musee_label)) {
+      html = (((html + '<p class="recit-relation">\\U0001f3db Conservée au <strong>') + musee_label) + '</strong></p>');
+    }
+    if (__ml_truthy(sujet_label)) {
+      html = (((html + '<p class="recit-relation">\\U0001f3a8 Représente <strong>') + sujet_label) + '</strong></p>');
+    }
+    if (__ml_truthy(materiau_label)) {
+      html = (((html + '<p class="recit-relation">\\U0001f58c Réalisée en <strong>') + materiau_label) + '</strong></p>');
+    }
+    html = (html + '</section>');
+  }
+  html = (html + '</div>');
+  html = (html + '<footer class="recit-footer">');
+  html = (html + '<button class="recit-btn-explorer" data-mode="observatory">Voir la constellation →</button>');
+  html = (html + '</footer>');
+  html = (html + '</article>');
+  return html;
+}
+
+function _rendre_recit_generique(entite) {
+  'Récit générique pour les entités sans type connu';
+  var entite_id = ((entite)?.['id'] ?? '');
+  var type_entite = ((entite)?.['type'] ?? 'entité');
+  var html = '<article class="recit-card">';
+  html = (html + '<header class="recit-header">');
+  html = (((html + '<span class="recit-badge">') + type_entite) + '</span>');
+  html = (((html + '<h2 class="recit-titre">') + entite_id) + '</h2>');
+  html = (html + '</header>');
+  html = (html + '<div class="recit-corps">');
+  html = (html + '<p class="recit-intro">Sélectionnez une entité pour lire son récit.</p>');
+  html = (html + '</div>');
+  html = (html + '</article>');
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.recit = window.ui.composants.recit || {};
+Object.assign(window.ui.composants.recit, {_extraire_annee: _extraire_annee, rendre_recit: rendre_recit, _rendre_recit_mouvement: _rendre_recit_mouvement, _rendre_recit_artiste: _rendre_recit_artiste, _rendre_recit_oeuvre: _rendre_recit_oeuvre, _rendre_recit_generique: _rendre_recit_generique});
+})();
+
+(() => {
+function calculer_intersection_artistes(ids_entites) {
+  'Calculer les artistes communs à toutes les entités données';
+  if (__ml_truthy(((ids_entites).length < 2))) {
+    return [];
+  }
+  var ensemble_courant = null;
+  for (const entite_id of ids_entites) {
+    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    var artistes = ensemble(((donnees)?.['artistes_ids'] ?? []));
+    if (__ml_truthy((ensemble_courant === null))) {
+      ensemble_courant = artistes;
+    }
+    else {
+      ensemble_courant = ensemble_courant.intersection(artistes);
+    }
+  }
+  if (__ml_truthy((ensemble_courant === null))) {
+    return [];
+  }
+  return Array.from(ensemble_courant);
+}
+
+function calculer_artistes_uniques(ids_entites) {
+  '\n    Pour chaque entité, calculer les artistes qui lui sont exclusifs\n    (présents dans cette entité mais dans aucune autre).\n    Retourne {entite_id: [artiste_ids_uniques]}\n    ';
+  if (__ml_truthy(((ids_entites).length < 2))) {
+    return {};
+  }
+  var ensembles = {};
+  for (const entite_id of ids_entites) {
+    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    ensembles[entite_id] = ensemble(((donnees)?.['artistes_ids'] ?? []));
+  }
+  var resultats = {};
+  for (const entite_id of ids_entites) {
+    var union_autres = ensemble();
+    for (const [autre_id, autre_ensemble] of Object.entries(ensembles)) {
+      if (__ml_truthy((autre_id != entite_id))) {
+        union_autres = union_autres.union(autre_ensemble);
+      }
+    }
+    resultats[entite_id] = Array.from(ensembles[entite_id].difference(union_autres));
+  }
+  return resultats;
+}
+
+function obtenir_etiquette_artiste(artiste_id, ids_entites) {
+  "Chercher l'étiquette d'un artiste dans les données de comparaison chargées";
+  for (const entite_id of ids_entites) {
+    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    var labels = ((donnees)?.['artistes_labels'] ?? {});
+    var label = ((labels)?.[artiste_id] ?? '');
+    if (__ml_truthy(label)) {
+      return label;
+    }
+  }
+  var noeud = ui.etat.graphe.obtenir_noeud(artiste_id);
+  if (__ml_truthy(noeud)) {
+    return noeud.etiquette;
+  }
+  return artiste_id;
+}
+
+function obtenir_statistiques(ids_entites) {
+  'Calculer un résumé statistique pour le panneau de comparaison';
+  if (__ml_truthy(((ids_entites).length < 2))) {
+    return {};
+  }
+  var artistes_communs = calculer_intersection_artistes(ids_entites);
+  var artistes_uniques = calculer_artistes_uniques(ids_entites);
+  var total_par_entite = {};
+  for (const entite_id of ids_entites) {
+    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    total_par_entite[entite_id] = (((donnees)?.['artistes_ids'] ?? [])).length;
+  }
+  var uniques_par_entite = {};
+  for (const [eid, u] of Object.entries(artistes_uniques)) {
+    uniques_par_entite[eid] = (u).length;
+  }
+  return {['artistes_communs_count']: (artistes_communs).length, ['total_par_entite']: total_par_entite, ['uniques_par_entite']: uniques_par_entite};
+}
+
+window.semantique = window.semantique || {};
+window.semantique.intersections = window.semantique.intersections || {};
+Object.assign(window.semantique.intersections, {calculer_intersection_artistes: calculer_intersection_artistes, calculer_artistes_uniques: calculer_artistes_uniques, obtenir_etiquette_artiste: obtenir_etiquette_artiste, obtenir_statistiques: obtenir_statistiques});
+})();
+
+(() => {
+function rendre_panneau_comparaison() {
+  'Rendre le panneau de comparaison entre entités sélectionnées';
+  var entites = ui.etat.entites_comparaison;
+  if ((!__ml_truthy(entites))) {
+    return '';
+  }
+  var html = '<div class="comparaison-panel">';
+  html = (html + '<header class="comparaison-header">');
+  html = (html + '<h3 class="comparaison-titre">Comparaison</h3>');
+  html = (html + '<button class="comparaison-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_comparaison&&(window.ui.etat.effacer_comparaison(),window.renderComparisonPanel())" aria-label="Effacer la comparaison">Effacer</button>');
+  html = (html + '</header>');
+  html = (html + _rendre_pastilles(entites));
+  if (__ml_truthy(((entites).length < 2))) {
+    var label = ((entites[0])?.['label'] ?? '');
+    html = (html + '<div class="comparaison-attente">');
+    html = (((html + '<p>Sélectionnez une autre entité à comparer avec <strong>') + label) + '</strong>.</p>');
+    html = (html + '<p class="comparaison-conseil">Utilisez le bouton <em>+ Comparer</em> dans les résultats de recherche.</p>');
+    html = (html + '</div>');
+    html = (html + '</div>');
+    return html;
+  }
+  var ids_entites = [];
+  for (const entite of entites) {
+    __ml_add(ids_entites, ((entite)?.['id'] ?? ''));
+  }
+  var artistes_communs = semantique.intersections.calculer_intersection_artistes(ids_entites);
+  var artistes_uniques = semantique.intersections.calculer_artistes_uniques(ids_entites);
+  var stats = semantique.intersections.obtenir_statistiques(ids_entites);
+  var toutes_chargees = true;
+  for (const entite_id of ids_entites) {
+    var donnees = ((ui.etat.donnees_comparaison)?.[entite_id] ?? {});
+    if ((!__ml_truthy((((donnees)?.['artistes_ids'] ?? null) === null)))) {
+      toutes_chargees = false;
+    }
+  }
+  if ((!__ml_truthy(toutes_chargees))) {
+    html = (html + '<div class="comparaison-chargement">');
+    html = (html + '<p>Chargement des données de comparaison...</p>');
+    html = (html + '</div>');
+    html = (html + '</div>');
+    return html;
+  }
+  var nb_communs = ((stats)?.['artistes_communs_count'] ?? 0);
+  html = (html + '<div class="comparaison-resume">');
+  if (__ml_truthy((nb_communs > 0))) {
+    html = (((html + '<p class="comparaison-resume-texte"><strong>') + String(nb_communs)) + '</strong> artiste');
+    if (__ml_truthy((nb_communs > 1))) {
+      html = (html + 's');
+    }
+    html = (html + ' en commun</p>');
+  }
+  else {
+    html = (html + '<p class="comparaison-resume-texte">Aucun artiste en commun</p>');
+  }
+  html = (html + '</div>');
+  html = (((html + '<div class="comparaison-grille" style="grid-template-columns: ') + _generer_colonnes((entites).length)) + '">');
+  for (const entite of entites) {
+    var entite_id = ((entite)?.['id'] ?? '');
+    var entite_label = ((entite)?.['label'] ?? '');
+    var uniques = ((artistes_uniques)?.[entite_id] ?? []);
+    var total = ((((stats)?.['total_par_entite'] ?? {}))?.[entite_id] ?? 0);
+    html = (html + '<div class="comparaison-colonne">');
+    html = (((html + '<h4 class="comparaison-col-titre">') + entite_label) + '</h4>');
+    html = (((((html + '<span class="comparaison-col-meta">') + String(total)) + ' artistes • ') + String((uniques).length)) + ' uniques</span>');
+    if (__ml_truthy(uniques)) {
+      html = (html + '<ul class="comparaison-liste">');
+      for (const artiste_id of uniques.slice(0, 8)) {
+        var nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites);
+        html = (((html + '<li class="comparaison-item comparaison-unique">') + nom) + '</li>');
+      }
+      if (__ml_truthy(((uniques).length > 8))) {
+        html = (((html + '<li class="comparaison-item comparaison-plus">+ ') + String(((uniques).length - 8))) + ' autres</li>');
+      }
+      html = (html + '</ul>');
+    }
+    else {
+      html = (html + '<p class="comparaison-vide">Aucun artiste unique</p>');
+    }
+    html = (html + '</div>');
+  }
+  html = (html + '<div class="comparaison-colonne comparaison-colonne-commun">');
+  html = (html + '<h4 class="comparaison-col-titre comparaison-col-titre-commun">En commun</h4>');
+  html = (((html + '<span class="comparaison-col-meta">') + String(nb_communs)) + ' artiste');
+  if (__ml_truthy((nb_communs > 1))) {
+    html = (html + 's');
+  }
+  html = (html + '</span>');
+  if (__ml_truthy(artistes_communs)) {
+    html = (html + '<ul class="comparaison-liste">');
+    for (const artiste_id of artistes_communs) {
+      nom = semantique.intersections.obtenir_etiquette_artiste(artiste_id, ids_entites);
+      html = (((html + '<li class="comparaison-item comparaison-commun">') + nom) + '</li>');
+    }
+    html = (html + '</ul>');
+  }
+  else {
+    html = (html + '<p class="comparaison-vide">Aucun artiste partagé</p>');
+  }
+  html = (html + '</div>');
+  html = (html + '</div>');
+  html = (html + '</div>');
+  return html;
+}
+
+function _rendre_pastilles(entites) {
+  'Rendre les pastilles des entités sélectionnées avec bouton de retrait';
+  var html = '<div class="comparaison-pastilles">';
+  for (const entite of entites) {
+    var entite_id = ((entite)?.['id'] ?? '');
+    var entite_label = ((entite)?.['label'] ?? '');
+    var entite_type = ((entite)?.['type'] ?? '');
+    html = (html + '<span class="comparaison-pastille">');
+    html = (html + entite_label);
+    html = (html + '<button class="comparaison-pastille-retirer"');
+    html = (((((((html + ' onclick="window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(\\\'') + entite_id) + "\\',\\'") + entite_type) + "\\',\\'") + entite_label) + '\\\'),window.renderComparisonPanel())"');
+    html = (((html + ' aria-label="Retirer ') + entite_label) + '">×</button>');
+    html = (html + '</span>');
+  }
+  html = (html + '</div>');
+  return html;
+}
+
+function _generer_colonnes(nb_entites) {
+  "Générer la valeur grid-template-columns selon le nombre d'entités";
+  var total = (nb_entites + 1);
+  return ((['1fr'] * total)).join(' ');
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.panneau_comparaison = window.ui.composants.panneau_comparaison || {};
+Object.assign(window.ui.composants.panneau_comparaison, {rendre_panneau_comparaison: rendre_panneau_comparaison, _rendre_pastilles: _rendre_pastilles, _generer_colonnes: _generer_colonnes});
+})();
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);
@@ -2050,6 +2624,26 @@ async function principal() {
 async function initialiser_application() {
   "Initialiser l'application avec un mouvement de départ";
   await ui.etat.charger_mouvement('Q40415');
+}
+
+async function rechercher_entites(requete) {
+  'Rechercher des entités (cache + Wikidata) et retourner les résultats normalisés pour le shell JS';
+  if (((!__ml_truthy(requete)) || __ml_truthy(((requete).length < 2)))) {
+    return [];
+  }
+  var carte_types = {['mouvement']: 'movement', ['artiste']: 'artist', ['oeuvre']: 'artwork'};
+  var resultats_cache = ui.interactions.recherche._rechercher_cache(requete);
+  var resultats_wikidata = await donnees.requetes.rechercher_entites_wikidata(requete);
+  var entites_vues = {};
+  var resultats = [];
+  for (const r of (resultats_cache + resultats_wikidata)) {
+    var cle = ((r)?.['id'] ?? '');
+    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
+      entites_vues[cle] = true;
+      __ml_add(resultats, {['id']: cle, ['label']: ((r)?.['label'] ?? cle), ['description']: ((r)?.['description'] ?? ''), ['entityType']: ((carte_types)?.[((r)?.['type'] ?? '')] ?? '')});
+    }
+  }
+  return resultats;
 }
 
 async function lancer_recherche(requete) {
@@ -2110,4 +2704,31 @@ async function charger_artiste_oeuvres_page_suivante() {
 async function charger_musee_oeuvres_page_suivante() {
   "Charger la page suivante d'œuvres pour le musée courant";
   return await ui.etat.charger_musee_oeuvres_page_suivante();
+}
+
+function rendre_recit() {
+  "Rendre le récit narratif de l'entité sélectionnée";
+  return ui.composants.recit.rendre_recit();
+}
+
+async function basculer_mode_recit() {
+  'Basculer le mode récit dans la visualisation';
+  await ui.etat.basculer_visualisation('recit');
+  return ui.etat.obtenir_instantane_etat();
+}
+
+function rendre_panneau_comparaison() {
+  'Rendre le panneau de comparaison entre entités';
+  return ui.composants.panneau_comparaison.rendre_panneau_comparaison();
+}
+
+async function basculer_comparaison(entite_id, type_entite, etiquette) {
+  'Ajouter ou retirer une entité du panneau de comparaison, puis charger ses données';
+  ui.etat.basculer_comparaison(entite_id, type_entite, etiquette);
+  await ui.etat.charger_donnees_comparaison(entite_id, type_entite);
+}
+
+function effacer_comparaison() {
+  'Vider le panneau de comparaison';
+  ui.etat.effacer_comparaison();
 }

@@ -76,8 +76,12 @@ déf obtenir_statistiques(ids_entites: liste) -> dictionnaire:
         donnees = ui.etat.donnees_comparaison.obtenir(entite_id, {})
         total_par_entite[entite_id] = len(donnees.obtenir("artistes_ids", []))
 
+    uniques_par_entite = {}
+    pour eid, u dans artistes_uniques.items():
+        uniques_par_entite[eid] = len(u)
+
     retour {
         "artistes_communs_count": len(artistes_communs),
         "total_par_entite": total_par_entite,
-        "uniques_par_entite": {eid: len(u) pour eid, u dans artistes_uniques.items()}
+        "uniques_par_entite": uniques_par_entite
     }

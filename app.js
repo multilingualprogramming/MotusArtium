@@ -957,7 +957,7 @@
                 if (isRecitMode) {
                     try {
                         const recitRoot = document.getElementById("__ml_recit_root");
-                        const renderRecit = window.ui?.rendre_recit;
+                        const renderRecit = window.ui?.composants?.recit?.rendre_recit;
                         if (recitRoot && typeof renderRecit === "function") {
                             recitRoot.innerHTML = renderRecit() || "";
                         }

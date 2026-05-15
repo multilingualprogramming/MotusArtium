@@ -739,12 +739,7 @@ asynchrone déf rechercher_entites_wikidata(terme: chaine, langue: chaine = LANG
     si non terme ou len(terme) < 2:
         retour []
 
-    url = (
-        "https://www.wikidata.org/w/api.php?action=wbsearchentities"
-        + "&search=" + encodeURIComponent(terme)
-        + "&language=" + langue
-        + "&format=json&origin=*&limit=20"
-    )
+    url = "https://www.wikidata.org/w/api.php?action=wbsearchentities" + "&search=" + encodeURIComponent(terme) + "&language=" + langue + "&format=json&origin=*&limit=20"
     reponse = attendre fetch(url)
     corps = attendre reponse.json()
     entrees = corps.obtenir("search", [])

@@ -18,7 +18,7 @@
             const root = document.getElementById("__ml_comparison_root");
             if (!container || !root) return;
             try {
-                const render = window.ui?.rendre_panneau_comparaison;
+                const render = window.ui?.composants?.panneau_comparaison?.rendre_panneau_comparaison;
                 const html = typeof render === "function" ? render() || "" : "";
                 root.innerHTML = html;
                 container.hidden = !html;

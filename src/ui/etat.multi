@@ -621,7 +621,7 @@ asynchrone déf charger_donnees_comparaison(entite_id: chaine, type_entite: chai
     """Charger les données d'une entité pour la comparaison sans modifier le graphe principal"""
     existantes = donnees_comparaison.obtenir(entite_id, {})
     si existantes.obtenir("artistes_ids", []):
-        retour  # Déjà chargé
+        retour
 
     si type_entite == "mouvement":
         essayer:

@@ -12,7 +12,7 @@ déf rendre_panneau_comparaison() -> chaine:
     html = '<div class="comparaison-panel">'
     html = html + '<header class="comparaison-header">'
     html = html + '<h3 class="comparaison-titre">Comparaison</h3>'
-    html = html + '<button class="comparaison-effacer" onclick="window.ui&&window.ui.effacer_comparaison&&window.ui.effacer_comparaison()" aria-label="Effacer la comparaison">Effacer</button>'
+    html = html + '<button class="comparaison-effacer" onclick="window.ui&&window.ui.etat&&window.ui.etat.effacer_comparaison&&(window.ui.etat.effacer_comparaison(),window.renderComparisonPanel())" aria-label="Effacer la comparaison">Effacer</button>'
     html = html + '</header>'
 
     # Pastilles des entités sélectionnées
@@ -124,7 +124,7 @@ déf _rendre_pastilles(entites: liste) -> chaine:
         html = html + '<span class="comparaison-pastille">'
         html = html + entite_label
         html = html + '<button class="comparaison-pastille-retirer"'
-        html = html + ' onclick="window.ui&&window.ui.basculer_comparaison&&window.ui.basculer_comparaison(\'' + entite_id + '\',\'' + entite_type + '\',\'' + entite_label + '\')"'
+        html = html + ' onclick="window.ui&&window.ui.etat&&window.ui.etat.basculer_comparaison&&(window.ui.etat.basculer_comparaison(\'' + entite_id + '\',\'' + entite_type + '\',\'' + entite_label + '\'),window.renderComparisonPanel())"'
         html = html + ' aria-label="Retirer ' + entite_label + '">×</button>'
         html = html + '</span>'
     html = html + '</div>'

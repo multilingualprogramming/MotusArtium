@@ -988,6 +988,7 @@
                 const storyRoot = document.getElementById("__ml_story_recit_root");
                 if (storyRoot && typeof renderRecit === "function") {
                     storyRoot.innerHTML = renderRecit() || "";
+                    renderStorySubjectFallback(storyRoot);
                 }
             } catch (e) {
                 console.warn("story recit render error:", e);
@@ -1005,8 +1006,131 @@
             } catch (e) {
                 console.warn("theme grid render error:", e);
             }
+            renderExplorerFocus();
         }
         window.renderStoryTier = renderStoryTier;
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function explorerRelatedWorks(snapshot, selectedId) {
+            const graph = snapshot.graphe || {};
+            const nodes = graph.noeuds || [];
+            const relations = graph.relations || [];
+            const nodeById = new Map(nodes.map((node) => [node.id, node]));
+            return relations
+                .filter((relation) => relation.source === selectedId && ["subject_of", "represente", "houses_work", "expose"].includes(relation.type))
+                .map((relation) => nodeById.get(relation.target))
+                .filter(Boolean)
+                .slice(0, 12);
+        }
+
+        function subjectSelectionFromSnapshot(snapshot) {
+            const selectedId = snapshot.entite_selectionnee_id || "";
+            const selected = snapshot.entite_selectionnee || {};
+            const selectedRecord = selected.donnees || {};
+            const selectedType = normaliseDetailEntityType(selected.type || snapshot.entite_selectionnee_type || "");
+            if (!selectedId || (selectedType !== "sujet" && selectedType !== "subject")) {
+                return null;
+            }
+            const label = fieldValue(selectedRecord, "subjectLabel") || fieldValue(selectedRecord, "label") || runtimeState.selectedEntity.name || selectedId;
+            return { selectedId, selectedRecord, selectedType, label };
+        }
+
+        function renderStorySubjectFallback(root) {
+            const snapshot = currentSnapshot();
+            const subject = subjectSelectionFromSnapshot(snapshot);
+            if (!subject) {
+                return;
+            }
+
+            const relatedWorks = explorerRelatedWorks(snapshot, subject.selectedId);
+            const count = Number(subject.selectedRecord.artworkCount || relatedWorks.length || 0);
+            let html = '<article class="recit-card recit-sujet story-subject-result">';
+            html += '<header class="recit-header">';
+            html += '<span class="recit-badge">Theme</span>';
+            html += '<h2 class="recit-titre">' + escapeHtml(subject.label || subject.selectedId) + '</h2>';
+            html += '</header>';
+            html += '<div class="recit-corps">';
+            html += '<p class="recit-intro">' + (count ? escapeHtml(count + " artworks found for this theme.") : "Loading artworks for this theme...") + '</p>';
+            if (relatedWorks.length) {
+                html += '<ul class="recit-liste-oeuvres">';
+                relatedWorks.slice(0, 10).forEach((work) => {
+                    html += '<li class="recit-oeuvre">' + escapeHtml(work.etiquette || work.label || work.id) + '</li>';
+                });
+                html += '</ul>';
+            }
+            html += '</div>';
+            html += '<footer class="recit-footer">';
+            html += '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>Explore in constellation</button>';
+            html += '</footer>';
+            html += '</article>';
+            root.innerHTML = html;
+        }
+
+        function renderExplorerFocus() {
+            const root = document.getElementById("__ml_explorer_focus_root");
+            if (!root) {
+                return;
+            }
+
+            const snapshot = currentSnapshot();
+            const selectedId = snapshot.entite_selectionnee_id || "";
+            const selected = snapshot.entite_selectionnee || {};
+            const selectedRecord = selected.donnees || {};
+            const selectedType = normaliseDetailEntityType(selected.type || snapshot.entite_selectionnee_type || "");
+            const label = fieldValue(selectedRecord, "subjectLabel") || fieldValue(selectedRecord, "museumLabel") || fieldValue(selectedRecord, "movementLabel") || fieldValue(selectedRecord, "artistLabel") || fieldValue(selectedRecord, "artworkLabel") || fieldValue(selectedRecord, "label") || runtimeState.selectedEntity.name || selectedId;
+
+            if (!selectedId) {
+                root.innerHTML = [
+                    '<div class="explorer-empty">',
+                    '<strong>Choose a theme or search result</strong>',
+                    '<span>Explorer will show the selected entity and its first useful connections here.</span>',
+                    '</div>'
+                ].join("");
+                return;
+            }
+
+            const relatedWorks = explorerRelatedWorks(snapshot, selectedId);
+            const count = Number(selectedRecord.artworkCount || relatedWorks.length || 0);
+            let html = '<article class="explorer-focus-card">';
+            html += '<header class="explorer-focus-header">';
+            html += '<div><span class="eyebrow">Current selection</span>';
+            html += '<h3>' + escapeHtml(label || selectedId) + '</h3></div>';
+            html += '<span class="chip">' + escapeHtml(selectedType || "entity") + '</span>';
+            html += '</header>';
+
+            if (selectedType === "sujet" || selectedType === "subject") {
+                html += '<p class="explorer-focus-summary">' + (count ? escapeHtml(count + " artworks found for this theme.") : "Theme loaded. Try another theme if Wikidata has no direct artwork matches.") + '</p>';
+            } else {
+                html += '<p class="explorer-focus-summary">' + escapeHtml(runtimeState.selectedEntity.meta || "Selection loaded.") + '</p>';
+            }
+
+            if (relatedWorks.length) {
+                html += '<div class="explorer-work-list" aria-label="Related artworks">';
+                relatedWorks.forEach((work) => {
+                    html += '<button type="button" class="explorer-work-item" data-explorer-entity-id="' + escapeHtml(work.id) + '" data-explorer-entity-type="artwork">';
+                    html += '<strong>' + escapeHtml(work.etiquette || work.label || work.id) + '</strong>';
+                    html += '<small>artwork</small>';
+                    html += '</button>';
+                });
+                html += '</div>';
+            }
+
+            html += '<div class="explorer-focus-actions">';
+            html += '<button type="button" class="ghost-button" data-explorer-open-observatory>See constellation</button>';
+            html += '</div>';
+            html += '</article>';
+            root.innerHTML = html;
+        }
+
+        window.renderExplorerFocus = renderExplorerFocus;
 
         function updateTierInUrl(tier) {
             if (!window.history || typeof window.history.replaceState !== "function") {
@@ -1042,6 +1166,7 @@ function setActiveTier(tier, options = {}) {
                 }
             } else if (tier === "explorer") {
                 renderStoryTier();
+                renderExplorerFocus();
             } else if (tier === "observatory") {
                 const guideKey = "observatory-guide-seen";
                 if (!localStorage.getItem(guideKey)) {
@@ -3245,6 +3370,7 @@ function setActiveTier(tier, options = {}) {
             if (typeof window.renderDetailPanel === "function") {
                 window.renderDetailPanel();
             }
+            renderExplorerFocus();
         }
 
         function loadEntityByNode(node) {
@@ -4565,8 +4691,19 @@ function setActiveTier(tier, options = {}) {
             if (!tile) return;
             const sujetId = tile.dataset.sujetId;
             if (!sujetId) return;
+            tile.classList.add("is-loading");
             try {
-                if (typeof charger_sujet === "function") {
+                const storyRoot = document.getElementById("__ml_story_recit_root");
+                const subjectLabel = tile.dataset.sujetLabel || tile.querySelector(".theme-tile-label")?.textContent || tile.textContent.trim() || sujetId;
+                if (storyRoot && document.body?.dataset.tier === "story") {
+                    storyRoot.innerHTML = '<article class="recit-card recit-sujet story-subject-result"><header class="recit-header"><span class="recit-badge">Theme</span><h2 class="recit-titre">' + escapeHtml(subjectLabel) + '</h2></header><div class="recit-corps"><p class="recit-intro">Loading artworks for this theme...</p></div></article>';
+                }
+                if (window.ui?.etat?.amorcer_entite) {
+                    window.ui.etat.amorcer_entite(sujetId, "sujet", subjectLabel);
+                }
+                if (window.ui?.etat?.charger_sujet) {
+                    await invokeRuntimeAction("charger_sujet", window.ui.etat.charger_sujet.bind(window.ui.etat), [sujetId]);
+                } else if (typeof charger_sujet === "function") {
                     await charger_sujet(sujetId);
                 }
                 renderConstellation();
@@ -4574,9 +4711,35 @@ function setActiveTier(tier, options = {}) {
                 await refreshMultilingualEntityLabels();
                 window.renderDetailPanel?.();
                 window.renderStoryTier?.();
+                window.renderExplorerFocus?.();
             } catch (err) {
                 console.warn("charger-sujet error:", err);
+            } finally {
+                tile.classList.remove("is-loading");
             }
+        });
+
+        document.addEventListener("click", async (e) => {
+            const item = e.target.closest("[data-explorer-entity-id]");
+            if (!item) return;
+            const id = item.dataset.explorerEntityId;
+            const type = item.dataset.explorerEntityType || "artwork";
+            if (!id) return;
+            try {
+                if (typeof window.loadSearchSelection === "function") {
+                    await window.loadSearchSelection(id, type, item.textContent.trim() || id);
+                } else {
+                    await loadEntityByNode({ id, type });
+                }
+                renderExplorerFocus();
+            } catch (err) {
+                console.warn("explorer entity load error:", err);
+            }
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest("[data-explorer-open-observatory]")) return;
+            setActiveTier("observatory");
         });
 
         // Search mode toggle in Explorer panel

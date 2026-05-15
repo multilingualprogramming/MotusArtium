@@ -150,10 +150,14 @@
                 <div class="search-modes" role="group" aria-label="Choose search type">
                     <button type="button" class="search-mode-btn is-active" data-search-mode="entity" title="Search for any named entity">Find entity</button>
                     <button type="button" class="search-mode-btn" data-search-mode="subject" title="Find artworks that depict a subject">Artworks of&hellip;</button>
-                    <button type="button" class="search-mode-btn" data-search-mode="nationality" title="Find artists by nationality">Artists from&hellip;</button>
-                    <button type="button" class="search-mode-btn" data-search-mode="material" title="Find artworks by material or technique">By material&hellip;</button>
+                    <button type="button" class="search-mode-btn" data-search-mode="nationality" title="Artists by nationality — coming next" disabled>Artists from&hellip;</button>
+                    <button type="button" class="search-mode-btn" data-search-mode="material" title="Artworks by material — coming next" disabled>By material&hellip;</button>
                 </div>
                 <p class="search-mode-hint" id="search-mode-hint" role="status" aria-live="polite">Search for a movement, artist, or artwork using the bar above.</p>
+
+                <section class="explorer-focus" id="explorer-focus-section" aria-label="Current explorer result">
+                    <div id="__ml_explorer_focus_root"></div>
+                </section>
 
                 <div class="explorer-layout">
                     <!-- Theme grid for zero-typing discovery -->

@@ -5,6 +5,7 @@ importer ui.composants.panneau_detail
 importer ui.interactions.recherche
 importer ui.interactions.navigation
 importer ui.etat
+importer donnees.requetes
 
 # ui.etat is intentionally owned by Multilingual. The browser shell may keep a
 # temporary compatibility fallback, but new application state belongs here.
@@ -64,6 +65,30 @@ asynchrone déf initialiser_application():
 # ============================================================================
 # Recherche et navigation
 # ============================================================================
+
+asynchrone déf rechercher_entites(requete: chaine) -> liste:
+    """Rechercher des entités (cache + Wikidata) et retourner les résultats normalisés pour le shell JS"""
+    si non requete ou len(requete) < 2:
+        retour []
+
+    carte_types = {"mouvement": "movement", "artiste": "artist", "oeuvre": "artwork"}
+    resultats_cache = ui.interactions.recherche._rechercher_cache(requete)
+    resultats_wikidata = attendre donnees.requetes.rechercher_entites_wikidata(requete)
+
+    entites_vues = {}
+    resultats = []
+    pour r dans resultats_cache + resultats_wikidata:
+        cle = r.obtenir("id", "")
+        si cle et cle non dans entites_vues:
+            entites_vues[cle] = vrai
+            resultats.ajouter({
+                "id": cle,
+                "label": r.obtenir("label", cle),
+                "description": r.obtenir("description", ""),
+                "entityType": carte_types.obtenir(r.obtenir("type", ""), "")
+            })
+    retour resultats
+
 
 asynchrone déf lancer_recherche(requete):
     """Lancer une recherche textuelle"""

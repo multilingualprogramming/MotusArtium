@@ -4340,6 +4340,35 @@
             });
         }
 
+        window.searchEntities = async function searchEntities(query) {
+            if (!query || query.length < 2) return [];
+            const lang = runtimeState.currentLanguage || "fr";
+            const queryLower = query.toLowerCase();
+            const seen = new Set();
+            const results = [];
+            for (const node of browserAdapterState.graphe.noeuds.values()) {
+                if (node.etiquette && node.etiquette.toLowerCase().includes(queryLower)) {
+                    seen.add(node.id);
+                    results.push({ id: node.id, label: node.etiquette, description: "(dans le graphe chargé)", entityType: node.type || "" });
+                }
+            }
+            try {
+                const url = "https://www.wikidata.org/w/api.php?action=wbsearchentities&search=" + encodeURIComponent(query) + "&language=" + lang + "&format=json&origin=*&limit=20";
+                const response = await originalFetch(url);
+                const data = await response.json();
+                for (const item of (data.search || [])) {
+                    const id = item.id || "";
+                    if (id && !seen.has(id)) {
+                        seen.add(id);
+                        results.push({ id, label: item.label || id, description: item.description || "", entityType: "" });
+                    }
+                }
+            } catch (e) {
+                console.warn("Wikidata search failed:", e);
+            }
+            return results;
+        };
+
         buildShellFilter();
         loadQueryInventory();
         updateLanguageSurface("fr");

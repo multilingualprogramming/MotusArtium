@@ -11,6 +11,7 @@ importer ui.interactions.navigation
 importer ui.etat
 importer ui.i18n
 importer donnees.requetes
+importer donnees.normalisation
 importer semantique.intersections
 
 # ui.etat is intentionally owned by Multilingual. The browser shell may keep a

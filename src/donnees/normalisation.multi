@@ -1,0 +1,172 @@
+# Normalisation des données brutes Wikidata vers des structures uniformes.
+#
+# Ces fonctions transforment les réponses GraphQL brutes en objets
+# canoniques utilisés par l'adaptateur navigateur et les composants .multi.
+# Elles constituent la seule source de vérité pour le mappage des champs.
+
+
+déf premier_element(declarations: liste) -> dictionnaire:
+    """Retourner le premier élément valide d'une liste de déclarations Wikidata."""
+    si non declarations:
+        retour {}
+    premier = declarations[0]
+    si non premier:
+        retour {}
+    valeur = premier.obtenir("value", {})
+    si non valeur.obtenir("id", ""):
+        retour {}
+    retour {
+        "id": valeur.obtenir("id", ""),
+        "label": valeur.obtenir("label", valeur.obtenir("content", valeur.obtenir("id", "")))
+    }
+
+
+déf elements(declarations: liste) -> liste:
+    """Retourner tous les éléments valides d'une liste de déclarations Wikidata."""
+    resultat = []
+    pour entree dans (declarations ou []):
+        valeur = entree.obtenir("value", {})
+        si valeur.obtenir("id", ""):
+            resultat.ajouter({
+                "id": valeur.obtenir("id", ""),
+                "label": valeur.obtenir("label", valeur.obtenir("content", valeur.obtenir("id", "")))
+            })
+    retour resultat
+
+
+déf _premiere_valeur_temps(champ: liste) -> chaine:
+    """Extraire la première valeur temporelle (.time) d'un champ Wikidata."""
+    si non champ:
+        retour ""
+    premier = champ[0]
+    si non premier:
+        retour ""
+    retour premier.obtenir("value", {}).obtenir("time", "")
+
+
+déf _premiere_valeur_contenu(champ: liste) -> chaine:
+    """Extraire la première valeur de contenu (.content) d'un champ Wikidata."""
+    si non champ:
+        retour ""
+    premier = champ[0]
+    si non premier:
+        retour ""
+    retour premier.obtenir("value", {}).obtenir("content", "")
+
+
+déf _envelopper_elements(items: liste) -> liste:
+    """Envelopper une liste d'éléments dans des objets {value: element}."""
+    resultat = []
+    pour item dans items:
+        resultat.ajouter({"value": item})
+    retour resultat
+
+
+déf _etiquettes_jointes(items: liste) -> chaine:
+    """Joindre les libellés d'une liste d'éléments en une chaîne séparée par des virgules."""
+    etiquettes = []
+    pour item dans items:
+        label = item.obtenir("label", "")
+        si label:
+            etiquettes.ajouter(label)
+    retour ", ".joindre(etiquettes)
+
+
+déf normaliser_mouvement(element: dictionnaire) -> dictionnaire:
+    """Normaliser les données brutes d'un mouvement artistique Wikidata."""
+    suit = premier_element(element.obtenir("follows", []))
+    suivi_par = premier_element(element.obtenir("followedBy", []))
+    pays = premier_element(element.obtenir("country", []))
+    retour {
+        "id": element.obtenir("id", ""),
+        "movementLabel": element.obtenir("movementLabel", ""),
+        "startTime": {"value": _premiere_valeur_temps(element.obtenir("startTime", []))},
+        "endTime": {"value": _premiere_valeur_temps(element.obtenir("endTime", []))},
+        "country": [{"value": pays}] si suit.obtenir("id", "") sinon [],
+        "countryLabel": pays.obtenir("label", "") si pays.obtenir("id", "") sinon "",
+        "follows": [{"value": suit}] si suit.obtenir("id", "") sinon [],
+        "followsLabel": suit.obtenir("label", "") si suit.obtenir("id", "") sinon "",
+        "followedBy": [{"value": suivi_par}] si suivi_par.obtenir("id", "") sinon [],
+        "followedByLabel": suivi_par.obtenir("label", "") si suivi_par.obtenir("id", "") sinon ""
+    }
+
+
+déf normaliser_artistes_mouvement(aretes: liste) -> liste:
+    """Normaliser la liste des artistes associés à un mouvement artistique."""
+    resultat = []
+    pour arete dans (aretes ou []):
+        noeud = arete.obtenir("node", {})
+        noeud_id = noeud.obtenir("id", "")
+        uri = "http://www.wikidata.org/entity/" + noeud_id si noeud_id sinon ""
+        resultat.ajouter({
+            "artist": {"value": uri},
+            "artistLabel": {"value": noeud.obtenir("artistLabel", "")},
+            "birthDate": {"value": _premiere_valeur_temps(noeud.obtenir("birthDate", []))},
+            "deathDate": {"value": _premiere_valeur_temps(noeud.obtenir("deathDate", []))}
+        })
+    retour resultat
+
+
+déf normaliser_artiste(element: dictionnaire) -> dictionnaire:
+    """Normaliser les données brutes d'un artiste Wikidata."""
+    lieu_naissance = elements(element.obtenir("birthplace", []))
+    lieu_deces = elements(element.obtenir("deathplace", []))
+    mouvement = elements(element.obtenir("movement", []))
+    retour {
+        "id": element.obtenir("id", ""),
+        "artistLabel": element.obtenir("artistLabel", ""),
+        "birthDate": {"value": _premiere_valeur_temps(element.obtenir("birthDate", []))},
+        "deathDate": {"value": _premiere_valeur_temps(element.obtenir("deathDate", []))},
+        "birthplace": _envelopper_elements(lieu_naissance),
+        "birthplaceLabel": _etiquettes_jointes(lieu_naissance),
+        "deathplace": _envelopper_elements(lieu_deces),
+        "deathplaceLabel": _etiquettes_jointes(lieu_deces),
+        "movement": _envelopper_elements(mouvement),
+        "movementLabel": _etiquettes_jointes(mouvement)
+    }
+
+
+déf normaliser_oeuvre(element: dictionnaire) -> dictionnaire:
+    """Normaliser les données brutes d'une œuvre d'art Wikidata."""
+    createur = elements(element.obtenir("creator", []))
+    musee = elements(element.obtenir("museum", []))
+    represente = elements(element.obtenir("depicts", []))
+    materiau = elements(element.obtenir("material", []))
+    retour {
+        "id": element.obtenir("id", ""),
+        "artworkLabel": element.obtenir("artworkLabel", ""),
+        "creator": _envelopper_elements(createur),
+        "creatorLabel": _etiquettes_jointes(createur),
+        "inceptionDate": {"value": _premiere_valeur_temps(element.obtenir("inceptionDate", []))},
+        "museum": _envelopper_elements(musee),
+        "museumLabel": _etiquettes_jointes(musee),
+        "depicts": _envelopper_elements(represente),
+        "depictsLabel": _etiquettes_jointes(represente),
+        "material": _envelopper_elements(materiau),
+        "materialLabel": _etiquettes_jointes(materiau),
+        "image": {"value": _premiere_valeur_contenu(element.obtenir("image", []))}
+    }
+
+
+déf normaliser_musee(element: dictionnaire) -> dictionnaire:
+    """Normaliser les données brutes d'un musée Wikidata."""
+    pays = elements(element.obtenir("country", []))
+    lieu = elements(element.obtenir("location", []))
+    retour {
+        "id": element.obtenir("id", ""),
+        "museumLabel": element.obtenir("museumLabel", element.obtenir("label", "")),
+        "inceptionDate": {"value": _premiere_valeur_temps(element.obtenir("inceptionDate", []))},
+        "country": _envelopper_elements(pays),
+        "countryLabel": _etiquettes_jointes(pays),
+        "location": _envelopper_elements(lieu),
+        "locationLabel": _etiquettes_jointes(lieu),
+        "officialWebsite": {"value": _premiere_valeur_contenu(element.obtenir("officialWebsite", []))}
+    }
+
+
+déf normaliser_influences_artiste(element: dictionnaire) -> dictionnaire:
+    """Normaliser les données d'influence d'un artiste Wikidata."""
+    retour {
+        "influencedBy": elements(element.obtenir("influencedBy", [])),
+        "influenced": elements(element.obtenir("influenced", []))
+    }

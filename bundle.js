@@ -3210,6 +3210,134 @@ window.ui.composants.grille_themes = window.ui.composants.grille_themes || {};
 Object.assign(window.ui.composants.grille_themes, {_t: _t, _tuile_theme: _tuile_theme, rendre_grille_themes: rendre_grille_themes});
 })();
 
+(() => {
+function premier_element(declarations) {
+  "Retourner le premier élément valide d'une liste de déclarations Wikidata.";
+  if ((!__ml_truthy(declarations))) {
+    return {};
+  }
+  var premier = declarations[0];
+  if ((!__ml_truthy(premier))) {
+    return {};
+  }
+  var valeur = ((premier)?.["value"] ?? {});
+  if ((!__ml_truthy(((valeur)?.["id"] ?? "")))) {
+    return {};
+  }
+  return {["id"]: ((valeur)?.["id"] ?? ""), ["label"]: ((valeur)?.["label"] ?? ((valeur)?.["content"] ?? ((valeur)?.["id"] ?? "")))};
+}
+
+function elements(declarations) {
+  "Retourner tous les éléments valides d'une liste de déclarations Wikidata.";
+  var resultat = [];
+  for (const entree of __ml_iterate((declarations || []))) {
+    var valeur = ((entree)?.["value"] ?? {});
+    if (__ml_truthy(((valeur)?.["id"] ?? ""))) {
+      __ml_add(resultat, {["id"]: ((valeur)?.["id"] ?? ""), ["label"]: ((valeur)?.["label"] ?? ((valeur)?.["content"] ?? ((valeur)?.["id"] ?? "")))});
+    }
+  }
+  return resultat;
+}
+
+function _premiere_valeur_temps(champ) {
+  "Extraire la première valeur temporelle (.time) d'un champ Wikidata.";
+  if ((!__ml_truthy(champ))) {
+    return "";
+  }
+  var premier = champ[0];
+  if ((!__ml_truthy(premier))) {
+    return "";
+  }
+  return ((((premier)?.["value"] ?? {}))?.["time"] ?? "");
+}
+
+function _premiere_valeur_contenu(champ) {
+  "Extraire la première valeur de contenu (.content) d'un champ Wikidata.";
+  if ((!__ml_truthy(champ))) {
+    return "";
+  }
+  var premier = champ[0];
+  if ((!__ml_truthy(premier))) {
+    return "";
+  }
+  return ((((premier)?.["value"] ?? {}))?.["content"] ?? "");
+}
+
+function _envelopper_elements(items) {
+  "Envelopper une liste d'éléments dans des objets {value: element}.";
+  var resultat = [];
+  for (const item of __ml_iterate(items)) {
+    __ml_add(resultat, {["value"]: item});
+  }
+  return resultat;
+}
+
+function _etiquettes_jointes(items) {
+  "Joindre les libellés d'une liste d'éléments en une chaîne séparée par des virgules.";
+  var etiquettes = [];
+  for (const item of __ml_iterate(items)) {
+    var label = ((item)?.["label"] ?? "");
+    if (__ml_truthy(label)) {
+      __ml_add(etiquettes, label);
+    }
+  }
+  return (etiquettes).join(", ");
+}
+
+function normaliser_mouvement(element) {
+  "Normaliser les données brutes d'un mouvement artistique Wikidata.";
+  var suit = premier_element(((element)?.["follows"] ?? []));
+  var suivi_par = premier_element(((element)?.["followedBy"] ?? []));
+  var pays = premier_element(((element)?.["country"] ?? []));
+  return {["id"]: ((element)?.["id"] ?? ""), ["movementLabel"]: ((element)?.["movementLabel"] ?? ""), ["startTime"]: {["value"]: _premiere_valeur_temps(((element)?.["startTime"] ?? []))}, ["endTime"]: {["value"]: _premiere_valeur_temps(((element)?.["endTime"] ?? []))}, ["country"]: (__ml_truthy(((suit)?.["id"] ?? "")) ? [{["value"]: pays}] : []), ["countryLabel"]: (__ml_truthy(((pays)?.["id"] ?? "")) ? ((pays)?.["label"] ?? "") : ""), ["follows"]: (__ml_truthy(((suit)?.["id"] ?? "")) ? [{["value"]: suit}] : []), ["followsLabel"]: (__ml_truthy(((suit)?.["id"] ?? "")) ? ((suit)?.["label"] ?? "") : ""), ["followedBy"]: (__ml_truthy(((suivi_par)?.["id"] ?? "")) ? [{["value"]: suivi_par}] : []), ["followedByLabel"]: (__ml_truthy(((suivi_par)?.["id"] ?? "")) ? ((suivi_par)?.["label"] ?? "") : "")};
+}
+
+function normaliser_artistes_mouvement(aretes) {
+  "Normaliser la liste des artistes associés à un mouvement artistique.";
+  var resultat = [];
+  for (const arete of __ml_iterate((aretes || []))) {
+    var noeud = ((arete)?.["node"] ?? {});
+    var noeud_id = ((noeud)?.["id"] ?? "");
+    var uri = (__ml_truthy(noeud_id) ? ("http://www.wikidata.org/entity/" + noeud_id) : "");
+    __ml_add(resultat, {["artist"]: {["value"]: uri}, ["artistLabel"]: {["value"]: ((noeud)?.["artistLabel"] ?? "")}, ["birthDate"]: {["value"]: _premiere_valeur_temps(((noeud)?.["birthDate"] ?? []))}, ["deathDate"]: {["value"]: _premiere_valeur_temps(((noeud)?.["deathDate"] ?? []))}});
+  }
+  return resultat;
+}
+
+function normaliser_artiste(element) {
+  "Normaliser les données brutes d'un artiste Wikidata.";
+  var lieu_naissance = elements(((element)?.["birthplace"] ?? []));
+  var lieu_deces = elements(((element)?.["deathplace"] ?? []));
+  var mouvement = elements(((element)?.["movement"] ?? []));
+  return {["id"]: ((element)?.["id"] ?? ""), ["artistLabel"]: ((element)?.["artistLabel"] ?? ""), ["birthDate"]: {["value"]: _premiere_valeur_temps(((element)?.["birthDate"] ?? []))}, ["deathDate"]: {["value"]: _premiere_valeur_temps(((element)?.["deathDate"] ?? []))}, ["birthplace"]: _envelopper_elements(lieu_naissance), ["birthplaceLabel"]: _etiquettes_jointes(lieu_naissance), ["deathplace"]: _envelopper_elements(lieu_deces), ["deathplaceLabel"]: _etiquettes_jointes(lieu_deces), ["movement"]: _envelopper_elements(mouvement), ["movementLabel"]: _etiquettes_jointes(mouvement)};
+}
+
+function normaliser_oeuvre(element) {
+  "Normaliser les données brutes d'une œuvre d'art Wikidata.";
+  var createur = elements(((element)?.["creator"] ?? []));
+  var musee = elements(((element)?.["museum"] ?? []));
+  var represente = elements(((element)?.["depicts"] ?? []));
+  var materiau = elements(((element)?.["material"] ?? []));
+  return {["id"]: ((element)?.["id"] ?? ""), ["artworkLabel"]: ((element)?.["artworkLabel"] ?? ""), ["creator"]: _envelopper_elements(createur), ["creatorLabel"]: _etiquettes_jointes(createur), ["inceptionDate"]: {["value"]: _premiere_valeur_temps(((element)?.["inceptionDate"] ?? []))}, ["museum"]: _envelopper_elements(musee), ["museumLabel"]: _etiquettes_jointes(musee), ["depicts"]: _envelopper_elements(represente), ["depictsLabel"]: _etiquettes_jointes(represente), ["material"]: _envelopper_elements(materiau), ["materialLabel"]: _etiquettes_jointes(materiau), ["image"]: {["value"]: _premiere_valeur_contenu(((element)?.["image"] ?? []))}};
+}
+
+function normaliser_musee(element) {
+  "Normaliser les données brutes d'un musée Wikidata.";
+  var pays = elements(((element)?.["country"] ?? []));
+  var lieu = elements(((element)?.["location"] ?? []));
+  return {["id"]: ((element)?.["id"] ?? ""), ["museumLabel"]: ((element)?.["museumLabel"] ?? ((element)?.["label"] ?? "")), ["inceptionDate"]: {["value"]: _premiere_valeur_temps(((element)?.["inceptionDate"] ?? []))}, ["country"]: _envelopper_elements(pays), ["countryLabel"]: _etiquettes_jointes(pays), ["location"]: _envelopper_elements(lieu), ["locationLabel"]: _etiquettes_jointes(lieu), ["officialWebsite"]: {["value"]: _premiere_valeur_contenu(((element)?.["officialWebsite"] ?? []))}};
+}
+
+function normaliser_influences_artiste(element) {
+  "Normaliser les données d'influence d'un artiste Wikidata.";
+  return {["influencedBy"]: elements(((element)?.["influencedBy"] ?? [])), ["influenced"]: elements(((element)?.["influenced"] ?? []))};
+}
+
+window.donnees = window.donnees || {};
+window.donnees.normalisation = window.donnees.normalisation || {};
+Object.assign(window.donnees.normalisation, {premier_element: premier_element, elements: elements, _premiere_valeur_temps: _premiere_valeur_temps, _premiere_valeur_contenu: _premiere_valeur_contenu, _envelopper_elements: _envelopper_elements, _etiquettes_jointes: _etiquettes_jointes, normaliser_mouvement: normaliser_mouvement, normaliser_artistes_mouvement: normaliser_artistes_mouvement, normaliser_artiste: normaliser_artiste, normaliser_oeuvre: normaliser_oeuvre, normaliser_musee: normaliser_musee, normaliser_influences_artiste: normaliser_influences_artiste});
+})();
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);

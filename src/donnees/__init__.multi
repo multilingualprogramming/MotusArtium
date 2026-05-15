@@ -1,2 +1,3 @@
 # Module de récupération de données Wikidata
 importer .requetes
+importer .normalisation

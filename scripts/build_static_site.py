@@ -20,6 +20,8 @@ STATIC_FILES = [
     "app.js",
     "theme.js",
     "bootstrap.js",
+    "js/bus.js",
+    "js/actions.js",
 ]
 
 I18N_FILES = [
@@ -79,7 +81,9 @@ def stage_site(build_dir: pathlib.Path, site_dir: pathlib.Path) -> None:
     site_dir.mkdir(parents=True)
 
     for relative in STATIC_FILES:
-        shutil.copy2(ROOT / relative, site_dir / relative)
+        destination = site_dir / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / relative, destination)
 
     for relative in I18N_FILES:
         destination = site_dir / relative

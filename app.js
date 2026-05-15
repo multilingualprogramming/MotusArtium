@@ -2552,96 +2552,22 @@ function setActiveTier(tier, options = {}) {
             return item.label || "";
         }
 
-        function normaliseMovementDetails(item) {
-            const follows = firstStatementItem(item.follows);
-            const followedBy = firstStatementItem(item.followedBy);
-            const country = firstStatementItem(item.country);
-            return {
-                id: item.id || "",
-                movementLabel: item.movementLabel || "",
-                startTime: { value: (((item.startTime || [])[0] || {}).value || {}).time || "" },
-                endTime: { value: (((item.endTime || [])[0] || {}).value || {}).time || "" },
-                country: country ? [{ value: country }] : [],
-                countryLabel: country ? country.label : "",
-                follows: follows ? [{ value: follows }] : [],
-                followsLabel: follows ? follows.label : "",
-                followedBy: followedBy ? [{ value: followedBy }] : [],
-                followedByLabel: followedBy ? followedBy.label : ""
-            };
-        }
+        // Data normalisation — delegates to donnees.normalisation compiled from normalisation.multi.
+        // The _norm() accessor is safe to call before bundle.js sets up window.ui because these
+        // functions are only invoked inside async adapter methods triggered by user actions.
+        function _norm() { return window.donnees && window.donnees.normalisation || null; }
 
-        function normaliseArtistsByMovement(edges) {
-            return (edges || []).map((edge) => {
-                const node = edge && edge.node ? edge.node : {};
-                return {
-                    artist: { value: node.id ? "http://www.wikidata.org/entity/" + node.id : "" },
-                    artistLabel: { value: node.artistLabel || "" },
-                    birthDate: { value: (((node.birthDate || [])[0] || {}).value || {}).time || "" },
-                    deathDate: { value: (((node.deathDate || [])[0] || {}).value || {}).time || "" }
-                };
-            });
+        function firstStatementItem(stmts) {
+            const r = _norm() && _norm().premier_element(stmts || []) || {};
+            return r.id ? r : null;
         }
-
-        function normaliseArtistDetails(item) {
-            const birthplace = statementItems(item.birthplace);
-            const deathplace = statementItems(item.deathplace);
-            const movement = statementItems(item.movement);
-            return {
-                id: item.id || "",
-                artistLabel: item.artistLabel || "",
-                birthDate: { value: (((item.birthDate || [])[0] || {}).value || {}).time || "" },
-                deathDate: { value: (((item.deathDate || [])[0] || {}).value || {}).time || "" },
-                birthplace: birthplace.map((value) => ({ value })),
-                birthplaceLabel: birthplace.map((value) => value.label).filter(Boolean).join(", "),
-                deathplace: deathplace.map((value) => ({ value })),
-                deathplaceLabel: deathplace.map((value) => value.label).filter(Boolean).join(", "),
-                movement: movement.map((value) => ({ value })),
-                movementLabel: movement.map((value) => value.label).filter(Boolean).join(", ")
-            };
-        }
-
-        function normaliseArtworkDetails(item) {
-            const creator = statementItems(item.creator);
-            const museum = statementItems(item.museum);
-            const depicts = statementItems(item.depicts);
-            const material = statementItems(item.material);
-            return {
-                id: item.id || "",
-                artworkLabel: item.artworkLabel || "",
-                creator: creator.map((value) => ({ value })),
-                creatorLabel: creator.map((value) => value.label).filter(Boolean).join(", "),
-                inceptionDate: { value: (((item.inceptionDate || [])[0] || {}).value || {}).time || "" },
-                museum: museum.map((value) => ({ value })),
-                museumLabel: museum.map((value) => value.label).filter(Boolean).join(", "),
-                depicts: depicts.map((value) => ({ value })),
-                depictsLabel: depicts.map((value) => value.label).filter(Boolean).join(", "),
-                material: material.map((value) => ({ value })),
-                materialLabel: material.map((value) => value.label).filter(Boolean).join(", "),
-                image: { value: (((item.image || [])[0] || {}).value || {}).content || "" }
-            };
-        }
-
-        function normaliseMuseumDetails(item) {
-            const country = statementItems(item.country);
-            const location = statementItems(item.location);
-            return {
-                id: item.id || "",
-                museumLabel: item.museumLabel || item.label || "",
-                inceptionDate: { value: (((item.inceptionDate || [])[0] || {}).value || {}).time || "" },
-                country: country.map((value) => ({ value })),
-                countryLabel: country.map((value) => value.label).filter(Boolean).join(", "),
-                location: location.map((value) => ({ value })),
-                locationLabel: location.map((value) => value.label).filter(Boolean).join(", "),
-                officialWebsite: { value: (((item.officialWebsite || [])[0] || {}).value || {}).content || "" }
-            };
-        }
-
-        function normaliseArtistInfluenceDetails(item) {
-            return {
-                influencedBy: statementItems(item.influencedBy),
-                influenced: statementItems(item.influenced)
-            };
-        }
+        function statementItems(stmts) { return _norm() && _norm().elements(stmts || []) || []; }
+        function normaliseMovementDetails(item) { return _norm() && _norm().normaliser_mouvement(item) || {}; }
+        function normaliseArtistsByMovement(edges) { return _norm() && _norm().normaliser_artistes_mouvement(edges) || []; }
+        function normaliseArtistDetails(item) { return _norm() && _norm().normaliser_artiste(item) || {}; }
+        function normaliseArtworkDetails(item) { return _norm() && _norm().normaliser_oeuvre(item) || {}; }
+        function normaliseMuseumDetails(item) { return _norm() && _norm().normaliser_musee(item) || {}; }
+        function normaliseArtistInfluenceDetails(item) { return _norm() && _norm().normaliser_influences_artiste(item) || {}; }
 
         const browserAdapterState = {
             entite_selectionnee_id: "",
@@ -4396,13 +4322,7 @@ function setActiveTier(tier, options = {}) {
             });
         }
 
-        // Tier navigation
-        const tierButtons = Array.from(document.querySelectorAll(".tier-button"));
-        tierButtons.forEach((button) => {
-            button.addEventListener("click", () => {
-                setActiveTier(button.dataset.tier);
-            });
-        });
+        // Tier navigation delegated to js/actions.js via .tier-button[data-tier] listener.
 
         // Observatory guide dismiss
         const observatoryGuideDismissEl = document.getElementById("observatory-guide-dismiss");

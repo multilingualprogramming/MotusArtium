@@ -7,7 +7,7 @@ MotusArtium is a layered application with a static browser shell, a Multilingual
 - `index.html` and `styles.css` define the shell layout and presentation.
 - `bundle.js` is the generated Multilingual browser bundle.
 - `src/ui/etat.multi` owns live data, graph state, and runtime loading functions.
-- `app.js` bridges the static shell to DOM rendering and keeps a temporary `ui.etat` fallback for older generated bundles.
+- `app.js` bridges the static shell to DOM rendering and keeps a compatibility `ui.etat` fallback for older generated bundles.
 - `bootstrap.js` handles startup, URL deep links, REST search, and detail-panel fallback behavior.
 - `src/` contains the source application written in Multilingual.
 - `graphql/` contains the GraphQL documents sent to Wikidata.
@@ -28,7 +28,7 @@ MotusArtium is a layered application with a static browser shell, a Multilingual
 
 - tracks active GraphQL documents and variables for the visible query mirror
 - renders query status, response shape, selection context, and the static-shell constellation
-- provides `window.ui.etat` only when the generated Multilingual bundle has not provided it yet
+- provides `window.ui.etat` only as an older-bundle compatibility fallback
 
 ### `bootstrap.js`
 

@@ -33,7 +33,7 @@ The project uses a Multilingual-first hybrid model:
   - URL bootstrapping
   - shell-level UI behavior
 
-`app.js` still carries a compatibility implementation of `window.ui.etat` for bundles produced before the full state module is lowered. It must stay a fallback: new stateful behavior belongs in `src/ui/etat.multi` or nearby `.multi` modules.
+The generated bundle now provides `window.ui.etat` from Multilingual source. `app.js` still carries a compatibility implementation for older bundles, but new stateful behavior belongs in `src/ui/etat.multi` or nearby `.multi` modules.
 
 ## Build Model
 

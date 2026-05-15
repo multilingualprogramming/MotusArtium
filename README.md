@@ -36,7 +36,7 @@ That means GraphQL remains the core retrieval model for expansion, relationships
 
 - [`src/principal.multi`](src/principal.multi): Multilingual application entrypoint
 - [`src/ui/etat.multi`](src/ui/etat.multi): application state, entity loaders, graph cache, and pagination logic in Multilingual
-- [`app.js`](app.js): browser-side shell adapter and temporary `ui.etat` fallback while the generated bundle catches up
+- [`app.js`](app.js): browser-side shell adapter with a compatibility fallback for older bundles
 - [`bootstrap.js`](bootstrap.js): startup, URL bootstrapping, REST search wiring, and detail-panel fallback logic
 - [`index.html`](index.html): static shell layout
 - [`styles.css`](styles.css): shell styling
@@ -92,7 +92,7 @@ python3 scripts/build_static_site.py
 python3 tests/smoke_static_site.py _site
 ```
 
-The build script also reports whether the generated Multilingual bundle provides `ui.etat`; until it does, `app.js` keeps the compatibility fallback.
+The build script also reports whether the generated Multilingual bundle provides `ui.etat`; current builds should report `yes`.
 
 ## Repository Layout
 

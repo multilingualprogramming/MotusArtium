@@ -1,12 +1,12 @@
 importer donnees.requetes
-importer semantique.graphe comme module_graphe
+importer semantique.graphe
 importer asyncio
 
 # Etat global reactif de l'application
 observer var entite_selectionnee_id = ""
 observer var entite_selectionnee_type = ""  # "mouvement", "artiste", "oeuvre"
 observer var mode_visualisation = "graphe"  # "graphe", "galaxie", "riviere", "chronologie"
-observer var graphe = module_graphe.Graphe()
+observer var graphe = semantique.graphe.Graphe()
 observer var affichage_chargement = faux
 observer var message_erreur = ""
 

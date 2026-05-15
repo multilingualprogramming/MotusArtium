@@ -56,8 +56,8 @@ asynchrone déf explorer_voisinage(entite_id: chaine, profondeur: nombre = 2):
     voisinage = ui.etat.graphe.obtenir_voisinage(entite_id, profondeur)
 
     # Charger les entités du voisinage
-    pour couche in voisinage.obtenir("couches", []):
-        pour element in couche:
+    pour couche dans voisinage.obtenir("couches", []):
+        pour element dans couche:
             element_id = element.obtenir("id", "")
             # Les nœuds sont déjà dans le graphe, pas besoin de les recharger
 
@@ -73,7 +73,7 @@ asynchrone déf explorer_influences(artiste_id: chaine):
     voisins = ui.etat.graphe.obtenir_voisins(artiste_id, "influence")
 
     # Charger les détails pour chaque artiste influencé
-    pour voisin_id in voisins:
+    pour voisin_id dans voisins:
         voisin = ui.etat.graphe.obtenir_noeud(voisin_id)
         si voisin et voisin.type == "artiste":
             # Le nœud est déjà dans le graphe
@@ -126,7 +126,7 @@ asynchrone déf obtenir_entites_liees(entite_id: chaine) -> dictionnaire:
         "par_type": {}
     }
 
-    pour voisin_id in voisins:
+    pour voisin_id dans voisins:
         voisin = ui.etat.graphe.obtenir_noeud(voisin_id)
 
         si voisin:
@@ -136,7 +136,7 @@ asynchrone déf obtenir_entites_liees(entite_id: chaine) -> dictionnaire:
                 "type": voisin.type
             })
 
-            si voisin.type non in entites_liees["par_type"]:
+            si voisin.type non dans entites_liees["par_type"]:
                 entites_liees["par_type"][voisin.type] = []
 
             entites_liees["par_type"][voisin.type].ajouter({
@@ -151,8 +151,8 @@ asynchrone déf obtenir_composante_connexe(entite_id: chaine) -> liste:
     """Obtenir tous les nœuds connectés à une entité"""
     composantes = ui.etat.graphe.obtenir_composantes_connexes()
 
-    pour composante in composantes:
-        si entite_id in composante:
+    pour composante dans composantes:
+        si entite_id dans composante:
             retour composante
 
     retour [entite_id]

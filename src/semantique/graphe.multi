@@ -225,7 +225,7 @@ classe Graphe:
             relations_json.ajouter({
                 "source": rel.source_id,
                 "target": rel.target_id,
-                "type": rel.type,
+                "type": rel.type_noeud,
                 "poids": rel.poids
             })
 

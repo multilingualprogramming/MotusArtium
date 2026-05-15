@@ -143,8 +143,11 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
         assert_contains(bundle_js, name, "bundle.js")
     for marker in BUNDLE_DELEGATION_MARKERS:
         assert_contains(bundle_js, marker, "bundle.js delegation")
+    assert_contains(bundle_js, "Object.assign(window.ui.etat", "bundle.js")
     if "unsupported" in bundle_js:
         raise AssertionError("bundle.js contains unsupported lowering output")
+    if "null /*" in bundle_js:
+        raise AssertionError("bundle.js contains placeholder lowering output")
 
 
 def validate_http(site_root: pathlib.Path) -> None:

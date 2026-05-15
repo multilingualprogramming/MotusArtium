@@ -368,7 +368,7 @@ asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre 
 
     pour edge dans edges:
         noeud = edge.obtenir("node", {})
-        si noeud and len(resultats) < limite:
+        si noeud et len(resultats) < limite:
             resultats.ajouter(_normaliser_artiste_resume(noeud))
 
     retour resultats
@@ -433,7 +433,7 @@ asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50)
 
     pour edge dans edges:
         noeud = edge.obtenir("node", {})
-        si noeud and len(resultats) < limite:
+        si noeud et len(resultats) < limite:
             resultats.ajouter(_normaliser_oeuvre_resume(noeud))
 
     retour resultats
@@ -454,7 +454,7 @@ asynchrone déf obtenir_oeuvres_par_sujet(sujet_id: chaine, limite: nombre = 50)
 
     pour edge dans edges:
         noeud = edge.obtenir("node", {})
-        si noeud and len(resultats) < limite:
+        si noeud et len(resultats) < limite:
             resultats.ajouter(_normaliser_oeuvre_resume(noeud))
 
     retour resultats
@@ -476,7 +476,11 @@ asynchrone déf obtenir_diffusion_geographique(mouvement_id: chaine) -> liste:
 
     item = donnees_mouvement.obtenir("item", {})
     pays = _extraire_items(item.obtenir("country", []))
-    ids_pays = [entree.obtenir("id", "") pour entree dans pays si entree.obtenir("id", "")]
+    ids_pays = []
+    pour entree dans pays:
+        pays_id = entree.obtenir("id", "")
+        si pays_id:
+            ids_pays.ajouter(pays_id)
 
     si non ids_pays:
         retour []
@@ -528,7 +532,7 @@ asynchrone déf obtenir_oeuvres_musee(musee_id: chaine, limite: nombre = 50) -> 
 
     pour edge dans edges:
         noeud = edge.obtenir("node", {})
-        si noeud and len(resultats) < limite:
+        si noeud et len(resultats) < limite:
             resultats.ajouter(_normaliser_oeuvre_resume(noeud))
 
     retour resultats
@@ -548,7 +552,7 @@ asynchrone déf obtenir_chronologie_mouvements(debut: nombre, fin: nombre) -> li
         debut_mouvement = _annee_depuis_temps(entree.obtenir("startTime", {}).obtenir("value", ""))
         fin_mouvement = _annee_depuis_temps(entree.obtenir("endTime", {}).obtenir("value", ""))
 
-        si debut_mouvement et fin_mouvement and debut_mouvement >= debut and fin_mouvement <= fin:
+        si debut_mouvement et fin_mouvement et debut_mouvement >= debut et fin_mouvement <= fin:
             resultats.ajouter(entree)
 
     retour resultats
@@ -584,7 +588,7 @@ asynchrone déf obtenir_etiquettes_entite(entite_id: chaine, langues: liste = ["
             passe
 
         etiquette = attendre obtenir_etiquette_entite(entite_id, langue)
-        observer etiquettes[langue] = etiquette.obtenir("label", "")
+        etiquettes[langue] = etiquette.obtenir("label", "")
 
     retour etiquettes
 

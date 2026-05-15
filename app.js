@@ -368,28 +368,29 @@
         function summariseVariables(variables) {
             const entries = Object.entries(variables || {}).filter(([, value]) => value !== "" && value != null);
             if (!entries.length) {
-                return "No variables";
+                return traduireInterface("query.variables.none");
             }
             return entries.slice(0, 3).map(([key, value]) => key + ": " + value).join(" · ");
         }
 
         function narrativeForDocument(documentName, variables) {
             const selectedId = findSelectedEntityId(variables);
-            const target = selectedId || "current selection";
-            const narratives = {
-                "movement_details.graphql": "Movement details for " + target + " keep start/end dates and succession visible in the observatory.",
-                "movement_evolution.graphql": "Movement evolution for " + target + " traces follows, followed by, and broader lineage.",
-                "artists_by_movement.graphql": "Artists linked to " + target + " expand the constellation from movement into people and dated careers.",
-                "artist_details.graphql": "Artist details for " + target + " bring lifespan and movement membership into the visible field.",
-                "artist_influences.graphql": "Artist influence flow for " + target + " turns inspiration into readable graph and river edges.",
-                "artworks_by_artist.graphql": "Works by " + target + " translate an artist selection into a creation timeline.",
-                "artwork_details.graphql": "Artwork details for " + target + " keep creation date, museum, and subjects visible with the active query.",
-                "artworks_by_museum.graphql": "Museum expansion for " + target + " shows holdings as a live GraphQL collection.",
-                "artworks_by_subject.graphql": "Subject expansion for " + target + " reveals artworks that share a semantic theme.",
-                "movements_catalog.graphql": "Movement catalog retrieval provides the broad temporal field for timeline and river views.",
-                "entity_label.graphql": "Multilingual labels for " + target + " keep the same Wikidata entity readable across French and English surfaces."
+            const target = selectedId || traduireInterface("query.target.currentSelection");
+            const narrativeKeys = {
+                "movement_details.graphql": "queryNarrative.movement_details",
+                "movement_evolution.graphql": "queryNarrative.movement_evolution",
+                "artists_by_movement.graphql": "queryNarrative.artists_by_movement",
+                "artist_details.graphql": "queryNarrative.artist_details",
+                "artist_influences.graphql": "queryNarrative.artist_influences",
+                "artworks_by_artist.graphql": "queryNarrative.artworks_by_artist",
+                "artwork_details.graphql": "queryNarrative.artwork_details",
+                "artworks_by_museum.graphql": "queryNarrative.artworks_by_museum",
+                "artworks_by_subject.graphql": "queryNarrative.artworks_by_subject",
+                "movements_catalog.graphql": "queryNarrative.movements_catalog",
+                "entity_label.graphql": "queryNarrative.entity_label"
             };
-            return narratives[documentName] || ("Live GraphQL request through " + documentName + " for " + target + ".");
+            const key = narrativeKeys[documentName] || "queryNarrative.default";
+            return traduireInterface(key, { documentName, target });
         }
 
         function beginQuerySession(documentName, variables) {
@@ -2375,7 +2376,7 @@ function setActiveTier(tier, options = {}) {
                 windowStart: 1540,
                 windowEnd: 1760,
                 label,
-                caption: "No dated field found"
+                caption: traduireInterface("timeline.noDatedField")
             };
         }
 
@@ -2416,15 +2417,13 @@ function setActiveTier(tier, options = {}) {
             const target = nodes.find((node) => node.id === relation.target);
             const sourceLabel = source ? source.etiquette : relation.source;
             const targetLabel = target ? target.etiquette : relation.target;
-            const relationLabels = {
-                follows: "follows",
-                followed_by: "followed by",
-                influenced_by: "influenced by",
-                influenced: "influenced",
-                created: "created",
-                contains_artist: "contains artist"
-            };
-            return sourceLabel + " " + (relationLabels[relation.type] || relation.type.replace(/_/g, " ")) + " " + targetLabel;
+            const relationLabel = traduireInterface("relation." + relation.type);
+            const fallbackRelation = relationLabel === "relation." + relation.type ? relation.type.replace(/_/g, " ") : relationLabel;
+            return traduireInterface("relationNarrative.default", {
+                source: sourceLabel,
+                relation: fallbackRelation,
+                target: targetLabel
+            });
         }
 
         function deriveTemporalInsights(snapshot) {
@@ -2436,7 +2435,7 @@ function setActiveTier(tier, options = {}) {
             const focus = focusEvent || {
                 start: 1400,
                 end: 2000,
-                label: "Temporal field",
+                label: traduireInterface("timeline.temporalField"),
                 type: "Entity"
             };
             const activeEvents = events.filter((event) => event.start <= focus.end && event.end >= focus.start);
@@ -2448,24 +2447,26 @@ function setActiveTier(tier, options = {}) {
 
             const insights = [];
             insights.push({
-                label: "Temporal Focus",
+                label: traduireInterface("timeline.insight.temporalFocus"),
                 value: focus.label + " - " + formatTimelineYear(focus.start) + (focus.end !== focus.start ? " - " + formatTimelineYear(focus.end) : "")
             });
             insights.push({
-                label: "Active Entities",
-                value: activeEvents.length ? activeEvents.length + " entities overlap the active window" : "No dated entities overlap the active window"
+                label: traduireInterface("timeline.insight.activeEntities"),
+                value: activeEvents.length
+                    ? traduireInterface("timeline.activeEntities.overlap", { count: activeEvents.length })
+                    : traduireInterface("timeline.activeEntities.none")
             });
             if (succession.length) {
                 insights.push({
-                    label: "Flow",
+                    label: traduireInterface("timeline.insight.flow"),
                     value: succession.join(" | ")
                 });
             } else if (events.length > 1) {
                 const first = events[0];
                 const last = events[Math.min(events.length - 1, 2)];
                 insights.push({
-                    label: "Flow",
-                    value: first.label + " to " + last.label + " keeps chronology visible even before richer influence edges load."
+                    label: traduireInterface("timeline.insight.flow"),
+                    value: traduireInterface("timeline.flow.fallback", { first: first.label, last: last.label })
                 });
             }
 
@@ -2484,7 +2485,7 @@ function setActiveTier(tier, options = {}) {
 
             const insights = runtimeState.temporalInsights || [];
             if (!insights.length) {
-                timelineInsightsEl.innerHTML = '<div class="preset"><span>Temporal Focus</span><small>Awaiting dated selection</small></div>';
+                timelineInsightsEl.innerHTML = '<div class="preset"><span>' + escapeHtml(traduireInterface("timeline.insight.temporalFocus")) + '</span><small>' + escapeHtml(traduireInterface("timeline.awaitingDatedSelection")) + '</small></div>';
                 return;
             }
 

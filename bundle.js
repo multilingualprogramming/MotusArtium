@@ -11,6 +11,15 @@ class ReactiveSignal {
       handler(value);
     }
   }
+  setIndex(index, value) {
+    if (this._value == null || typeof this._value !== 'object') {
+      this._value = {};
+    }
+    this._value[index] = value;
+    for (const handler of this._handlers) {
+      handler(this._value);
+    }
+  }
   on_change(handler) {
     this._handlers.push(handler);
   }
@@ -115,6 +124,22 @@ function __ml_contains(container, item) {
   return false;
 }
 
+function __ml_truthy(value) {
+  if (value == null || value === false) {
+    return false;
+  }
+  if (Array.isArray(value) || typeof value === 'string') {
+    return value.length > 0;
+  }
+  if (value instanceof Set || value instanceof Map) {
+    return value.size > 0;
+  }
+  if (typeof value === 'object') {
+    return Object.keys(value).length > 0;
+  }
+  return Boolean(value);
+}
+
 function __ml_add(container, item) {
   if (container instanceof Set) {
     container.add(item);
@@ -156,12 +181,12 @@ var CACHE_DOCUMENTS_GRAPHQL = {};
 
 async function charger_document_graphql(nom_document) {
   'Charger un document GraphQL dédié depuis le dépôt statique';
-  if (__ml_contains(CACHE_DOCUMENTS_GRAPHQL, nom_document)) {
+  if (__ml_truthy(__ml_contains(CACHE_DOCUMENTS_GRAPHQL, nom_document))) {
     return CACHE_DOCUMENTS_GRAPHQL[nom_document];
   }
   var chemin = ('graphql/' + nom_document);
   var reponse = await fetch(chemin);
-  if ((!reponse.ok)) {
+  if ((!__ml_truthy(reponse.ok))) {
     throw new Error(('Impossible de charger le document GraphQL: ' + nom_document));
   }
   var document = await reponse.text();
@@ -175,12 +200,12 @@ async function executer_requete_graphql(nom_document, variables = {}) {
   var corps = JSON.stringify({['query']: document, ['variables']: variables});
   var entetes = {['Accept']: 'application/json', ['Content-Type']: 'application/json'};
   var reponse = await fetch(POINT_TERMINAL_WIKIDATA_GRAPHQL, {['method']: 'POST', ['headers']: entetes, ['body']: corps});
-  if ((!reponse.ok)) {
+  if ((!__ml_truthy(reponse.ok))) {
     throw new Error(('Erreur GraphQL Wikidata: ' + String(reponse.status)));
   }
   var donnees = await reponse.json();
   var erreurs = ((donnees)?.['errors'] ?? []);
-  if (erreurs) {
+  if (__ml_truthy(erreurs)) {
     var message = ((erreurs[0])?.['message'] ?? 'Erreur GraphQL inconnue');
     throw new Error(message);
   }
@@ -188,14 +213,14 @@ async function executer_requete_graphql(nom_document, variables = {}) {
 }
 
 function _champ_valeur(valeur) {
-  if (((valeur === null) || (valeur == ''))) {
+  if ((__ml_truthy((valeur === null)) || __ml_truthy((valeur == '')))) {
     return {};
   }
   return {['value']: valeur};
 }
 
 function _uri_entite(entite_id) {
-  if ((!entite_id)) {
+  if ((!__ml_truthy(entite_id))) {
     return '';
   }
   return ('http://www.wikidata.org/entity/' + entite_id);
@@ -203,19 +228,17 @@ function _uri_entite(entite_id) {
 
 function _champ_entite(entite_id) {
   var uri = _uri_entite(entite_id);
-  if ((!uri)) {
+  if ((!__ml_truthy(uri))) {
     return {};
   }
   return {['value']: uri};
 }
 
-var uri = _uri_entite(entite_id);
-
 function _extraire_temps(entrees) {
   for (const entree of (entrees || [])) {
     var valeur = ((entree)?.['value'] ?? {});
     var temps = ((valeur)?.['time'] ?? '');
-    if (temps) {
+    if (__ml_truthy(temps)) {
       return temps;
     }
   }
@@ -226,7 +249,7 @@ function _extraire_texte(entrees) {
   for (const entree of (entrees || [])) {
     var valeur = ((entree)?.['value'] ?? {});
     var contenu = ((valeur)?.['content'] ?? '');
-    if (contenu) {
+    if (__ml_truthy(contenu)) {
       return contenu;
     }
   }
@@ -237,7 +260,7 @@ function _extraire_item(entrees) {
   for (const entree of (entrees || [])) {
     var valeur = ((entree)?.['value'] ?? {});
     var entite_id = ((valeur)?.['id'] ?? '');
-    if (entite_id) {
+    if (__ml_truthy(entite_id)) {
       return {['id']: entite_id, ['label']: ((valeur)?.['label'] ?? '')};
     }
   }
@@ -249,21 +272,19 @@ function _extraire_items(entrees) {
   for (const entree of (entrees || [])) {
     var valeur = ((entree)?.['value'] ?? {});
     var entite_id = ((valeur)?.['id'] ?? '');
-    if (entite_id) {
+    if (__ml_truthy(entite_id)) {
       __ml_add(resultats, {['id']: entite_id, ['label']: ((valeur)?.['label'] ?? '')});
     }
   }
   return resultats;
 }
 
-var resultats = [];
-
 function _extraire_coordonnees(entrees) {
   for (const entree of (entrees || [])) {
     var valeur = ((entree)?.['value'] ?? {});
     var latitude = ((valeur)?.['latitude'] ?? null);
     var longitude = ((valeur)?.['longitude'] ?? null);
-    if (((latitude != null) && (longitude != null))) {
+    if ((__ml_truthy((latitude != null)) && __ml_truthy((longitude != null)))) {
       return {['latitude']: latitude, ['longitude']: longitude};
     }
   }
@@ -277,24 +298,12 @@ function _normaliser_mouvement_detail(item) {
   return {['movement']: _champ_entite(((item)?.['id'] ?? '')), ['movementLabel']: _champ_valeur(((item)?.['movementLabel'] ?? '')), ['startTime']: _champ_valeur(_extraire_temps(((item)?.['startTime'] ?? []))), ['endTime']: _champ_valeur(_extraire_temps(((item)?.['endTime'] ?? []))), ['country']: _champ_entite(((pays)?.['id'] ?? '')), ['countryLabel']: _champ_valeur(((pays)?.['label'] ?? '')), ['follows']: _champ_entite(((precedent)?.['id'] ?? '')), ['followsLabel']: _champ_valeur(((precedent)?.['label'] ?? '')), ['followedBy']: _champ_entite(((suivant)?.['id'] ?? '')), ['followedByLabel']: _champ_valeur(((suivant)?.['label'] ?? ''))};
 }
 
-var pays = _extraire_item(((item)?.['country'] ?? []));
-
-var precedent = _extraire_item(((item)?.['follows'] ?? []));
-
-var suivant = _extraire_item(((item)?.['followedBy'] ?? []));
-
 function _normaliser_artiste_detail(item) {
   var lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
   var lieu_deces = _extraire_item(((item)?.['deathplace'] ?? []));
   var mouvement = _extraire_item(((item)?.['movement'] ?? []));
   return {['artist']: _champ_entite(((item)?.['id'] ?? '')), ['artistLabel']: _champ_valeur(((item)?.['artistLabel'] ?? '')), ['birthDate']: _champ_valeur(_extraire_temps(((item)?.['birthDate'] ?? []))), ['deathDate']: _champ_valeur(_extraire_temps(((item)?.['deathDate'] ?? []))), ['birthplace']: _champ_entite(((lieu_naissance)?.['id'] ?? '')), ['birthplaceLabel']: _champ_valeur(((lieu_naissance)?.['label'] ?? '')), ['deathplace']: _champ_entite(((lieu_deces)?.['id'] ?? '')), ['deathplaceLabel']: _champ_valeur(((lieu_deces)?.['label'] ?? '')), ['movement']: _champ_entite(((mouvement)?.['id'] ?? '')), ['movementLabel']: _champ_valeur(((mouvement)?.['label'] ?? ''))};
 }
-
-var lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
-
-var lieu_deces = _extraire_item(((item)?.['deathplace'] ?? []));
-
-var mouvement = _extraire_item(((item)?.['movement'] ?? []));
 
 function _normaliser_oeuvre_detail(item) {
   var createur = _extraire_item(((item)?.['creator'] ?? []));
@@ -304,20 +313,10 @@ function _normaliser_oeuvre_detail(item) {
   return {['artwork']: _champ_entite(((item)?.['id'] ?? '')), ['artworkLabel']: _champ_valeur(((item)?.['artworkLabel'] ?? '')), ['creator']: _champ_entite(((createur)?.['id'] ?? '')), ['creatorLabel']: _champ_valeur(((createur)?.['label'] ?? '')), ['inceptionDate']: _champ_valeur(_extraire_temps(((item)?.['inceptionDate'] ?? []))), ['museum']: _champ_entite(((musee)?.['id'] ?? '')), ['museumLabel']: _champ_valeur(((musee)?.['label'] ?? '')), ['depicts']: _champ_entite(((sujet)?.['id'] ?? '')), ['depictsLabel']: _champ_valeur(((sujet)?.['label'] ?? '')), ['material']: _champ_entite(((materiau)?.['id'] ?? '')), ['materialLabel']: _champ_valeur(((materiau)?.['label'] ?? '')), ['image']: _champ_valeur(_extraire_texte(((item)?.['image'] ?? [])))};
 }
 
-var createur = _extraire_item(((item)?.['creator'] ?? []));
-
-var musee = _extraire_item(((item)?.['museum'] ?? []));
-
-var sujet = _extraire_item(((item)?.['depicts'] ?? []));
-
-var materiau = _extraire_item(((item)?.['material'] ?? []));
-
 function _normaliser_artiste_resume(item) {
   var lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
   return {['artist']: _champ_entite(((item)?.['id'] ?? '')), ['artistLabel']: _champ_valeur(((item)?.['artistLabel'] ?? '')), ['birthDate']: _champ_valeur(_extraire_temps(((item)?.['birthDate'] ?? []))), ['deathDate']: _champ_valeur(_extraire_temps(((item)?.['deathDate'] ?? []))), ['birthplace']: _champ_entite(((lieu_naissance)?.['id'] ?? '')), ['birthplaceLabel']: _champ_valeur(((lieu_naissance)?.['label'] ?? ''))};
 }
-
-lieu_naissance = _extraire_item(((item)?.['birthplace'] ?? []));
 
 function _normaliser_oeuvre_resume(item) {
   var createur = _extraire_item(((item)?.['creator'] ?? []));
@@ -326,22 +325,16 @@ function _normaliser_oeuvre_resume(item) {
   return {['artwork']: _champ_entite(((item)?.['id'] ?? '')), ['artworkLabel']: _champ_valeur(((item)?.['artworkLabel'] ?? '')), ['creator']: _champ_entite(((createur)?.['id'] ?? '')), ['creatorLabel']: _champ_valeur(((createur)?.['label'] ?? '')), ['inceptionDate']: _champ_valeur(_extraire_temps(((item)?.['inceptionDate'] ?? []))), ['museum']: _champ_entite(((musee)?.['id'] ?? '')), ['museumLabel']: _champ_valeur(((musee)?.['label'] ?? '')), ['subject']: _champ_entite(((sujet)?.['id'] ?? '')), ['subjectLabel']: _champ_valeur(((sujet)?.['label'] ?? ''))};
 }
 
-createur = _extraire_item(((item)?.['creator'] ?? []));
-
-musee = _extraire_item(((item)?.['museum'] ?? []));
-
-sujet = _extraire_item(((item)?.['subject'] ?? []));
-
 function _normaliser_chronologie(item) {
   return {['movement']: _champ_entite(((item)?.['id'] ?? '')), ['movementLabel']: _champ_valeur(((item)?.['movementLabel'] ?? '')), ['startTime']: _champ_valeur(_extraire_temps(((item)?.['startTime'] ?? []))), ['endTime']: _champ_valeur(_extraire_temps(((item)?.['endTime'] ?? [])))};
 }
 
 function _annee_depuis_temps(temps) {
-  if (((!temps) || ((temps).length < 4))) {
+  if (((!__ml_truthy(temps)) || __ml_truthy(((temps).length < 4)))) {
     return 0;
   }
   var texte = temps;
-  if ((texte[0] == '+')) {
+  if (__ml_truthy((texte[0] == '+'))) {
     texte = texte.slice(1, undefined);
   }
   try {
@@ -351,15 +344,13 @@ function _annee_depuis_temps(temps) {
   }
 }
 
-var texte = temps;
-
 async function _recuperer_mouvements_catalogue() {
   var donnees = await executer_requete_graphql('movements_catalog.graphql', {['languageCode']: LANGUE_PAR_DEFAUT});
   var edges = ((((donnees)?.['searchItems'] ?? {}))?.['edges'] ?? []);
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if (noeud) {
+    if (__ml_truthy(noeud)) {
       __ml_add(resultats, noeud);
     }
   }
@@ -370,7 +361,7 @@ async function obtenir_mouvement_details(mouvement_id) {
   "Récupère les détails d'un mouvement artistique via GraphQL";
   var donnees = await executer_requete_graphql('movement_details.graphql', {['id']: mouvement_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var item = ((donnees)?.['item'] ?? {});
-  if (item) {
+  if (__ml_truthy(item)) {
     return _normaliser_mouvement_detail(item);
   }
   return {};
@@ -384,7 +375,7 @@ async function obtenir_mouvements_par_periode(debut_annee, fin_annee) {
     var entree = _normaliser_chronologie(mouvement);
     var debut = _annee_depuis_temps(((((entree)?.['startTime'] ?? {}))?.['value'] ?? ''));
     var fin = _annee_depuis_temps(((((entree)?.['endTime'] ?? {}))?.['value'] ?? ''));
-    if ((debut && fin && (debut >= debut_annee) && (fin <= fin_annee))) {
+    if ((__ml_truthy(debut) && __ml_truthy(fin) && __ml_truthy((debut >= debut_annee)) && __ml_truthy((fin <= fin_annee)))) {
       __ml_add(resultats, entree);
     }
   }
@@ -405,7 +396,7 @@ async function obtenir_artiste_details(artiste_id) {
   "Récupère les détails d'un artiste via GraphQL";
   var donnees = await executer_requete_graphql('artist_details.graphql', {['id']: artiste_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var item = ((donnees)?.['item'] ?? {});
-  if (item) {
+  if (__ml_truthy(item)) {
     return _normaliser_artiste_detail(item);
   }
   return {};
@@ -418,7 +409,7 @@ async function obtenir_artistes_mouvement(mouvement_id, limite = 50) {
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud && ((resultats).length < limite))) {
+    if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_artiste_resume(noeud));
     }
   }
@@ -438,7 +429,7 @@ async function obtenir_oeuvre_details(oeuvre_id) {
   "Récupère les détails d'une œuvre via GraphQL";
   var donnees = await executer_requete_graphql('artwork_details.graphql', {['id']: oeuvre_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var item = ((donnees)?.['item'] ?? {});
-  if (item) {
+  if (__ml_truthy(item)) {
     return _normaliser_oeuvre_detail(item);
   }
   return {};
@@ -451,7 +442,7 @@ async function obtenir_oeuvres_artiste(artiste_id, limite = 50) {
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud && ((resultats).length < limite))) {
+    if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -465,7 +456,7 @@ async function obtenir_oeuvres_par_sujet(sujet_id, limite = 50) {
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud && ((resultats).length < limite))) {
+    if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -480,18 +471,18 @@ async function obtenir_diffusion_geographique(mouvement_id) {
   var ids_pays = [];
   for (const entree of pays) {
     var pays_id = ((entree)?.['id'] ?? '');
-    if (pays_id) {
+    if (__ml_truthy(pays_id)) {
       __ml_add(ids_pays, pays_id);
     }
   }
-  if ((!ids_pays)) {
+  if ((!__ml_truthy(ids_pays))) {
     return [];
   }
   var donnees_pays = await executer_requete_graphql('countries_coordinates.graphql', {['ids']: ids_pays, ['languageCode']: LANGUE_PAR_DEFAUT});
   var pays_par_id = {};
   for (const pays_item of ((donnees_pays)?.['itemsById'] ?? [])) {
     pays_id = ((pays_item)?.['id'] ?? '');
-    if (pays_id) {
+    if (__ml_truthy(pays_id)) {
       pays_par_id[pays_id] = pays_item;
     }
   }
@@ -512,7 +503,7 @@ async function obtenir_oeuvres_musee(musee_id, limite = 50) {
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((noeud && ((resultats).length < limite))) {
+    if ((__ml_truthy(noeud) && __ml_truthy(((resultats).length < limite)))) {
       __ml_add(resultats, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -527,7 +518,7 @@ async function obtenir_chronologie_mouvements(debut, fin) {
     var entree = _normaliser_chronologie(mouvement);
     var debut_mouvement = _annee_depuis_temps(((((entree)?.['startTime'] ?? {}))?.['value'] ?? ''));
     var fin_mouvement = _annee_depuis_temps(((((entree)?.['endTime'] ?? {}))?.['value'] ?? ''));
-    if ((debut_mouvement && fin_mouvement && (debut_mouvement >= debut) && (fin_mouvement <= fin))) {
+    if ((__ml_truthy(debut_mouvement) && __ml_truthy(fin_mouvement) && __ml_truthy((debut_mouvement >= debut)) && __ml_truthy((fin_mouvement <= fin)))) {
       __ml_add(resultats, entree);
     }
   }
@@ -545,7 +536,7 @@ async function obtenir_etiquettes_entite(entite_id, langues = ['fr', 'en']) {
   "Recuperer plusieurs etiquettes d'une meme entite.";
   var etiquettes = {};
   for (const langue of (langues || [])) {
-    if ((!langue)) {
+    if ((!__ml_truthy(langue))) {
       passe;
     }
     var etiquette = await obtenir_etiquette_entite(entite_id, langue);
@@ -574,7 +565,7 @@ async function obtenir_graphe_oeuvre(oeuvre_id) {
   var donnees = await executer_requete_graphql('artwork_details.graphql', {['id']: oeuvre_id, ['languageCode']: LANGUE_PAR_DEFAUT});
   var item = ((donnees)?.['item'] ?? {});
   var oeuvre = {};
-  if (item) {
+  if (__ml_truthy(item)) {
     oeuvre = _normaliser_oeuvre_detail(item);
   }
   return {['oeuvre']: oeuvre, ['musee']: _extraire_item(((item)?.['museum'] ?? [])), ['musees']: _extraire_items(((item)?.['museum'] ?? [])), ['sujets']: _extraire_items(((item)?.['depicts'] ?? [])), ['materiaux']: _extraire_items(((item)?.['material'] ?? []))};
@@ -583,7 +574,7 @@ async function obtenir_graphe_oeuvre(oeuvre_id) {
 async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres = '') {
   "Récupère une page d'artistes pour un mouvement avec pagination curseur.";
   var variables = {['movementId']: mouvement_id, ['languageCode']: LANGUE_PAR_DEFAUT, ['first']: premier};
-  if (apres) {
+  if (__ml_truthy(apres)) {
     variables['after'] = apres;
   }
   var donnees = await executer_requete_graphql('artists_by_movement.graphql', variables);
@@ -593,7 +584,7 @@ async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres
   var artistes = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if (noeud) {
+    if (__ml_truthy(noeud)) {
       __ml_add(artistes, _normaliser_artiste_resume(noeud));
     }
   }
@@ -603,7 +594,7 @@ async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres
 async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = '') {
   "Récupère une page d'œuvres pour un artiste avec pagination curseur.";
   var variables = {['artistId']: artiste_id, ['languageCode']: LANGUE_PAR_DEFAUT, ['first']: premier};
-  if (apres) {
+  if (__ml_truthy(apres)) {
     variables['after'] = apres;
   }
   var donnees = await executer_requete_graphql('artworks_by_artist.graphql', variables);
@@ -613,7 +604,7 @@ async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = ''
   var oeuvres = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if (noeud) {
+    if (__ml_truthy(noeud)) {
       __ml_add(oeuvres, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -623,7 +614,7 @@ async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = ''
 async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = '') {
   "Récupère une page d'œuvres pour un musée avec pagination curseur.";
   var variables = {['museumId']: musee_id, ['languageCode']: LANGUE_PAR_DEFAUT, ['first']: premier};
-  if (apres) {
+  if (__ml_truthy(apres)) {
     variables['after'] = apres;
   }
   var donnees = await executer_requete_graphql('artworks_by_museum.graphql', variables);
@@ -633,7 +624,7 @@ async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = '') {
   var oeuvres = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if (noeud) {
+    if (__ml_truthy(noeud)) {
       __ml_add(oeuvres, _normaliser_oeuvre_resume(noeud));
     }
   }
@@ -642,7 +633,7 @@ async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = '') {
 
 async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
   'Rechercher des entités sur Wikidata par texte/mot-clé';
-  if (((!terme) || ((terme).length < 2))) {
+  if (((!__ml_truthy(terme)) || __ml_truthy(((terme).length < 2)))) {
     return [];
   }
   var donnees = await executer_requete_graphql('recherche_par_texte.graphql', {['terme']: terme, ['languageCode']: langue});
@@ -650,7 +641,7 @@ async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
   var resultats = [];
   for (const edge of edges) {
     var noeud = ((edge)?.['node'] ?? {});
-    if ((!noeud)) {
+    if ((!__ml_truthy(noeud))) {
       passe;
     }
     var entite_id = ((noeud)?.['id'] ?? '');
@@ -660,20 +651,20 @@ async function rechercher_entites_wikidata(terme, langue = LANGUE_PAR_DEFAUT) {
     var type_entite = 'entite';
     for (const instance of instance_of) {
       var instance_id = ((instance)?.['id'] ?? '');
-      if ((instance_id == TYPE_MOUVEMENT_ARTISTIQUE)) {
+      if (__ml_truthy((instance_id == TYPE_MOUVEMENT_ARTISTIQUE))) {
         type_entite = 'mouvement';
         break;
       }
-      else if ((instance_id == TYPE_ETRE_HUMAIN)) {
+      else if (__ml_truthy((instance_id == TYPE_ETRE_HUMAIN))) {
         type_entite = 'artiste';
         break;
       }
-      else if ((instance_id == TYPE_OEUVRE_ART)) {
+      else if (__ml_truthy((instance_id == TYPE_OEUVRE_ART))) {
         type_entite = 'oeuvre';
         break;
       }
     }
-    if (entite_id) {
+    if (__ml_truthy(entite_id)) {
       __ml_add(resultats, {['id']: entite_id, ['label']: etiquette, ['description']: description, ['type']: type_entite});
     }
   }
@@ -712,7 +703,7 @@ class Graphe {
   }
   ajouter_noeud(id, type_noeud, etiquette, donnees = {}) {
     'Ajouter ou mettre à jour un nœud';
-    if ((!__ml_contains(this.noeuds, id))) {
+    if (__ml_truthy((!__ml_contains(this.noeuds, id)))) {
       var noeud = new NoeudGraphe(id, type_noeud, etiquette, donnees);
       this.noeuds[id] = noeud;
     }
@@ -723,11 +714,11 @@ class Graphe {
   }
   ajouter_relation(source_id, target_id, type_noeud, poids = 1.0) {
     'Ajouter une relation entre deux nœuds';
-    if (((!__ml_contains(this.noeuds, source_id)) || (!__ml_contains(this.noeuds, target_id)))) {
+    if ((__ml_truthy((!__ml_contains(this.noeuds, source_id))) || __ml_truthy((!__ml_contains(this.noeuds, target_id))))) {
       return;
     }
     for (const rel of this.relations) {
-      if (((rel.source_id == source_id) && (rel.target_id == target_id) && (rel.type_noeud == type_noeud))) {
+      if ((__ml_truthy((rel.source_id == source_id)) && __ml_truthy((rel.target_id == target_id)) && __ml_truthy((rel.type_noeud == type_noeud)))) {
         rel.poids = poids;
         return;
       }
@@ -745,13 +736,13 @@ class Graphe {
     'Obtenir les nœuds adjacents';
     var voisins = [];
     for (const relation of this.relations) {
-      if ((relation.source_id == noeud_id)) {
-        if (((type_relation == '') || (relation.type_noeud == type_relation))) {
+      if (__ml_truthy((relation.source_id == noeud_id))) {
+        if ((__ml_truthy((type_relation == '')) || __ml_truthy((relation.type_noeud == type_relation)))) {
           __ml_add(voisins, relation.target_id);
         }
       }
-      else if ((relation.target_id == noeud_id)) {
-        if (((type_relation == '') || (relation.type_noeud == type_relation))) {
+      else if (__ml_truthy((relation.target_id == noeud_id))) {
+        if ((__ml_truthy((type_relation == '')) || __ml_truthy((relation.type_noeud == type_relation)))) {
           __ml_add(voisins, relation.source_id);
         }
       }
@@ -762,7 +753,7 @@ class Graphe {
     "Obtenir toutes les relations d'un nœud";
     var rels = [];
     for (const relation of this.relations) {
-      if (((relation.source_id == noeud_id) || (relation.target_id == noeud_id))) {
+      if ((__ml_truthy((relation.source_id == noeud_id)) || __ml_truthy((relation.target_id == noeud_id)))) {
         __ml_add(rels, relation);
       }
     }
@@ -780,7 +771,7 @@ class Graphe {
     "Obtenir tous les nœuds d'un type donné";
     var resultats = [];
     for (const [id, noeud] of Object.entries(this.noeuds)) {
-      if ((noeud.type_noeud == type)) {
+      if (__ml_truthy((noeud.type_noeud == type))) {
         __ml_add(resultats, noeud);
       }
     }
@@ -790,7 +781,7 @@ class Graphe {
     "Obtenir toutes les relations d'un type donné";
     var resultats = [];
     for (const relation of this.relations) {
-      if ((relation.type_noeud == type)) {
+      if (__ml_truthy((relation.type_noeud == type))) {
         __ml_add(resultats, relation);
       }
     }
@@ -798,22 +789,22 @@ class Graphe {
   }
   chemin_plus_court(noeud_depart_id, noeud_arrivee_id) {
     'Trouver le chemin le plus court entre deux nœuds (BFS)';
-    if (((!__ml_contains(this.noeuds, noeud_depart_id)) || (!__ml_contains(this.noeuds, noeud_arrivee_id)))) {
+    if ((__ml_truthy((!__ml_contains(this.noeuds, noeud_depart_id))) || __ml_truthy((!__ml_contains(this.noeuds, noeud_arrivee_id))))) {
       return [];
     }
-    if ((noeud_depart_id == noeud_arrivee_id)) {
+    if (__ml_truthy((noeud_depart_id == noeud_arrivee_id))) {
       return [noeud_depart_id];
     }
     var visites = new Set([noeud_depart_id]);
     var queue = [[noeud_depart_id]];
-    while (((queue).length > 0)) {
+    while (__ml_truthy(((queue).length > 0))) {
       var chemin = queue.shift();
       var noeud_actuel = chemin[(-1)];
       for (const voisin_id of this.obtenir_voisins(noeud_actuel)) {
-        if ((voisin_id == noeud_arrivee_id)) {
+        if (__ml_truthy((voisin_id == noeud_arrivee_id))) {
           return (chemin + [voisin_id]);
         }
-        if ((!__ml_contains(visites, voisin_id))) {
+        if (__ml_truthy((!__ml_contains(visites, voisin_id)))) {
           __ml_add(visites, voisin_id);
           __ml_add(queue, (chemin + [voisin_id]));
         }
@@ -831,21 +822,21 @@ class Graphe {
       var noeuds_couche = [];
       for (const noeud_courant_id of couche_actuelle) {
         for (const voisin_id of this.obtenir_voisins(noeud_courant_id)) {
-          if ((!__ml_contains(visites, voisin_id))) {
+          if (__ml_truthy((!__ml_contains(visites, voisin_id)))) {
             __ml_add(visites, voisin_id);
             __ml_add(prochaine_couche, voisin_id);
             var noeud = this.obtenir_noeud(voisin_id);
-            if (noeud) {
+            if (__ml_truthy(noeud)) {
               __ml_add(noeuds_couche, {['id']: voisin_id, ['etiquette']: noeud.etiquette, ['type']: noeud.type_noeud});
             }
           }
         }
       }
-      if (noeuds_couche) {
+      if (__ml_truthy(noeuds_couche)) {
         __ml_add(voisinage['couches'], noeuds_couche);
       }
       couche_actuelle = prochaine_couche;
-      if ((!couche_actuelle)) {
+      if ((!__ml_truthy(couche_actuelle))) {
         break;
       }
     }
@@ -856,22 +847,22 @@ class Graphe {
     var visites = {};
     var composantes = [];
     for (const noeud_id of Object.keys(this.noeuds)) {
-      if ((!__ml_contains(visites, noeud_id))) {
+      if (__ml_truthy((!__ml_contains(visites, noeud_id)))) {
         var composante = [];
         var queue = [noeud_id];
-        while (((queue).length > 0)) {
+        while (__ml_truthy(((queue).length > 0))) {
           var courant = queue.shift();
-          if ((!__ml_contains(visites, courant))) {
+          if (__ml_truthy((!__ml_contains(visites, courant)))) {
             visites[courant] = true;
             __ml_add(composante, courant);
             for (const voisin of this.obtenir_voisins(courant)) {
-              if ((!__ml_contains(visites, voisin))) {
+              if (__ml_truthy((!__ml_contains(visites, voisin)))) {
                 __ml_add(queue, voisin);
               }
             }
           }
         }
-        if (composante) {
+        if (__ml_truthy(composante)) {
           __ml_add(composantes, composante);
         }
       }
@@ -974,18 +965,16 @@ __ml_signals['source_id_oeuvres_musee'] = _engine.declare('source_id_oeuvres_mus
 
 function _extraire_id_entite(champ) {
   var valeur = ((champ)?.['value'] ?? '');
-  if ((!valeur)) {
+  if ((!__ml_truthy(valeur))) {
     return '';
   }
   return valeur.replace('http://www.wikidata.org/entity/', '');
 }
 
-var valeur = ((champ)?.['value'] ?? '');
-
 function _etiquette_entite(entite, cles, etiquette_par_defaut) {
   for (const cle of (cles || [])) {
     var valeur = ((((entite)?.[cle] ?? {}))?.['value'] ?? '');
-    if (valeur) {
+    if (__ml_truthy(valeur)) {
       return valeur;
     }
   }
@@ -998,54 +987,46 @@ function _mettre_a_jour_selection(entite_id, entite_type) {
   _engine.get('panneau_detail_visible').set(true);
 }
 
-_engine.get('entite_selectionnee_id').set(entite_id);
-
-_engine.get('entite_selectionnee_type').set(entite_type);
-
-_engine.get('panneau_detail_visible').set(true);
-
 function _mettre_en_cache(entite_id, donnees) {
-  if ((!entite_id)) {
+  if ((!__ml_truthy(entite_id))) {
     return;
   }
   _engine.get('cache_entites').setIndex(entite_id, donnees);
 }
 
-_engine.get('cache_entites').setIndex(entite_id, donnees);
-
 async function _rafraichir_etiquettes_multilingues(entite_id) {
-  if ((!entite_id)) {
+  if ((!__ml_truthy(entite_id))) {
     return;
   }
   _engine.get('etiquettes_multilingues').setIndex(entite_id, {['fr']: '', ['en']: ''});
 }
 
 function _ajouter_noeud(entite_id, type_noeud, etiquette, donnees = {}) {
-  if ((!entite_id)) {
+  if ((!__ml_truthy(entite_id))) {
     return;
   }
   _engine.get('graphe').get().ajouter_noeud(entite_id, type_noeud, etiquette, donnees);
 }
 
 function _ajouter_relation(source_id, cible_id, type_relation) {
-  if (((!source_id) || (!cible_id))) {
+  if (((!__ml_truthy(source_id)) || (!__ml_truthy(cible_id)))) {
     return;
   }
   _engine.get('graphe').get().ajouter_relation(source_id, cible_id, type_relation, 1.0);
 }
 
 function _supprimer_entites_graphe(ids) {
-  if ((!ids)) {
+  if ((!__ml_truthy(ids))) {
     return;
   }
   for (const entite_id of ids) {
-    if (__ml_contains(_engine.get('graphe').get().noeuds, entite_id)) {
+    if (__ml_truthy(__ml_contains(_engine.get('graphe').get().noeuds, entite_id))) {
       delete _engine.get('graphe').get().noeuds[entite_id];
     }
   }
   var nouvelles_relations = [];
   for (const relation of _engine.get('graphe').get().relations) {
-    if (((!__ml_contains(ids, relation.source_id)) && (!__ml_contains(ids, relation.target_id)))) {
+    if ((__ml_truthy((!__ml_contains(ids, relation.source_id))) && __ml_truthy((!__ml_contains(ids, relation.target_id))))) {
       __ml_add(nouvelles_relations, relation);
     }
   }
@@ -1053,7 +1034,7 @@ function _supprimer_entites_graphe(ids) {
   for (const [noeud_id, noeud] of Object.entries(_engine.get('graphe').get().noeuds)) {
     var voisins_filtres = [];
     for (const voisin_id of noeud.voisins) {
-      if ((!__ml_contains(ids, voisin_id))) {
+      if (__ml_truthy((!__ml_contains(ids, voisin_id)))) {
         __ml_add(voisins_filtres, voisin_id);
       }
     }
@@ -1061,21 +1042,15 @@ function _supprimer_entites_graphe(ids) {
   }
 }
 
-var nouvelles_relations = [];
-
-_engine.get('graphe').get().relations = nouvelles_relations;
-
 function _obtenir_cibles_relations(source_id, type_relation) {
   var ids = [];
   for (const relation of _engine.get('graphe').get().relations) {
-    if (((relation.source_id == source_id) && (relation.type == type_relation))) {
+    if ((__ml_truthy((relation.source_id == source_id)) && __ml_truthy((relation.type == type_relation)))) {
       __ml_add(ids, relation.target_id);
     }
   }
   return ids;
 }
-
-var ids = [];
 
 function _reduire_branche_oeuvre(oeuvre_id) {
   var detail_ids = [];
@@ -1083,15 +1058,13 @@ function _reduire_branche_oeuvre(oeuvre_id) {
   __ml_extend(detail_ids, _obtenir_cibles_relations(oeuvre_id, 'represente'));
   __ml_extend(detail_ids, _obtenir_cibles_relations(oeuvre_id, 'compose_de'));
   _supprimer_entites_graphe(detail_ids);
-  if ((_engine.get('oeuvre_etendue_id').get() == oeuvre_id)) {
+  if (__ml_truthy((_engine.get('oeuvre_etendue_id').get() == oeuvre_id))) {
     _engine.get('oeuvre_etendue_id').set('');
   }
-  if ((_engine.get('oeuvre_focus_id').get() == oeuvre_id)) {
+  if (__ml_truthy((_engine.get('oeuvre_focus_id').get() == oeuvre_id))) {
     _engine.get('oeuvre_focus_id').set('');
   }
 }
-
-var detail_ids = [];
 
 function _reduire_branche_artiste(artiste_id) {
   var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
@@ -1099,18 +1072,12 @@ function _reduire_branche_artiste(artiste_id) {
     _reduire_branche_oeuvre(oeuvre_id);
   }
   _supprimer_entites_graphe(oeuvres);
-  if ((_engine.get('artiste_etendu_id').get() == artiste_id)) {
+  if (__ml_truthy((_engine.get('artiste_etendu_id').get() == artiste_id))) {
     _engine.get('artiste_etendu_id').set('');
   }
   _engine.get('oeuvre_etendue_id').set('');
   _engine.get('oeuvre_focus_id').set('');
 }
-
-var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
-
-_engine.get('oeuvre_etendue_id').set('');
-
-_engine.get('oeuvre_focus_id').set('');
 
 function _reduire_branche_mouvement(mouvement_id) {
   var artistes = _obtenir_cibles_relations(mouvement_id, 'contient_artiste');
@@ -1118,7 +1085,7 @@ function _reduire_branche_mouvement(mouvement_id) {
     _reduire_branche_artiste(artiste_id);
   }
   _supprimer_entites_graphe(artistes);
-  if ((_engine.get('mouvement_etendu_id').get() == mouvement_id)) {
+  if (__ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id))) {
     _engine.get('mouvement_etendu_id').set('');
   }
   _engine.get('artiste_etendu_id').set('');
@@ -1126,22 +1093,14 @@ function _reduire_branche_mouvement(mouvement_id) {
   _engine.get('oeuvre_focus_id').set('');
 }
 
-var artistes = _obtenir_cibles_relations(mouvement_id, 'contient_artiste');
-
-_engine.get('artiste_etendu_id').set('');
-
-_engine.get('oeuvre_etendue_id').set('');
-
-_engine.get('oeuvre_focus_id').set('');
-
 function _focaliser_oeuvre_dans_branche_artiste(artiste_id, oeuvre_id) {
-  if ((!artiste_id)) {
+  if ((!__ml_truthy(artiste_id))) {
     return;
   }
   var oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
   var oeuvres_a_supprimer = [];
   for (const oeuvre_courante_id of oeuvres) {
-    if ((oeuvre_courante_id != oeuvre_id)) {
+    if (__ml_truthy((oeuvre_courante_id != oeuvre_id))) {
       _reduire_branche_oeuvre(oeuvre_courante_id);
       __ml_add(oeuvres_a_supprimer, oeuvre_courante_id);
     }
@@ -1150,17 +1109,11 @@ function _focaliser_oeuvre_dans_branche_artiste(artiste_id, oeuvre_id) {
   _engine.get('oeuvre_focus_id').set(oeuvre_id);
 }
 
-oeuvres = _obtenir_cibles_relations(artiste_id, 'a_cree');
-
-var oeuvres_a_supprimer = [];
-
-_engine.get('oeuvre_focus_id').set(oeuvre_id);
-
 function _ajouter_references_oeuvre(oeuvre_id, references, type_noeud, type_relation, etiquette_par_defaut) {
   for (const reference of (references || [])) {
     var reference_id = ((reference)?.['id'] ?? '');
     var reference_label = (((reference)?.['label'] ?? '') || etiquette_par_defaut);
-    if (reference_id) {
+    if (__ml_truthy(reference_id)) {
       _mettre_en_cache(reference_id, {['label']: reference_label});
       _ajouter_noeud(reference_id, type_noeud, reference_label, {['label']: reference_label});
       _ajouter_relation(oeuvre_id, reference_id, type_relation);
@@ -1170,15 +1123,15 @@ function _ajouter_references_oeuvre(oeuvre_id, references, type_noeud, type_rela
 
 async function charger_mouvement(mouvement_id) {
   "Charger les details d'un mouvement et son branchement artiste.";
-  if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) && (_engine.get('entite_selectionnee_id').get() == mouvement_id))) {
+  if ((__ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == mouvement_id)))) {
     _reduire_branche_mouvement(mouvement_id);
     _mettre_a_jour_selection(mouvement_id, 'mouvement');
     return obtenir_entite_selectionnee();
   }
-  if (_engine.get('artiste_etendu_id').get()) {
+  if (__ml_truthy(_engine.get('artiste_etendu_id').get())) {
     _reduire_branche_artiste(_engine.get('artiste_etendu_id').get());
   }
-  if ((_engine.get('mouvement_etendu_id').get() && (_engine.get('mouvement_etendu_id').get() != mouvement_id))) {
+  if ((__ml_truthy(_engine.get('mouvement_etendu_id').get()) && __ml_truthy((_engine.get('mouvement_etendu_id').get() != mouvement_id)))) {
     _reduire_branche_mouvement(_engine.get('mouvement_etendu_id').get());
   }
   _engine.get('affichage_chargement').set(true);
@@ -1188,7 +1141,7 @@ async function charger_mouvement(mouvement_id) {
     var contrat = await donnees.requetes.obtenir_graphe_mouvement(mouvement_id);
     var mouvement = ((contrat)?.['mouvement'] ?? {});
     var artistes = ((contrat)?.['artistes'] ?? []);
-    if ((!mouvement)) {
+    if ((!__ml_truthy(mouvement))) {
       _engine.get('message_erreur').set('Mouvement non trouve');
       _engine.get('affichage_chargement').set(false);
       return {};
@@ -1200,7 +1153,7 @@ async function charger_mouvement(mouvement_id) {
     for (const artiste of artistes) {
       var artiste_id = _extraire_id_entite(((artiste)?.['artist'] ?? {}));
       var artiste_label = _etiquette_entite(artiste, ['artistLabel'], 'Artiste inconnu');
-      if (artiste_id) {
+      if (__ml_truthy(artiste_id)) {
         _mettre_en_cache(artiste_id, artiste);
         _ajouter_noeud(artiste_id, 'artiste', artiste_label, artiste);
         _ajouter_relation(mouvement_id, artiste_id, 'contient_artiste');
@@ -1225,12 +1178,12 @@ async function charger_mouvement(mouvement_id) {
 
 async function charger_artiste(artiste_id) {
   "Charger les details d'un artiste et son branchement oeuvre.";
-  if (((_engine.get('artiste_etendu_id').get() == artiste_id) && (_engine.get('entite_selectionnee_id').get() == artiste_id))) {
+  if ((__ml_truthy((_engine.get('artiste_etendu_id').get() == artiste_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == artiste_id)))) {
     _reduire_branche_artiste(artiste_id);
     _mettre_a_jour_selection(artiste_id, 'artiste');
     return obtenir_entite_selectionnee();
   }
-  if ((_engine.get('artiste_etendu_id').get() && (_engine.get('artiste_etendu_id').get() != artiste_id))) {
+  if ((__ml_truthy(_engine.get('artiste_etendu_id').get()) && __ml_truthy((_engine.get('artiste_etendu_id').get() != artiste_id)))) {
     _reduire_branche_artiste(_engine.get('artiste_etendu_id').get());
   }
   _engine.get('affichage_chargement').set(true);
@@ -1241,7 +1194,7 @@ async function charger_artiste(artiste_id) {
     var artiste = ((contrat)?.['artiste'] ?? {});
     var oeuvres = ((contrat)?.['oeuvres'] ?? []);
     var influences = ((contrat)?.['influences'] ?? {});
-    if ((!artiste)) {
+    if ((!__ml_truthy(artiste))) {
       _engine.get('message_erreur').set('Artiste non trouve');
       _engine.get('affichage_chargement').set(false);
       return {};
@@ -1253,7 +1206,7 @@ async function charger_artiste(artiste_id) {
     for (const oeuvre of oeuvres) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
-      if (oeuvre_id) {
+      if (__ml_truthy(oeuvre_id)) {
         _mettre_en_cache(oeuvre_id, oeuvre);
         _ajouter_noeud(oeuvre_id, 'oeuvre', oeuvre_label, oeuvre);
         _ajouter_relation(artiste_id, oeuvre_id, 'a_cree');
@@ -1261,7 +1214,7 @@ async function charger_artiste(artiste_id) {
     }
     var influence_id = _extraire_id_entite(((influences)?.['influencedBy'] ?? {}));
     var influence_label = _etiquette_entite(influences, ['influencedByLabel'], 'Influence');
-    if (influence_id) {
+    if (__ml_truthy(influence_id)) {
       _mettre_en_cache(influence_id, {['artistLabel']: {['value']: influence_label}});
       _ajouter_noeud(influence_id, 'artiste', influence_label, {['artistLabel']: {['value']: influence_label}});
       _ajouter_relation(influence_id, artiste_id, 'a_influence');
@@ -1284,12 +1237,12 @@ async function charger_artiste(artiste_id) {
 
 async function charger_oeuvre(oeuvre_id) {
   "Charger les details d'une oeuvre et ses noeuds de detail.";
-  if (((_engine.get('oeuvre_etendue_id').get() == oeuvre_id) && (_engine.get('entite_selectionnee_id').get() == oeuvre_id))) {
+  if ((__ml_truthy((_engine.get('oeuvre_etendue_id').get() == oeuvre_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == oeuvre_id)))) {
     _reduire_branche_oeuvre(oeuvre_id);
     _mettre_a_jour_selection(oeuvre_id, 'oeuvre');
     return obtenir_entite_selectionnee();
   }
-  if ((_engine.get('oeuvre_etendue_id').get() && (_engine.get('oeuvre_etendue_id').get() != oeuvre_id))) {
+  if ((__ml_truthy(_engine.get('oeuvre_etendue_id').get()) && __ml_truthy((_engine.get('oeuvre_etendue_id').get() != oeuvre_id)))) {
     _reduire_branche_oeuvre(_engine.get('oeuvre_etendue_id').get());
   }
   _engine.get('affichage_chargement').set(true);
@@ -1298,7 +1251,7 @@ async function charger_oeuvre(oeuvre_id) {
   try {
     var contrat = await donnees.requetes.obtenir_graphe_oeuvre(oeuvre_id);
     var oeuvre = ((contrat)?.['oeuvre'] ?? {});
-    if ((!oeuvre)) {
+    if ((!__ml_truthy(oeuvre))) {
       _engine.get('message_erreur').set('Oeuvre non trouvee');
       _engine.get('affichage_chargement').set(false);
       return {};
@@ -1307,7 +1260,7 @@ async function charger_oeuvre(oeuvre_id) {
     _engine.get('cache_relations').setIndex(oeuvre_id, contrat);
     var etiquette = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
     _ajouter_noeud(oeuvre_id, 'oeuvre', etiquette, oeuvre);
-    if (_engine.get('artiste_etendu_id').get()) {
+    if (__ml_truthy(_engine.get('artiste_etendu_id').get())) {
       _focaliser_oeuvre_dans_branche_artiste(_engine.get('artiste_etendu_id').get(), oeuvre_id);
     }
     _ajouter_references_oeuvre(oeuvre_id, ((contrat)?.['musees'] ?? []), 'musee', 'expose_a', 'Musee');
@@ -1334,7 +1287,7 @@ async function charger_chronologie(debut, fin) {
     for (const mouvement of mouvements) {
       var mouvement_id = _extraire_id_entite(((mouvement)?.['movement'] ?? {}));
       var mouvement_label = _etiquette_entite(mouvement, ['movementLabel'], 'Mouvement');
-      if (mouvement_id) {
+      if (__ml_truthy(mouvement_id)) {
         _mettre_en_cache(mouvement_id, mouvement);
         _ajouter_noeud(mouvement_id, 'mouvement', mouvement_label, mouvement);
       }
@@ -1356,22 +1309,22 @@ async function basculer_visualisation(mode) {
   _engine.get('affichage_chargement').set(true);
   _engine.get('message_erreur').set('');
   try {
-    if (((mode == 'heatmap') && _engine.get('entite_selectionnee_id').get())) {
+    if ((__ml_truthy((mode == 'heatmap')) && __ml_truthy(_engine.get('entite_selectionnee_id').get()))) {
       await _charger_donnees_heatmap(_engine.get('entite_selectionnee_id').get());
     }
-    else if (((mode == 'galaxie') && _engine.get('entite_selectionnee_id').get())) {
+    else if ((__ml_truthy((mode == 'galaxie')) && __ml_truthy(_engine.get('entite_selectionnee_id').get()))) {
       await _initialiser_galaxie(_engine.get('entite_selectionnee_id').get());
     }
-    else if ((mode == 'chronologie')) {
+    else if (__ml_truthy((mode == 'chronologie'))) {
       await charger_chronologie(_engine.get('plage_temporelle_debut').get(), _engine.get('plage_temporelle_fin').get());
     }
-    else if ((mode == 'riviere')) {
+    else if (__ml_truthy((mode == 'riviere'))) {
       await charger_chronologie(_engine.get('plage_temporelle_debut').get(), _engine.get('plage_temporelle_fin').get());
     }
-    else if (((mode == 'polyglot-studio') && _engine.get('entite_selectionnee_id').get())) {
+    else if ((__ml_truthy((mode == 'polyglot-studio')) && __ml_truthy(_engine.get('entite_selectionnee_id').get()))) {
       await _charger_multilingue_complet(_engine.get('entite_selectionnee_id').get());
     }
-    else if ((mode == 'graphe')) {
+    else if (__ml_truthy((mode == 'graphe'))) {
       passe;
     }
     _engine.get('mode_visualisation').set(mode);
@@ -1386,9 +1339,9 @@ async function basculer_visualisation(mode) {
 
 async function _charger_donnees_heatmap(entite_id) {
   'Charger les données géographiques pour la visualisation heatmap.';
-  if ((_engine.get('entite_selectionnee_type').get() == 'mouvement')) {
+  if (__ml_truthy((_engine.get('entite_selectionnee_type').get() == 'mouvement'))) {
     var diffusion = await donnees.requetes.obtenir_diffusion_geographique(entite_id);
-    if (diffusion) {
+    if (__ml_truthy(diffusion)) {
       _engine.get('cache_relations').setIndex((entite_id + '_heatmap'), {['type']: 'geographique', ['donnees']: diffusion});
     }
   }
@@ -1397,20 +1350,20 @@ async function _charger_donnees_heatmap(entite_id) {
 async function _initialiser_galaxie(entite_id) {
   "Initialiser la visualisation galaxie autour de l'entité sélectionnée.";
   var voisinage = _engine.get('graphe').get().obtenir_voisinage(entite_id, 2);
-  if (voisinage) {
+  if (__ml_truthy(voisinage)) {
     _engine.get('cache_relations').setIndex((entite_id + '_galaxie'), {['type']: 'voisinage', ['donnees']: voisinage});
   }
 }
 
 async function _charger_multilingue_complet(entite_id) {
   'Charger les données multilingues pour la visualisation polyglot-studio.';
-  if ((!entite_id)) {
+  if ((!__ml_truthy(entite_id))) {
     return;
   }
   await _rafraichir_etiquettes_multilingues(entite_id);
   _engine.get('entite_multilingue_focus').set(entite_id);
   var entite = ((_engine.get('cache_entites').get())?.[entite_id] ?? {});
-  if (entite) {
+  if (__ml_truthy(entite)) {
     _engine.get('cache_relations').setIndex((entite_id + '_polyglot'), {['type']: 'multilingue', ['entite_id']: entite_id, ['donnees_entite']: entite, ['labels_multilingues']: ((_engine.get('etiquettes_multilingues').get())?.[entite_id] ?? {})});
   }
 }
@@ -1442,7 +1395,7 @@ async function reinitialiser_filtre() {
   'Réinitialiser tous les filtres appliqués.';
   _engine.get('affichage_chargement').set(true);
   try {
-    if (__ml_contains(_engine.get('cache_relations').get(), 'graphe_filtre')) {
+    if (__ml_truthy(__ml_contains(_engine.get('cache_relations').get(), 'graphe_filtre'))) {
       delete _engine.get('cache_relations').get()['graphe_filtre'];
     }
     _engine.get('affichage_chargement').set(false);
@@ -1462,7 +1415,7 @@ async function executer_recherche(requete) {
   var resultats = [];
   for (const [entite_id, entite] of Object.entries(_engine.get('cache_entites').get())) {
     var etiquette = (((((entite)?.['movementLabel'] ?? {}))?.['value'] ?? '') || ((((entite)?.['artistLabel'] ?? {}))?.['value'] ?? '') || ((((entite)?.['artworkLabel'] ?? {}))?.['value'] ?? '') || ((entite)?.['label'] ?? ''));
-    if (__ml_contains(String(etiquette).toLowerCase(), String(requete).toLowerCase())) {
+    if (__ml_truthy(__ml_contains(String(etiquette).toLowerCase(), String(requete).toLowerCase()))) {
       __ml_add(resultats, {['id']: entite_id, ['etiquette']: etiquette, ['entite']: entite});
     }
   }
@@ -1473,11 +1426,11 @@ async function executer_recherche(requete) {
 
 async function basculer_langue(langue) {
   'Basculer entre les langues (fr/en) en mode polyglot-studio.';
-  if ((!__ml_contains(['fr', 'en'], langue))) {
+  if (__ml_truthy((!__ml_contains(['fr', 'en'], langue)))) {
     return;
   }
   _engine.get('mode_langue_actif').set(langue);
-  if (((_engine.get('mode_visualisation').get() == 'polyglot-studio') && _engine.get('entite_multilingue_focus').get())) {
+  if ((__ml_truthy((_engine.get('mode_visualisation').get() == 'polyglot-studio')) && __ml_truthy(_engine.get('entite_multilingue_focus').get()))) {
     await _charger_multilingue_complet(_engine.get('entite_multilingue_focus').get());
   }
   return obtenir_instantane_etat();
@@ -1485,15 +1438,13 @@ async function basculer_langue(langue) {
 
 function basculer_affichage_surfaces() {
   "Basculer entre l'affichage cote a cote et par onglets.";
-  _engine.get('afficher_surfaces_paralleles').set((!_engine.get('afficher_surfaces_paralleles').get()));
+  _engine.get('afficher_surfaces_paralleles').set((!__ml_truthy(_engine.get('afficher_surfaces_paralleles').get())));
   return obtenir_instantane_etat();
 }
 
-_engine.get('afficher_surfaces_paralleles').set((!_engine.get('afficher_surfaces_paralleles').get()));
-
 function obtenir_entite_selectionnee() {
   "Obtenir l'entite actuellement selectionnee.";
-  if ((!_engine.get('entite_selectionnee_id').get())) {
+  if ((!__ml_truthy(_engine.get('entite_selectionnee_id').get()))) {
     return {};
   }
   var entite = ((_engine.get('cache_entites').get())?.[_engine.get('entite_selectionnee_id').get()] ?? {});
@@ -1501,13 +1452,9 @@ function obtenir_entite_selectionnee() {
   return {['id']: _engine.get('entite_selectionnee_id').get(), ['type']: _engine.get('entite_selectionnee_type').get(), ['donnees']: entite, ['labels_multilingues']: labels};
 }
 
-var entite = ((_engine.get('cache_entites').get())?.[_engine.get('entite_selectionnee_id').get()] ?? {});
-
-var labels = ((_engine.get('etiquettes_multilingues').get())?.[_engine.get('entite_selectionnee_id').get()] ?? {});
-
 function obtenir_noeud_selectionne() {
   'Obtenir le noeud du graphe actuellement selectionne.';
-  if (_engine.get('entite_selectionnee_id').get()) {
+  if (__ml_truthy(_engine.get('entite_selectionnee_id').get())) {
     return _engine.get('graphe').get().obtenir_noeud(_engine.get('entite_selectionnee_id').get());
   }
   return null;
@@ -1520,7 +1467,7 @@ function obtenir_instantane_etat() {
 
 async function charger_mouvement_artistes_page_suivante() {
   "Charger la page suivante d'artistes pour le mouvement en cours.";
-  if (((!_engine.get('source_id_artistes_mouvement').get()) || (!_engine.get('a_page_suivante_artistes_mouvement').get()))) {
+  if (((!__ml_truthy(_engine.get('source_id_artistes_mouvement').get())) || (!__ml_truthy(_engine.get('a_page_suivante_artistes_mouvement').get())))) {
     return null;
   }
   _engine.get('affichage_chargement').set(true);
@@ -1529,7 +1476,7 @@ async function charger_mouvement_artistes_page_suivante() {
     for (const artiste of ((page)?.['artistes'] ?? [])) {
       var artiste_id = _extraire_id_entite(((artiste)?.['artist'] ?? {}));
       var artiste_label = _etiquette_entite(artiste, ['artistLabel'], 'Artiste inconnu');
-      if (artiste_id) {
+      if (__ml_truthy(artiste_id)) {
         _mettre_en_cache(artiste_id, artiste);
         _ajouter_noeud(artiste_id, 'artiste', artiste_label, artiste);
         _ajouter_relation(_engine.get('source_id_artistes_mouvement').get(), artiste_id, 'contient_artiste');
@@ -1548,7 +1495,7 @@ async function charger_mouvement_artistes_page_suivante() {
 
 async function charger_artiste_oeuvres_page_suivante() {
   "Charger la page suivante d'œuvres pour l'artiste en cours.";
-  if (((!_engine.get('source_id_oeuvres_artiste').get()) || (!_engine.get('a_page_suivante_oeuvres_artiste').get()))) {
+  if (((!__ml_truthy(_engine.get('source_id_oeuvres_artiste').get())) || (!__ml_truthy(_engine.get('a_page_suivante_oeuvres_artiste').get())))) {
     return null;
   }
   _engine.get('affichage_chargement').set(true);
@@ -1557,7 +1504,7 @@ async function charger_artiste_oeuvres_page_suivante() {
     for (const oeuvre of ((page)?.['oeuvres'] ?? [])) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
-      if (oeuvre_id) {
+      if (__ml_truthy(oeuvre_id)) {
         _mettre_en_cache(oeuvre_id, oeuvre);
         _ajouter_noeud(oeuvre_id, 'oeuvre', oeuvre_label, oeuvre);
         _ajouter_relation(_engine.get('source_id_oeuvres_artiste').get(), oeuvre_id, 'a_cree');
@@ -1576,7 +1523,7 @@ async function charger_artiste_oeuvres_page_suivante() {
 
 async function charger_musee_oeuvres_page_suivante() {
   "Charger la page suivante d'œuvres pour le musée en cours.";
-  if (((!_engine.get('source_id_oeuvres_musee').get()) || (!_engine.get('a_page_suivante_oeuvres_musee').get()))) {
+  if (((!__ml_truthy(_engine.get('source_id_oeuvres_musee').get())) || (!__ml_truthy(_engine.get('a_page_suivante_oeuvres_musee').get())))) {
     return null;
   }
   _engine.get('affichage_chargement').set(true);
@@ -1585,7 +1532,7 @@ async function charger_musee_oeuvres_page_suivante() {
     for (const oeuvre of ((page)?.['oeuvres'] ?? [])) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.['artwork'] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ['artworkLabel'], 'Oeuvre inconnue');
-      if (oeuvre_id) {
+      if (__ml_truthy(oeuvre_id)) {
         _mettre_en_cache(oeuvre_id, oeuvre);
         _ajouter_noeud(oeuvre_id, 'musee_oeuvre', oeuvre_label, oeuvre);
         _ajouter_relation(_engine.get('source_id_oeuvres_musee').get(), oeuvre_id, 'expose');
@@ -1634,42 +1581,42 @@ Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etique
 (() => {
 async function naviguer_vers_entite(entite_id, entite_type) {
   'Naviguer vers une entité spécifique';
-  if ((entite_type == 'mouvement')) {
+  if (__ml_truthy((entite_type == 'mouvement'))) {
     await ui.etat.charger_mouvement(entite_id);
   }
-  else if ((entite_type == 'artiste')) {
+  else if (__ml_truthy((entite_type == 'artiste'))) {
     await ui.etat.charger_artiste(entite_id);
   }
-  else if ((entite_type == 'oeuvre')) {
+  else if (__ml_truthy((entite_type == 'oeuvre'))) {
     await ui.etat.charger_oeuvre(entite_id);
   }
-  else if ((entite_type == 'musee')) {
+  else if (__ml_truthy((entite_type == 'musee'))) {
     await ui.etat.charger_musee(entite_id);
   }
-  else if ((entite_type == 'sujet')) {
+  else if (__ml_truthy((entite_type == 'sujet'))) {
     await ui.etat.charger_sujet(entite_id);
   }
 }
 
 async function charger_selection(entite_id, type_en, etiquette) {
   'Charger une sélection de recherche: normaliser le type anglais→français et naviguer';
-  if ((type_en == 'artist')) {
+  if (__ml_truthy((type_en == 'artist'))) {
     var type_fr = 'artiste';
   }
-  else if ((type_en == 'artwork')) {
+  else if (__ml_truthy((type_en == 'artwork'))) {
     type_fr = 'oeuvre';
   }
-  else if ((type_en == 'museum')) {
+  else if (__ml_truthy((type_en == 'museum'))) {
     type_fr = 'musee';
   }
-  else if ((type_en == 'subject')) {
+  else if (__ml_truthy((type_en == 'subject'))) {
     type_fr = 'sujet';
   }
   else {
     type_fr = 'mouvement';
   }
   ui.etat.reinitialiser_graphe();
-  if (etiquette) {
+  if (__ml_truthy(etiquette)) {
     ui.etat.amorcer_entite(entite_id, type_fr, etiquette);
   }
   ui.etat.entite_selectionnee_id = entite_id;
@@ -1680,7 +1627,7 @@ async function charger_selection(entite_id, type_en, etiquette) {
 async function explorer_voisinage(entite_id, profondeur = 2) {
   "Explorer le voisinage d'une entité";
   var noeud = ui.etat.graphe.obtenir_noeud(entite_id);
-  if ((!noeud)) {
+  if ((!__ml_truthy(noeud))) {
     return;
   }
   var voisinage = ui.etat.graphe.obtenir_voisinage(entite_id, profondeur);
@@ -1694,13 +1641,13 @@ async function explorer_voisinage(entite_id, profondeur = 2) {
 async function explorer_influences(artiste_id) {
   "Explorer le réseau d'influences d'un artiste";
   var artiste = ui.etat.graphe.obtenir_noeud(artiste_id);
-  if (((!artiste) || (artiste.type != 'artiste'))) {
+  if (((!__ml_truthy(artiste)) || __ml_truthy((artiste.type != 'artiste')))) {
     return;
   }
   var voisins = ui.etat.graphe.obtenir_voisins(artiste_id, 'influence');
   for (const voisin_id of voisins) {
     var voisin = ui.etat.graphe.obtenir_noeud(voisin_id);
-    if ((voisin && (voisin.type == 'artiste'))) {
+    if ((__ml_truthy(voisin) && __ml_truthy((voisin.type == 'artiste')))) {
       passe;
     }
   }
@@ -1709,7 +1656,7 @@ async function explorer_influences(artiste_id) {
 async function explorer_mouvements_evolution(mouvement_id) {
   "Explorar l'évolution d'un mouvement";
   var mouvement = ui.etat.graphe.obtenir_noeud(mouvement_id);
-  if (((!mouvement) || (mouvement.type != 'mouvement'))) {
+  if (((!__ml_truthy(mouvement)) || __ml_truthy((mouvement.type != 'mouvement')))) {
     return;
   }
   var mouvements_successifs = [];
@@ -1731,16 +1678,16 @@ async function obtenir_chemin_influence(artiste1_id, artiste2_id) {
 async function obtenir_entites_liees(entite_id) {
   'Obtenir toutes les entités liées à une entité';
   var entite = ui.etat.graphe.obtenir_noeud(entite_id);
-  if ((!entite)) {
+  if ((!__ml_truthy(entite))) {
     return {};
   }
   var voisins = ui.etat.graphe.obtenir_voisins(entite_id);
   var entites_liees = {['directes']: [], ['par_type']: {}};
   for (const voisin_id of voisins) {
     var voisin = ui.etat.graphe.obtenir_noeud(voisin_id);
-    if (voisin) {
+    if (__ml_truthy(voisin)) {
       __ml_add(entites_liees['directes'], {['id']: voisin_id, ['etiquette']: voisin.etiquette, ['type']: voisin.type});
-      if ((!__ml_contains(entites_liees['par_type'], voisin.type))) {
+      if (__ml_truthy((!__ml_contains(entites_liees['par_type'], voisin.type)))) {
         entites_liees['par_type'][voisin.type] = [];
       }
       __ml_add(entites_liees['par_type'][voisin.type], {['id']: voisin_id, ['etiquette']: voisin.etiquette});
@@ -1753,7 +1700,7 @@ async function obtenir_composante_connexe(entite_id) {
   'Obtenir tous les nœuds connectés à une entité';
   var composantes = ui.etat.graphe.obtenir_composantes_connexes();
   for (const composante of composantes) {
-    if (__ml_contains(composante, entite_id)) {
+    if (__ml_truthy(__ml_contains(composante, entite_id))) {
       return composante;
     }
   }
@@ -1769,7 +1716,7 @@ Object.assign(window.ui.interactions.navigation, {naviguer_vers_entite: naviguer
 (() => {
 async function lancer_recherche(requete) {
   'Lancer une recherche: cache + Wikidata, fusionner et afficher';
-  if (((!requete) || ((requete).length < 2))) {
+  if (((!__ml_truthy(requete)) || __ml_truthy(((requete).length < 2)))) {
     ui.etat.resultats_recherche = [];
     return;
   }
@@ -1779,14 +1726,14 @@ async function lancer_recherche(requete) {
   var resultats_fusionnes = [];
   for (const resultat of resultats_cache) {
     var cle = ((resultat)?.['id'] ?? '');
-    if ((cle && (!__ml_contains(entites_vues, cle)))) {
+    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
       entites_vues[cle] = true;
       __ml_add(resultats_fusionnes, resultat);
     }
   }
   for (const resultat of resultats_wikidata) {
     cle = ((resultat)?.['id'] ?? '');
-    if ((cle && (!__ml_contains(entites_vues, cle)))) {
+    if ((__ml_truthy(cle) && __ml_truthy((!__ml_contains(entites_vues, cle))))) {
       entites_vues[cle] = true;
       __ml_add(resultats_fusionnes, resultat);
     }
@@ -1800,17 +1747,13 @@ function _rechercher_cache(requete) {
   var requete_bas = String(requete).toLowerCase();
   for (const [id_noeud, noeud] of Object.entries(ui.etat.graphe.noeuds)) {
     var etiquette = String(noeud.etiquette).toLowerCase();
-    if (__ml_contains(etiquette, requete_bas)) {
+    if (__ml_truthy(__ml_contains(etiquette, requete_bas))) {
       var type_noeud = noeud.type;
       __ml_add(resultats, {['id']: id_noeud, ['label']: noeud.etiquette, ['description']: '(dans le graphe chargé)', ['type']: type_noeud});
     }
   }
   return resultats;
 }
-
-var resultats = [];
-
-var requete_bas = String(requete).toLowerCase();
 
 async function resoudre_type_entite(entite_id, type_par_defaut) {
   "Résoudre le type d'une entité via les claims Wikidata (P31/P279)";
@@ -1825,24 +1768,24 @@ async function resoudre_type_entite(entite_id, type_par_defaut) {
       for (const rec of ((reclamations)?.[prop] ?? [])) {
         var val = ((((((rec)?.['mainsnak'] ?? {}))?.['datavalue'] ?? {}))?.['value'] ?? {});
         var id_val = ((val)?.['id'] ?? '');
-        if (id_val) {
+        if (__ml_truthy(id_val)) {
           __ml_add(ids_rec, id_val);
         }
       }
     }
-    if ((__ml_contains(ids_rec, 'Q33506') || __ml_contains(ids_rec, 'Q207694') || __ml_contains(ids_rec, 'Q11635'))) {
+    if ((__ml_truthy(__ml_contains(ids_rec, 'Q33506')) || __ml_truthy(__ml_contains(ids_rec, 'Q207694')) || __ml_truthy(__ml_contains(ids_rec, 'Q11635')))) {
       return 'museum';
     }
-    if (__ml_contains(ids_rec, 'Q5')) {
+    if (__ml_truthy(__ml_contains(ids_rec, 'Q5'))) {
       return 'artist';
     }
-    if (__ml_contains(ids_rec, 'Q968159')) {
+    if (__ml_truthy(__ml_contains(ids_rec, 'Q968159'))) {
       return 'movement';
     }
-    if ((__ml_contains(ids_rec, 'Q3305213') || __ml_contains(ids_rec, 'Q838948'))) {
+    if ((__ml_truthy(__ml_contains(ids_rec, 'Q3305213')) || __ml_truthy(__ml_contains(ids_rec, 'Q838948')))) {
       return 'artwork';
     }
-    if ((__ml_contains(ids_rec, 'Q82550') || __ml_contains(ids_rec, 'Q157957') || __ml_contains(ids_rec, 'Q1790144'))) {
+    if ((__ml_truthy(__ml_contains(ids_rec, 'Q82550')) || __ml_truthy(__ml_contains(ids_rec, 'Q157957')) || __ml_truthy(__ml_contains(ids_rec, 'Q1790144')))) {
       return 'subject';
     }
     return type_par_defaut;
@@ -1887,7 +1830,7 @@ async function fermer_barre_recherche() {
 
 function rendre_barre_recherche() {
   'Rendre la barre de recherche et la liste des résultats';
-  if ((!ui.etat.barre_recherche_active)) {
+  if ((!__ml_truthy(ui.etat.barre_recherche_active))) {
     return '';
   }
   var html = '<div class="search-bar-container">';
@@ -1900,7 +1843,7 @@ function rendre_barre_recherche() {
     var type_entite = ((resultat)?.['type'] ?? '');
     html = (((html + '<div class="search-result-item" data-entity-id="') + entite_id) + '">');
     html = (((html + '<strong>') + label) + '</strong>');
-    if (description) {
+    if (__ml_truthy(description)) {
       html = (((html + '<br/><small>') + description) + '</small>');
     }
     html = (html + '</div>');
@@ -1909,16 +1852,6 @@ function rendre_barre_recherche() {
   html = (html + '</div>');
   return html;
 }
-
-var html = '<div class="search-bar-container">';
-
-html = (html + '<input type="text" class="search-input" placeholder="Chercher..." />');
-
-html = (html + '<div class="search-results">');
-
-html = (html + '</div>');
-
-html = (html + '</div>');
 
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
@@ -1939,31 +1872,27 @@ async function fermer_panneau_detail() {
 
 function rendre_panneau_detail() {
   "Rendre le panneau de détails avec les informations de l'entité sélectionnée";
-  if ((!ui.etat.panneau_detail_visible)) {
+  if ((!__ml_truthy(ui.etat.panneau_detail_visible))) {
     return '';
   }
   var entite = ui.etat.obtenir_entite_selectionnee();
-  if ((!entite)) {
+  if ((!__ml_truthy(entite))) {
     return '';
   }
   var type_entite = ((entite)?.['type'] ?? '');
-  if ((type_entite == 'mouvement')) {
+  if (__ml_truthy((type_entite == 'mouvement'))) {
     return _rendre_detail_mouvement(entite);
   }
-  else if ((type_entite == 'artiste')) {
+  else if (__ml_truthy((type_entite == 'artiste'))) {
     return _rendre_detail_artiste(entite);
   }
-  else if ((type_entite == 'oeuvre')) {
+  else if (__ml_truthy((type_entite == 'oeuvre'))) {
     return _rendre_detail_oeuvre(entite);
   }
   else {
     return _rendre_detail_generique(entite);
   }
 }
-
-var entite = ui.etat.obtenir_entite_selectionnee();
-
-var type_entite = ((entite)?.['type'] ?? '');
 
 function _rendre_detail_mouvement(entite) {
   "Rendre les détails d'un mouvement artistique";
@@ -1973,45 +1902,27 @@ function _rendre_detail_mouvement(entite) {
   var fin = ((((donnees)?.['endTime'] ?? {}))?.['value'] ?? '');
   var pays = ((donnees)?.['country'] ?? {});
   var pays_label = '';
-  if (pays) {
+  if (__ml_truthy(pays)) {
     pays_label = ((pays)?.['label'] ?? '');
   }
   var html = '<div class="detail-section">';
   html = (((html + '<h3>') + label) + '</h3>');
-  if ((debut || fin)) {
+  if ((__ml_truthy(debut) || __ml_truthy(fin))) {
     var periodes = [];
-    if (debut) {
+    if (__ml_truthy(debut)) {
       __ml_add(periodes, ('Début: ' + debut));
     }
-    if (fin) {
+    if (__ml_truthy(fin)) {
       __ml_add(periodes, ('Fin: ' + fin));
     }
     html = (((html + '<p class="detail-row">') + (periodes).join(' | ')) + '</p>');
   }
-  if (pays_label) {
+  if (__ml_truthy(pays_label)) {
     html = (((html + '<p class="detail-row">Pays: ') + pays_label) + '</p>');
   }
   html = (html + '</div>');
   return html;
 }
-
-var donnees = ((entite)?.['donnees'] ?? {});
-
-var label = ((((donnees)?.['movementLabel'] ?? {}))?.['value'] ?? '');
-
-var debut = ((((donnees)?.['startTime'] ?? {}))?.['value'] ?? '');
-
-var fin = ((((donnees)?.['endTime'] ?? {}))?.['value'] ?? '');
-
-var pays = ((donnees)?.['country'] ?? {});
-
-var pays_label = '';
-
-var html = '<div class="detail-section">';
-
-html = (((html + '<h3>') + label) + '</h3>');
-
-html = (html + '</div>');
 
 function _rendre_detail_artiste(entite) {
   "Rendre les détails d'un artiste";
@@ -2021,45 +1932,27 @@ function _rendre_detail_artiste(entite) {
   var deces = ((((donnees)?.['deathTime'] ?? {}))?.['value'] ?? '');
   var lieu_naissance = ((donnees)?.['birthPlace'] ?? {});
   var lieu_naissance_label = '';
-  if (lieu_naissance) {
+  if (__ml_truthy(lieu_naissance)) {
     lieu_naissance_label = ((lieu_naissance)?.['label'] ?? '');
   }
   var html = '<div class="detail-section">';
   html = (((html + '<h3>') + label) + '</h3>');
-  if ((naissance || deces)) {
+  if ((__ml_truthy(naissance) || __ml_truthy(deces))) {
     var periodes = [];
-    if (naissance) {
+    if (__ml_truthy(naissance)) {
       __ml_add(periodes, ('Né: ' + naissance));
     }
-    if (deces) {
+    if (__ml_truthy(deces)) {
       __ml_add(periodes, ('Décédé: ' + deces));
     }
     html = (((html + '<p class="detail-row">') + (periodes).join(' | ')) + '</p>');
   }
-  if (lieu_naissance_label) {
+  if (__ml_truthy(lieu_naissance_label)) {
     html = (((html + '<p class="detail-row">Lieu de naissance: ') + lieu_naissance_label) + '</p>');
   }
   html = (html + '</div>');
   return html;
 }
-
-donnees = ((entite)?.['donnees'] ?? {});
-
-label = ((((donnees)?.['artistLabel'] ?? {}))?.['value'] ?? '');
-
-var naissance = ((((donnees)?.['birthTime'] ?? {}))?.['value'] ?? '');
-
-var deces = ((((donnees)?.['deathTime'] ?? {}))?.['value'] ?? '');
-
-var lieu_naissance = ((donnees)?.['birthPlace'] ?? {});
-
-var lieu_naissance_label = '';
-
-html = '<div class="detail-section">';
-
-html = (((html + '<h3>') + label) + '</h3>');
-
-html = (html + '</div>');
 
 function _rendre_detail_oeuvre(entite) {
   "Rendre les détails d'une œuvre";
@@ -2067,49 +1960,29 @@ function _rendre_detail_oeuvre(entite) {
   var label = ((((donnees)?.['artworkLabel'] ?? {}))?.['value'] ?? '');
   var createur = ((donnees)?.['creator'] ?? {});
   var createur_label = '';
-  if (createur) {
+  if (__ml_truthy(createur)) {
     createur_label = ((createur)?.['label'] ?? '');
   }
   var date = ((((donnees)?.['creationDate'] ?? {}))?.['value'] ?? '');
   var musee = ((donnees)?.['museum'] ?? {});
   var musee_label = '';
-  if (musee) {
+  if (__ml_truthy(musee)) {
     musee_label = ((musee)?.['label'] ?? '');
   }
   var html = '<div class="detail-section">';
   html = (((html + '<h3>') + label) + '</h3>');
-  if (createur_label) {
+  if (__ml_truthy(createur_label)) {
     html = (((html + '<p class="detail-row">Créateur: ') + createur_label) + '</p>');
   }
-  if (date) {
+  if (__ml_truthy(date)) {
     html = (((html + '<p class="detail-row">Date: ') + date) + '</p>');
   }
-  if (musee_label) {
+  if (__ml_truthy(musee_label)) {
     html = (((html + '<p class="detail-row">Musée: ') + musee_label) + '</p>');
   }
   html = (html + '</div>');
   return html;
 }
-
-donnees = ((entite)?.['donnees'] ?? {});
-
-label = ((((donnees)?.['artworkLabel'] ?? {}))?.['value'] ?? '');
-
-var createur = ((donnees)?.['creator'] ?? {});
-
-var createur_label = '';
-
-var date = ((((donnees)?.['creationDate'] ?? {}))?.['value'] ?? '');
-
-var musee = ((donnees)?.['museum'] ?? {});
-
-var musee_label = '';
-
-html = '<div class="detail-section">';
-
-html = (((html + '<h3>') + label) + '</h3>');
-
-html = (html + '</div>');
 
 function _rendre_detail_generique(entite) {
   "Rendre les détails génériques pour tout autre type d'entité";
@@ -2121,18 +1994,6 @@ function _rendre_detail_generique(entite) {
   html = (html + '</div>');
   return html;
 }
-
-donnees = ((entite)?.['donnees'] ?? {});
-
-var entite_id = ((entite)?.['id'] ?? '');
-
-html = '<div class="detail-section">';
-
-html = (((html + '<h3>') + entite_id) + '</h3>');
-
-html = (((html + '<p class="detail-row">Type: ') + ((entite)?.['type'] ?? 'inconnu')) + '</p>');
-
-html = (html + '</div>');
 
 window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};

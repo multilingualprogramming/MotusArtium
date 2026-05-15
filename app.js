@@ -463,7 +463,7 @@
             if (!record || typeof record !== "object") {
                 return "";
             }
-            return record.subjectLabel || record.museumLabel || record.movementLabel || record.artistLabel || record.artworkLabel || record.countryLabel || record.label || "";
+            return fieldValue(record, "subjectLabel") || fieldValue(record, "museumLabel") || fieldValue(record, "movementLabel") || fieldValue(record, "artistLabel") || fieldValue(record, "artworkLabel") || fieldValue(record, "countryLabel") || fieldValue(record, "label") || "";
         }
 
         function inferIdFromRecord(record) {
@@ -2187,7 +2187,7 @@
             if (!record || typeof record !== "object") {
                 return fallback || "Unknown";
             }
-            return record.subjectLabel || record.museumLabel || record.movementLabel || record.artistLabel || record.artworkLabel || record.label || fallback || "Unknown";
+            return fieldValue(record, "subjectLabel") || fieldValue(record, "museumLabel") || fieldValue(record, "movementLabel") || fieldValue(record, "artistLabel") || fieldValue(record, "artworkLabel") || fieldValue(record, "label") || fallback || "Unknown";
         }
 
         function fieldValue(record, key) {

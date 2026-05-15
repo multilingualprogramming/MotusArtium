@@ -160,11 +160,16 @@ def validate_bundle_graph_runtime(bundle_js: str) -> None:
         "var POINT_TERMINAL_WIKIDATA_GRAPHQL =",
         "var LANGUE_PAR_DEFAUT = 'fr'",
         "var CACHE_DOCUMENTS_GRAPHQL = {}",
+        "setIndex(index, value)",
+        "_engine.get('cache_entites').setIndex(entite_id, donnees)",
+        "_engine.get('cache_relations').setIndex(mouvement_id, contrat)",
         "await donnees.requetes.obtenir_graphe_mouvement(mouvement_id)",
         "_ajouter_noeud(mouvement_id, 'mouvement'",
         "_ajouter_noeud(artiste_id, 'artiste'",
         "_ajouter_relation(mouvement_id, artiste_id, 'contient_artiste')",
-        "if (((_engine.get('mouvement_etendu_id').get() == mouvement_id) &&",
+        "if ((__ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id)) &&",
+        "function __ml_truthy(value)",
+        "if (__ml_truthy(erreurs))",
         "return (Object.keys(this.noeuds)).length",
     ]
     for marker in expected_markers:
@@ -174,6 +179,21 @@ def validate_bundle_graph_runtime(bundle_js: str) -> None:
         raise AssertionError("bundle.js lowers the movement loaded guard with ||")
     if "async function obtenir_artistes_mouvement(mouvement_id, limite)" in bundle_js:
         raise AssertionError("bundle.js dropped the artist query default limit")
+
+    leaked_top_level_locals = [
+        "\nvar uri = _uri_entite(entite_id);",
+        "\nlieu_naissance = _extraire_item(",
+        "\ncreateur = _extraire_item(",
+        "\nmusee = _extraire_item(",
+        "\nsujet = _extraire_item(",
+        "\ndonnees = ((entite)?.['donnees'] ?? {});",
+        "\nhtml = '<div",
+    ]
+    for marker in leaked_top_level_locals:
+        if marker in bundle_js:
+            raise AssertionError(
+                "bundle.js leaked helper-function body statements to module scope"
+            )
 
 
 def validate_graph_display_contract(site_root: pathlib.Path) -> None:

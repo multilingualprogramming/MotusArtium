@@ -3362,6 +3362,163 @@
             padding: 12px 0;
         }
 
+        .trajectoire-panel-overlay {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            max-height: 42vh;
+            overflow-y: auto;
+            background: var(--bg-panel, #0d1a26);
+            border-top: 2px solid var(--accent-cyan, #36c2b4);
+            z-index: 201;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .trajectoire-panel {
+            padding: 16px 24px 20px;
+        }
+
+        .trajectoire-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .trajectoire-titre {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--accent-cyan, #36c2b4);
+        }
+
+        .trajectoire-effacer {
+            background: none;
+            border: none;
+            color: var(--text-muted, #8a9ab5);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .trajectoire-bornes {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .trajectoire-borne {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+            background: rgba(54, 194, 180, 0.08);
+            border: 1px solid rgba(54, 194, 180, 0.28);
+            border-radius: 20px;
+            padding: 5px 12px;
+            max-width: 100%;
+            color: var(--text-main, #e8edf5);
+        }
+
+        .trajectoire-borne small {
+            color: var(--accent-cyan, #36c2b4);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .trajectoire-borne strong {
+            font-size: 0.84rem;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .trajectoire-fleche {
+            color: var(--text-muted, #8a9ab5);
+        }
+
+        .trajectoire-attente,
+        .trajectoire-message {
+            color: var(--text-muted, #8a9ab5);
+            font-size: 0.86rem;
+            font-style: italic;
+            margin: 4px 0;
+        }
+
+        .trajectoire-chemin {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0;
+            list-style: none;
+            margin: 4px 0 12px;
+            padding: 0;
+        }
+
+        .trajectoire-etape {
+            margin: 0;
+        }
+
+        .trajectoire-noeud {
+            display: flex;
+            align-items: center;
+            min-height: 38px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+
+        .trajectoire-etape-depart .trajectoire-noeud,
+        .trajectoire-etape-arrivee .trajectoire-noeud {
+            border-color: rgba(54, 194, 180, 0.3);
+            background: rgba(54, 194, 180, 0.05);
+        }
+
+        .trajectoire-nom {
+            min-width: 0;
+            color: var(--text-secondary, #b8c5d8);
+            font-size: 0.9rem;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .trajectoire-transition {
+            display: grid;
+            grid-template-columns: 1px minmax(0, max-content);
+            align-items: center;
+            column-gap: 14px;
+            min-height: 26px;
+            margin: 0 0 0 18px;
+            color: var(--text-muted, #8a9ab5);
+        }
+
+        .trajectoire-ligne {
+            justify-self: center;
+            width: 1px;
+            height: 24px;
+            background: rgba(54, 194, 180, 0.38);
+        }
+
+        .trajectoire-rel {
+            font-size: 0.74rem;
+            color: var(--text-muted, #8a9ab5);
+            white-space: nowrap;
+        }
+
+        .trajectoire-longueur {
+            margin: 0;
+            color: var(--accent-cyan, #36c2b4);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
         /* ================================================================= */
         /* THREE-TIER NAVIGATION — Cartographic North                        */
         /* ================================================================= */

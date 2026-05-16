@@ -317,7 +317,7 @@
   "trajectory.chooseEnd": "Selecciona un artista de llegada con + Trayectoria",
   "trajectory.loading": "Calculando...",
   "trajectory.noPath": "No se encontro ningun camino de influencia entre estos dos artistas en el grafo actual. Carga mas artistas para enriquecer la red.",
-  "trajectory.influenced": "influyo en ↓",
+  "trajectory.influenced": "influido por ↓",
   "trajectory.degreeSingular": "{count} grado de separacion",
   "trajectory.degreePlural": "{count} grados de separacion",
   "detail.movement.start": "Inicio: {value}",

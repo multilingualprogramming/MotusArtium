@@ -3505,7 +3505,7 @@ function _rendre_borne(artiste_id, labels, css_class, libelle) {
 
 function _rendre_chemin(chemin, labels) {
   "Rendre les étapes du chemin d'influence.";
-  var html = "<ol class=\"trajectoire-chemin\">";
+  var html = (("<ol class=\"trajectoire-chemin\" aria-label=\"" + _t("trajectory.title")) + "\">");
   for (let i = 0; i < (chemin).length; i += 1) {
     var noeud_id = chemin[i];
     var nom = ((labels)?.[noeud_id] ?? noeud_id);
@@ -3519,11 +3519,16 @@ function _rendre_chemin(chemin, labels) {
       css = (css + " trajectoire-etape-arrivee");
     }
     html = (((html + "<li class=\"") + css) + "\">");
+    html = (html + "<span class=\"trajectoire-noeud\">");
     html = (((html + "<span class=\"trajectoire-nom\">") + nom) + "</span>");
-    if ((!__ml_truthy(est_dernier))) {
-      html = (((html + "<span class=\"trajectoire-rel\">") + _t("trajectory.influenced")) + "</span>");
-    }
+    html = (html + "</span>");
     html = (html + "</li>");
+    if ((!__ml_truthy(est_dernier))) {
+      html = (html + "<li class=\"trajectoire-transition\" aria-hidden=\"true\">");
+      html = (html + "<span class=\"trajectoire-ligne\"></span>");
+      html = (((html + "<span class=\"trajectoire-rel\">") + _t("trajectory.influenced")) + "</span>");
+      html = (html + "</li>");
+    }
   }
   html = (html + "</ol>");
   var nb_degres = ((chemin).length - 1);

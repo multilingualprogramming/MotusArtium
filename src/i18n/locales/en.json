@@ -317,7 +317,7 @@
   "trajectory.chooseEnd": "Select an arrival artist with + Trajectory",
   "trajectory.loading": "Calculating...",
   "trajectory.noPath": "No influence path was found between these two artists in the current graph. Load more artists to enrich the network.",
-  "trajectory.influenced": "influenced ↓",
+  "trajectory.influenced": "influenced by ↓",
   "trajectory.degreeSingular": "{count} degree of separation",
   "trajectory.degreePlural": "{count} degrees of separation",
   "detail.movement.start": "Start: {value}",

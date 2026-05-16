@@ -63,7 +63,7 @@ déf _rendre_borne(artiste_id: chaine, labels: dictionnaire, css_class: chaine, 
 
 déf _rendre_chemin(chemin: liste, labels: dictionnaire) -> chaine:
     """Rendre les étapes du chemin d'influence."""
-    html = '<ol class="trajectoire-chemin">'
+    html = '<ol class="trajectoire-chemin" aria-label="' + _t("trajectory.title") + '">'
 
     pour i dans intervalle(len(chemin)):
         noeud_id = chemin[i]
@@ -78,10 +78,16 @@ déf _rendre_chemin(chemin: liste, labels: dictionnaire) -> chaine:
             css = css + " trajectoire-etape-arrivee"
 
         html = html + '<li class="' + css + '">'
+        html = html + '<span class="trajectoire-noeud">'
         html = html + '<span class="trajectoire-nom">' + nom + '</span>'
-        si non est_dernier:
-            html = html + '<span class="trajectoire-rel">' + _t("trajectory.influenced") + '</span>'
+        html = html + '</span>'
         html = html + '</li>'
+
+        si non est_dernier:
+            html = html + '<li class="trajectoire-transition" aria-hidden="true">'
+            html = html + '<span class="trajectoire-ligne"></span>'
+            html = html + '<span class="trajectoire-rel">' + _t("trajectory.influenced") + '</span>'
+            html = html + '</li>'
 
     html = html + '</ol>'
     nb_degres = len(chemin) - 1

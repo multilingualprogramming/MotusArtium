@@ -2630,231 +2630,40 @@ function setActiveTier(tier, options = {}) {
             return filtered.length ? filtered : nodes;
         }
 
-        function computeConstellationLayout() {
-            const nodes = getRenderableNodes();
-            const positions = new Map();
+        const _graphe = () => window.ui?.visualisations?.graphe_vue || null;
 
-            if (!nodes.length) {
-                return positions;
-            }
+        function computeConstellationLayout() {
+            const g = _graphe();
+            const nodes = getRenderableNodes();
+
+            if (!nodes.length) return new Map();
 
             const snapshot = currentSnapshot();
             const selectedId = snapshot.entite_selectionnee_id;
-            const selectedNode = nodes.find((node) => node.id === selectedId) || nodes[0];
-            positions.set(selectedNode.id, { x: 50, y: 50 });
-
-            const remaining = nodes.filter((node) => node.id !== selectedNode.id);
-            remaining.sort((left, right) => {
-                const leftType = String(left.type || "");
-                const rightType = String(right.type || "");
-                if (leftType === rightType) {
-                    return String(left.etiquette || left.id).localeCompare(String(right.etiquette || right.id));
-                }
-                return leftType.localeCompare(rightType);
+            const selectedNode = nodes.find((n) => n.id === selectedId) || nodes[0];
+            const remaining = nodes.filter((n) => n.id !== selectedNode.id);
+            remaining.sort((a, b) => {
+                const aType = String(a.type || "");
+                const bType = String(b.type || "");
+                if (aType === bType) return String(a.etiquette || a.id).localeCompare(String(b.etiquette || b.id));
+                return aType.localeCompare(bType);
             });
 
-            const relationByTarget = new Map();
-            const relationBySource = new Map();
-            (((snapshot.graphe || {}).relations) || []).forEach((relation) => {
-                if (relation.source === selectedNode.id) {
-                    relationByTarget.set(relation.target, relation.type);
-                }
-                if (relation.target === selectedNode.id) {
-                    relationBySource.set(relation.source, relation.type);
-                }
+            const relByTarget = {};
+            const relBySource = {};
+            ((snapshot.graphe?.relations) || []).forEach((rel) => {
+                if (rel.source === selectedNode.id) relByTarget[rel.target] = rel.type;
+                if (rel.target === selectedNode.id) relBySource[rel.source] = rel.type;
             });
 
-            const sectors = semanticLayoutSectors(selectedNode, remaining, relationByTarget, relationBySource);
-            Object.values(sectors).forEach((sector) => {
-                placeNodesInSector(positions, sector.nodes, sector.start, sector.end, sector.radii || [23, 34, 43, 49]);
-            });
-            return positions;
-        }
+            if (!g) return new Map([[selectedNode.id, { x: 50, y: 50 }]]);
 
-        function semanticLayoutSectors(selectedNode, nodes, relationByTarget, relationBySource) {
-            const selectedType = String((selectedNode && selectedNode.type) || "").toLowerCase();
-            const activeLens = browserAdapterState.activeCompassLens || "movement";
-
-            const sectors = {
-                primary: { start: -150, end: 150, nodes: [], radii: [22, 32, 41, 47] },
-                left: { start: 145, end: 215, nodes: [], radii: [24, 35, 44] },
-                right: { start: -35, end: 35, nodes: [], radii: [24, 35, 44] },
-                top: { start: -130, end: -50, nodes: [], radii: [24, 35, 44] },
-                bottom: { start: 55, end: 125, nodes: [], radii: [24, 34, 42, 47] }
-            };
-
-            // Widen artist arc for movement entities
-            if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
-                sectors.bottom.start = 18;
-                sectors.bottom.end = 162;
-                sectors.bottom.radii = [22, 31, 40, 46];
-                sectors.primary.end = 14;
-            }
-
-            // For artist-type selected nodes: sibling artists from the same movement have
-            // no direct relation and fall into primary, which spans -150°→150° and includes
-            // the bottom sector (55°→125°) where works live, causing them to cover works.
-            // Fix: trim primary to end at 50° (5° gap before works), route the parent
-            // movement to top, and pack sibling artists into a dedicated upper-right zone.
-            if (selectedType.includes("artist") || selectedType.includes("artiste")) {
-                sectors.primary.end = 50;
-                sectors.siblings = { start: -50, end: 28, nodes: [], radii: [38, 44, 48] };
-            }
-
-            // Work context: route creator to bottom, dedicate upper-left to sibling works,
-            // trim primary so it never reaches the creator zone or sibling zone.
-            if (selectedType.includes("work") || selectedType.includes("oeuvre")) {
-                sectors.primary.start = -115;
-                sectors.primary.end = 42;
-                sectors.siblings = { start: -175, end: -135, nodes: [], radii: [34, 42, 48] };
-            }
-
-            // Lens-driven sector overrides: map relation types to compass directions
-            const lensSectorRules = {
-                influence: {
-                    influenced_by: "left",
-                    influenced: "right",
-                    follows: "top",
-                    followed_by: "top",
-                    contains_movement: "top",
-                    contains_artist: "bottom"
-                },
-                artist: {
-                    contains_artist: "primary",
-                    created: "bottom",
-                    influenced_by: "left",
-                    influenced: "right",
-                    follows: "top",
-                    followed_by: "top"
-                },
-                place: {
-                    displayed_at: "top",
-                    houses_work: "top",
-                    contains_artist: "primary"
-                },
-                time: {
-                    follows: "left",
-                    followed_by: "right",
-                    influenced_by: "left",
-                    influenced: "right",
-                    contains_movement: "top"
-                },
-                work: {
-                    depicts: "left",
-                    made_of: "right",
-                    displayed_at: "top",
-                    houses_work: "top",
-                    created: "primary"
-                }
-            };
-
-            const activeLensRules = (activeLens !== "movement") ? (lensSectorRules[activeLens] || null) : null;
-
-            // Widen sectors for influence/time lenses to emphasize left/right directionality
-            if (activeLens === "influence" || activeLens === "time") {
-                sectors.left.start = 130;
-                sectors.left.end = 230;
-                sectors.left.radii = [22, 33, 43, 48];
-                sectors.right.start = -50;
-                sectors.right.end = 50;
-                sectors.right.radii = [22, 33, 43, 48];
-                sectors.primary.start = -120;
-                sectors.primary.end = 120;
-            }
-
-            nodes.forEach((node) => {
-                const relation = relationByTarget.get(node.id) || relationBySource.get(node.id) || "";
-
-                // Apply active lens sector override first
-                if (activeLensRules && relation && activeLensRules[relation]) {
-                    sectors[activeLensRules[relation]].nodes.push(node);
-                    return;
-                }
-
-                // Entity-type default routing
-                if (selectedType.includes("artist") || selectedType.includes("artiste")) {
-                    if (relation === "influenced_by") {
-                        sectors.left.nodes.push(node);
-                    } else if (relation === "influenced") {
-                        sectors.right.nodes.push(node);
-                    } else if (relation === "created") {
-                        sectors.bottom.nodes.push(node);
-                    } else if (relation === "contains_artist") {
-                        // Parent movement(s) — place at top as context anchor
-                        sectors.top.nodes.push(node);
-                    } else {
-                        // Sibling artists (same movement, no direct relation) go to the
-                        // far upper-right cluster so they never cover the artist's works
-                        const nodeType = String(node.type || "").toLowerCase();
-                        if ((nodeType.includes("artist") || nodeType.includes("artiste")) && sectors.siblings) {
-                            sectors.siblings.nodes.push(node);
-                        } else {
-                            sectors.primary.nodes.push(node);
-                        }
-                    }
-                } else if (selectedType.includes("movement") || selectedType.includes("mouvement")) {
-                    if (relation === "follows" || relation === "followed_by" || relation === "contains_movement") {
-                        sectors.top.nodes.push(node);
-                    } else if (relation === "contains_artist") {
-                        sectors.bottom.nodes.push(node);
-                    } else {
-                        sectors.primary.nodes.push(node);
-                    }
-                } else if (selectedType.includes("museum") || selectedType.includes("musee")) {
-                    if (relation === "houses_work") {
-                        sectors.primary.nodes.push(node);
-                    } else {
-                        sectors.top.nodes.push(node);
-                    }
-                } else if (selectedType.includes("work") || selectedType.includes("oeuvre")) {
-                    if (relation === "displayed_at") {
-                        sectors.top.nodes.push(node);
-                    } else if (relation === "depicts") {
-                        sectors.left.nodes.push(node);
-                    } else if (relation === "made_of") {
-                        sectors.right.nodes.push(node);
-                    } else if (relation === "created") {
-                        sectors.bottom.nodes.push(node);  // Artist who created this work, anchored below
-                    } else {
-                        const nodeType = String(node.type || "").toLowerCase();
-                        if ((nodeType.includes("work") || nodeType.includes("oeuvre")) && sectors.siblings) {
-                            sectors.siblings.nodes.push(node);  // Sibling works, far upper-left
-                        } else {
-                            sectors.primary.nodes.push(node);
-                        }
-                    }
-                } else {
-                    sectors.primary.nodes.push(node);
-                }
-            });
-
-            return sectors;
-        }
-
-        function placeNodesInSector(positions, nodes, startDegrees, endDegrees, radii) {
-            if (!nodes || !nodes.length) {
-                return;
-            }
-
-            const capacityPerRing = Math.max(5, Math.ceil((endDegrees - startDegrees) / 13));
-            nodes.forEach((node, index) => {
-                const ringIndex = Math.min(radii.length - 1, Math.floor(index / capacityPerRing));
-                const slot = index % capacityPerRing;
-                const nodesInRing = Math.min(capacityPerRing, nodes.length - ringIndex * capacityPerRing);
-                const fraction = nodesInRing <= 1 ? 0.5 : slot / (nodesInRing - 1);
-                const angleDegrees = startDegrees + (endDegrees - startDegrees) * fraction;
-                const angle = angleDegrees * Math.PI / 180;
-                const nodeClass = constellationClassForType(node.type);
-                const typeNudge = nodeClass === "node--movement" ? 3 : (nodeClass === "node--work" ? -2 : 0);
-                const ring = Math.min(49, (radii[ringIndex] || radii[radii.length - 1]) + typeNudge + Math.floor(index / (capacityPerRing * radii.length)) * 4);
-                const jitter = ((index % 2 === 0 ? 1 : -1) * 0.6) + ((index % 5) - 2) * 0.14;
-                const x = 50 + Math.cos(angle) * ring + Math.sin(angle) * (ring * 0.03) * jitter;
-                const y = 50 + Math.sin(angle) * ring * 0.78 + Math.cos(angle) * (ring * 0.03) * jitter;
-                positions.set(node.id, {
-                    x: Math.max(7, Math.min(93, x)),
-                    y: Math.max(9, Math.min(91, y))
-                });
-            });
+            const positions = g.calculer_disposition_constellation(
+                selectedNode, remaining, relByTarget, relBySource,
+                String(selectedNode.type || ""),
+                browserAdapterState.activeCompassLens || "movement"
+            );
+            return new Map(Object.entries(positions));
         }
 
         function renderConstellation() {

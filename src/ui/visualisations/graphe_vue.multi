@@ -1,158 +1,198 @@
-importer asyncio
-importer math
-importer utilitaires.mathematiques
-importer ui.etat
-importer ui.visualisations.utilitaires_rendu
+# Constellation layout — pure math, no DOM.
+# JS delegate calls calculer_disposition_constellation and wraps the result
+# in a Map for compatibility with renderConstellation.
 
-# ============================================================================
-# Visualisation du graphe force-dirigée
-# ============================================================================
 
-classe VueGrapheForce:
-    """Visualisation du graphe avec algorithme force-dirigé"""
+déf _placer_noeuds_secteur(positions: dictionnaire, noeuds: liste, debut_degres: nombre, fin_degres: nombre, rayons: liste):
+    si non noeuds ou non (len(noeuds) > 0):
+        retour
+    capacite_par_anneau = max(5, ceil((fin_degres - debut_degres) / 13))
+    index = 0
+    pour noeud dans noeuds:
+        index_anneau = min(len(rayons) - 1, floor(index / capacite_par_anneau))
+        slot = index % capacite_par_anneau
+        noeuds_dans_anneau = min(capacite_par_anneau, len(noeuds) - index_anneau * capacite_par_anneau)
+        fraction = 0.5
+        si noeuds_dans_anneau > 1:
+            fraction = slot / (noeuds_dans_anneau - 1)
+        angle_degres = debut_degres + (fin_degres - debut_degres) * fraction
+        angle = angle_degres * pi / 180
+        type_noeud = noeud.obtenir("type", "").lower()
+        si "movement" dans type_noeud ou "mouvement" dans type_noeud:
+            nudge_type = 3
+        sinon si "work" dans type_noeud ou "oeuvre" dans type_noeud:
+            nudge_type = -2
+        sinon:
+            nudge_type = 0
+        rayon_de_base = rayons[index_anneau]
+        anneau = min(49, rayon_de_base + nudge_type + floor(index / (capacite_par_anneau * len(rayons))) * 4)
+        gigue = ((1 si index % 2 == 0 sinon -1) * 0.6) + ((index % 5) - 2) * 0.14
+        x = 50 + cos(angle) * anneau + sin(angle) * (anneau * 0.03) * gigue
+        y = 50 + sin(angle) * anneau * 0.78 + cos(angle) * (anneau * 0.03) * gigue
+        id_noeud = noeud.obtenir("id", "")
+        positions[id_noeud] = {"x": max(7, min(93, x)), "y": max(9, min(91, y))}
+        index = index + 1
 
-    canvas: element
-    rendeur: element
-    disposition: element
-    animating: booleen
-    id_animation: nombre
-    souris_x: nombre
-    souris_y: nombre
-    souris_enfoncee: booleen
-    noeud_draggable_id: chaine
-    dernier_noeud_survole: chaine
 
-    déf __init__(canvas: element):
-        observer self.canvas = canvas
-        observer self.rendeur = utilitaires_rendu.RenduGrapheCanvas(canvas)
-        observer self.disposition = nul
-        observer self.animating = faux
-        observer self.id_animation = 0
-        observer self.souris_x = 0
-        observer self.souris_y = 0
-        observer self.souris_enfoncee = faux
-        observer self.noeud_draggable_id = ""
-        observer self.dernier_noeud_survole = ""
+déf _secteurs_disposition_semantique(noeud_selectionne: dictionnaire, noeuds: liste, relations_par_cible: dictionnaire, relations_par_source: dictionnaire, type_selectionne: chaine, lentille_active: chaine) -> dictionnaire:
+    t = chaine(type_selectionne ou "").lower()
 
-        # Enregistrer les gestionnaires d'événements
-        canvas.gerer_clic = self.gerer_clic
-        canvas.gerer_deplacement_souris = self.gerer_deplacement_souris
-        canvas.gerer_souris_enfoncee = self.gerer_souris_enfoncee
-        canvas.gerer_souris_relachee = self.gerer_souris_relachee
-        canvas.gerer_roulette = self.gerer_roulette
+    debut_primaire = -150
+    fin_primaire = 150
+    rayons_primaire = [22, 32, 41, 47]
+    debut_gauche = 145
+    fin_gauche = 215
+    rayons_gauche = [24, 35, 44]
+    debut_droite = -35
+    fin_droite = 35
+    rayons_droite = [24, 35, 44]
+    debut_haut = -130
+    fin_haut = -50
+    rayons_haut = [24, 35, 44]
+    debut_bas = 55
+    fin_bas = 125
+    rayons_bas = [24, 34, 42, 47]
 
-    asynchrone déf initialiser_graphe(graphe: element):
-        """Initialiser la visualisation avec un graphe"""
-        observer self.disposition = utilitaires_mathematiques.DispositionForceGraphe(
-            self.canvas.largeur,
-            self.canvas.hauteur
+    noeuds_primaire = []
+    noeuds_gauche = []
+    noeuds_droite = []
+    noeuds_haut = []
+    noeuds_bas = []
+    noeuds_freres = []
+    debut_freres = 0
+    fin_freres = 0
+    rayons_freres = []
+    a_secteur_freres = faux
+
+    si "movement" dans t ou "mouvement" dans t:
+        debut_bas = 18
+        fin_bas = 162
+        rayons_bas = [22, 31, 40, 46]
+        fin_primaire = 14
+
+    si "artist" dans t ou "artiste" dans t:
+        fin_primaire = 50
+        a_secteur_freres = vrai
+        debut_freres = -50
+        fin_freres = 28
+        rayons_freres = [38, 44, 48]
+
+    si "work" dans t ou "oeuvre" dans t:
+        debut_primaire = -115
+        fin_primaire = 42
+        a_secteur_freres = vrai
+        debut_freres = -175
+        fin_freres = -135
+        rayons_freres = [34, 42, 48]
+
+    si lentille_active == "influence" ou lentille_active == "time":
+        debut_gauche = 130
+        fin_gauche = 230
+        rayons_gauche = [22, 33, 43, 48]
+        debut_droite = -50
+        fin_droite = 50
+        rayons_droite = [22, 33, 43, 48]
+        debut_primaire = -120
+        fin_primaire = 120
+
+    regles_lentille = {}
+    si lentille_active == "influence":
+        regles_lentille = {"influenced_by": "left", "influenced": "right", "follows": "top", "followed_by": "top", "contains_movement": "top", "contains_artist": "bottom"}
+    sinon si lentille_active == "artist":
+        regles_lentille = {"contains_artist": "primary", "created": "bottom", "influenced_by": "left", "influenced": "right", "follows": "top", "followed_by": "top"}
+    sinon si lentille_active == "place":
+        regles_lentille = {"displayed_at": "top", "houses_work": "top", "contains_artist": "primary"}
+    sinon si lentille_active == "time":
+        regles_lentille = {"follows": "left", "followed_by": "right", "influenced_by": "left", "influenced": "right", "contains_movement": "top"}
+    sinon si lentille_active == "work":
+        regles_lentille = {"depicts": "left", "made_of": "right", "displayed_at": "top", "houses_work": "top", "created": "primary"}
+
+    noeuds_secteurs = {
+        "primary": noeuds_primaire,
+        "left": noeuds_gauche,
+        "right": noeuds_droite,
+        "top": noeuds_haut,
+        "bottom": noeuds_bas,
+        "siblings": noeuds_freres
+    }
+
+    pour noeud dans noeuds:
+        id_noeud = noeud.obtenir("id", "")
+        relation = relations_par_cible.obtenir(id_noeud, relations_par_source.obtenir(id_noeud, ""))
+        type_noeud = noeud.obtenir("type", "").lower()
+        nom_secteur_lentille = regles_lentille.obtenir(relation, "")
+        si nom_secteur_lentille et relation:
+            noeuds_secteurs.obtenir(nom_secteur_lentille, noeuds_primaire).ajouter(noeud)
+        sinon si "artist" dans t ou "artiste" dans t:
+            si relation == "influenced_by":
+                noeuds_gauche.ajouter(noeud)
+            sinon si relation == "influenced":
+                noeuds_droite.ajouter(noeud)
+            sinon si relation == "created":
+                noeuds_bas.ajouter(noeud)
+            sinon si relation == "contains_artist":
+                noeuds_haut.ajouter(noeud)
+            sinon si ("artist" dans type_noeud ou "artiste" dans type_noeud) et a_secteur_freres:
+                noeuds_freres.ajouter(noeud)
+            sinon:
+                noeuds_primaire.ajouter(noeud)
+        sinon si "movement" dans t ou "mouvement" dans t:
+            si relation == "follows" ou relation == "followed_by" ou relation == "contains_movement":
+                noeuds_haut.ajouter(noeud)
+            sinon si relation == "contains_artist":
+                noeuds_bas.ajouter(noeud)
+            sinon:
+                noeuds_primaire.ajouter(noeud)
+        sinon si "museum" dans t ou "musee" dans t:
+            si relation == "houses_work":
+                noeuds_primaire.ajouter(noeud)
+            sinon:
+                noeuds_haut.ajouter(noeud)
+        sinon si "work" dans t ou "oeuvre" dans t:
+            si relation == "displayed_at":
+                noeuds_haut.ajouter(noeud)
+            sinon si relation == "depicts":
+                noeuds_gauche.ajouter(noeud)
+            sinon si relation == "made_of":
+                noeuds_droite.ajouter(noeud)
+            sinon si relation == "created":
+                noeuds_bas.ajouter(noeud)
+            sinon si ("work" dans type_noeud ou "oeuvre" dans type_noeud) et a_secteur_freres:
+                noeuds_freres.ajouter(noeud)
+            sinon:
+                noeuds_primaire.ajouter(noeud)
+        sinon:
+            noeuds_primaire.ajouter(noeud)
+
+    secteurs = {
+        "primary": {"debut": debut_primaire, "fin": fin_primaire, "noeuds": noeuds_primaire, "rayons": rayons_primaire},
+        "left": {"debut": debut_gauche, "fin": fin_gauche, "noeuds": noeuds_gauche, "rayons": rayons_gauche},
+        "right": {"debut": debut_droite, "fin": fin_droite, "noeuds": noeuds_droite, "rayons": rayons_droite},
+        "top": {"debut": debut_haut, "fin": fin_haut, "noeuds": noeuds_haut, "rayons": rayons_haut},
+        "bottom": {"debut": debut_bas, "fin": fin_bas, "noeuds": noeuds_bas, "rayons": rayons_bas}
+    }
+    si a_secteur_freres:
+        secteurs["siblings"] = {"debut": debut_freres, "fin": fin_freres, "noeuds": noeuds_freres, "rayons": rayons_freres}
+    retour secteurs
+
+
+déf calculer_disposition_constellation(noeud_selectionne: dictionnaire, noeuds: liste, relations_par_cible: dictionnaire, relations_par_source: dictionnaire, type_selectionne: chaine, lentille_active: chaine) -> dictionnaire:
+    positions = {}
+    id_selectionne = noeud_selectionne.obtenir("id", "")
+    positions[id_selectionne] = {"x": 50, "y": 50}
+
+    secteurs = _secteurs_disposition_semantique(
+        noeud_selectionne, noeuds, relations_par_cible, relations_par_source, type_selectionne, lentille_active
+    )
+
+    pour nom_secteur dans secteurs:
+        secteur = secteurs.obtenir(nom_secteur, {})
+        _placer_noeuds_secteur(
+            positions,
+            secteur.obtenir("noeuds", []),
+            secteur.obtenir("debut", 0),
+            secteur.obtenir("fin", 0),
+            secteur.obtenir("rayons", [])
         )
 
-        # Ajouter tous les nœuds
-        pour id, noeud dans graphe.noeuds.items():
-            observer self.disposition.ajouter_noeud(id)
-
-        # Ajouter toutes les relations
-        pour relation dans graphe.relations:
-            observer self.disposition.ajouter_relation(
-                relation.source_id,
-                relation.target_id,
-                relation.poids
-            )
-
-        # Exécuter la simulation initiale
-        attendre self.disposition.simuler(50)
-        positions = self.disposition.exporter_positions()
-        observer self.rendeur.mettre_a_jour_positions(positions)
-
-    asynchrone déf animer():
-        """Animer la simulation"""
-        observer self.animating = vrai
-
-        tantque self.animating:
-            # Une itération de simulation
-            attendre self.disposition.simuler_iteration()
-
-            # Mettre à jour les positions
-            positions = self.disposition.exporter_positions()
-            observer self.rendeur.mettre_a_jour_positions(positions)
-
-            # Rendre
-            self.rendeur.rendre_frame(interface.etat.graphe)
-
-            # Attendre un peu avant la prochaine itération
-            attendre asyncio.sleep(0.03)  # ~30 FPS
-
-    déf arreter_animation():
-        """Arrêter l'animation"""
-        observer self.animating = faux
-
-    déf gerer_clic(x: nombre, y: nombre):
-        """Gestionnaire de clic"""
-        noeud_id = self.rendeur.obtenir_noeud_a_position(x, y)
-
-        si noeud_id:
-            observer self.rendeur.noeud_selectionne = noeud_id
-            observer interface.etat.entite_selectionnee_id = noeud_id
-
-            # Déterminer le type et charger les détails
-            noeud = interface.etat.graphe.obtenir_noeud(noeud_id)
-            si noeud:
-                observer interface.etat.entite_selectionnee_type = noeud.type
-        sinon:
-            observer self.rendeur.noeud_selectionne = ""
-
-    déf gerer_deplacement_souris(x: nombre, y: nombre):
-        """Gestionnaire de mouvement de souris"""
-        observer self.souris_x = x
-        observer self.souris_y = y
-
-        si self.souris_enfoncee et self.noeud_draggable_id:
-            # Dragging d'un nœud
-            noeud = self.disposition.obtenir_noeud_par_id(self.noeud_draggable_id)
-            si noeud:
-                observer noeud["x"] = x - self.rendeur.deplacement_x
-                observer noeud["y"] = y - self.rendeur.deplacement_y
-        sinon:
-            # Hover
-            noeud_survole_id = self.rendeur.obtenir_noeud_a_position(x, y)
-
-            si noeud_survole_id != self.dernier_noeud_survole:
-                observer self.dernier_noeud_survole = noeud_survole_id
-                observer self.rendeur.noeud_survole = noeud_survole_id
-                self.rendeur.rendre_frame(interface.etat.graphe)
-
-    déf gerer_souris_enfoncee(x: nombre, y: nombre):
-        """Gestionnaire de souris enfoncée"""
-        observer self.souris_enfoncee = vrai
-
-        noeud_id = self.rendeur.obtenir_noeud_a_position(x, y)
-        si noeud_id:
-            observer self.noeud_draggable_id = noeud_id
-
-    déf gerer_souris_relachee(x: nombre, y: nombre):
-        """Gestionnaire de souris relâchée"""
-        observer self.souris_enfoncee = faux
-        observer self.noeud_draggable_id = ""
-
-    déf gerer_roulette(x: nombre, y: nombre, direction: nombre):
-        """Gestionnaire de roulette de souris (zoom)"""
-        self.rendeur.gerer_zoom(direction, x, y)
-        self.rendeur.rendre_frame(interface.etat.graphe)
-
-    déf reinitialiser_vue():
-        """Réinitialiser la vue"""
-        self.rendeur.reinitialiser_vue()
-        self.rendeur.rendre_frame(interface.etat.graphe)
-
-
-# ============================================================================
-# Factory pour créer une vue de graphe
-# ============================================================================
-
-asynchrone déf creer_vue_graphe(canvas: element, graphe: element) -> VueGrapheForce:
-    """Créer et initialiser une vue de graphe"""
-    vue = VueGrapheForce(canvas)
-    attendre vue.initialiser_graphe(graphe)
-    attendre vue.animer()
-    retour vue
+    retour positions

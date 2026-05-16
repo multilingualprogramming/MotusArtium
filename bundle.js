@@ -84,7 +84,7 @@ function streamToView(source, target) {
   });
 }
 
-function intervalle(...args) {
+function __ml_range(...args) {
   let start = 0;
   let stop = 0;
   let step = 1;
@@ -193,17 +193,73 @@ function __ml_slice(start, stop, step) {
 }
 
 function __ml_type(v) {
-  if (v === null || v === undefined) return "nul";
-  if (typeof v === "string") return "chaine";
-  if (Array.isArray(v)) return "liste";
-  if (typeof v === "number") return "nombre";
-  if (typeof v === "boolean") return "booleen";
-  return "dictionnaire";
+  if (v === null || v === undefined) return "none";
+  if (typeof v === "string") return "str";
+  if (Array.isArray(v)) return "list";
+  if (typeof v === "number") return "number";
+  if (typeof v === "boolean") return "bool";
+  return "dict";
 }
 const type = __ml_type;
-const chaine = "chaine";
-const liste = "liste";
-const dictionnaire = "dictionnaire";
+const cadeia = "str";
+const cadena = "str";
+const chaine = "str";
+const chaîne = "str";
+const lancuch = "str";
+const merkkijono = "str";
+const mjono = "str";
+const str = "str";
+const strack = "str";
+const strang = "str";
+const streng = "str";
+const stringa = "str";
+const tekenreeks = "str";
+const tekst = "str";
+const text = "str";
+const zeichenkette = "str";
+const نص = "str";
+const तार = "str";
+const पाठ = "str";
+const স্ট্রিং = "str";
+const சரம் = "str";
+const 字符串 = "str";
+const 文字列 = "str";
+const lijst = "list";
+const list = "list";
+const lista = "list";
+const liste = "list";
+const قائمة = "list";
+const सूची = "list";
+const তালিকা = "list";
+const பட்டியல் = "list";
+const リスト = "list";
+const 列表 = "list";
+const diccionario = "dict";
+const dicionario = "dict";
+const dict = "dict";
+const dictionnaire = "dict";
+const dizionario = "dict";
+const ordbog = "dict";
+const ordbok = "dict";
+const sanakirja = "dict";
+const slownik = "dict";
+const woerterbuch = "dict";
+const woordenboek = "dict";
+const قاموس = "dict";
+const शब्दकोश = "dict";
+const অভিধান = "dict";
+const அகராதி = "dict";
+const 字典 = "dict";
+const 辞書 = "dict";
+const max = Math.max;
+const min = Math.min;
+const abs = Math.abs;
+const round = Math.round;
+const ceil = Math.ceil;
+const floor = Math.floor;
+const cos = Math.cos;
+const sin = Math.sin;
+const pi = Math.PI;
 
 const _engine = new ReactiveEngine();
 const __ml_signals = _engine.signals;
@@ -845,7 +901,7 @@ class Graphe {
     var voisinage = {["centre"]: noeud_id, ["couches"]: []};
     var visites = new Set([noeud_id]);
     var couche_actuelle = [noeud_id];
-    for (const _ of __ml_iterate(intervalle(profondeur))) {
+    for (let _ = 0; _ < profondeur; _ += 1) {
       var prochaine_couche = [];
       var noeuds_couche = [];
       for (const noeud_courant_id of __ml_iterate(couche_actuelle)) {
@@ -3073,7 +3129,7 @@ function _generer_colonnes(nb_entites) {
   "Générer la valeur grid-template-columns selon le nombre d'entités";
   var total = (nb_entites + 1);
   var colonnes = [];
-  for (const i of __ml_iterate(intervalle(total))) {
+  for (let i = 0; i < total; i += 1) {
     __ml_add(colonnes, "1fr");
   }
   return (colonnes).join(" ");
@@ -3150,7 +3206,7 @@ function _rendre_borne(artiste_id, labels, css_class, libelle) {
 function _rendre_chemin(chemin, labels) {
   "Rendre les étapes du chemin d'influence.";
   var html = "<ol class=\"trajectoire-chemin\">";
-  for (const i of __ml_iterate(intervalle((chemin).length))) {
+  for (let i = 0; i < (chemin).length; i += 1) {
     var noeud_id = chemin[i];
     var nom = ((labels)?.[noeud_id] ?? noeud_id);
     var est_premier = (i == 0);
@@ -3891,6 +3947,215 @@ window.ui = window.ui || {};
 window.ui.visualisations = window.ui.visualisations || {};
 window.ui.visualisations.chronologie_vue = window.ui.visualisations.chronologie_vue || {};
 Object.assign(window.ui.visualisations.chronologie_vue, {_t: _t, _deballer_valeur_date: _deballer_valeur_date, champ_date: champ_date, extraire_annee: extraire_annee, formater_annee: formater_annee, construire_modele_temporel: construire_modele_temporel});
+})();
+
+(() => {
+function _placer_noeuds_secteur(positions, noeuds, debut_degres, fin_degres, rayons) {
+  if (((!__ml_truthy(noeuds)) || (!__ml_truthy(((noeuds).length > 0))))) {
+    return;
+  }
+  var capacite_par_anneau = max(5, ceil(((fin_degres - debut_degres) / 13)));
+  var index = 0;
+  for (const noeud of __ml_iterate(noeuds)) {
+    var index_anneau = min(((rayons).length - 1), floor((index / capacite_par_anneau)));
+    var slot = (index % capacite_par_anneau);
+    var noeuds_dans_anneau = min(capacite_par_anneau, ((noeuds).length - (index_anneau * capacite_par_anneau)));
+    var fraction = 0.5;
+    if (__ml_truthy((noeuds_dans_anneau > 1))) {
+      fraction = (slot / (noeuds_dans_anneau - 1));
+    }
+    var angle_degres = (debut_degres + ((fin_degres - debut_degres) * fraction));
+    var angle = ((angle_degres * pi) / 180);
+    var type_noeud = String(((noeud)?.["type"] ?? "")).toLowerCase();
+    if ((__ml_truthy(__ml_contains(type_noeud, "movement")) || __ml_truthy(__ml_contains(type_noeud, "mouvement")))) {
+      var nudge_type = 3;
+    }
+    else if ((__ml_truthy(__ml_contains(type_noeud, "work")) || __ml_truthy(__ml_contains(type_noeud, "oeuvre")))) {
+      nudge_type = (-2);
+    }
+    else {
+      nudge_type = 0;
+    }
+    var rayon_de_base = rayons[index_anneau];
+    var anneau = min(49, ((rayon_de_base + nudge_type) + (floor((index / (capacite_par_anneau * (rayons).length))) * 4)));
+    var gigue = (((__ml_truthy(((index % 2) == 0)) ? 1 : (-1)) * 0.6) + (((index % 5) - 2) * 0.14));
+    var x = ((50 + (cos(angle) * anneau)) + ((sin(angle) * (anneau * 0.03)) * gigue));
+    var y = ((50 + ((sin(angle) * anneau) * 0.78)) + ((cos(angle) * (anneau * 0.03)) * gigue));
+    var id_noeud = ((noeud)?.["id"] ?? "");
+    positions[id_noeud] = {["x"]: max(7, min(93, x)), ["y"]: max(9, min(91, y))};
+    index = (index + 1);
+  }
+}
+
+function _secteurs_disposition_semantique(noeud_selectionne, noeuds, relations_par_cible, relations_par_source, type_selectionne, lentille_active) {
+  var t = String(String((type_selectionne || ""))).toLowerCase();
+  var debut_primaire = (-150);
+  var fin_primaire = 150;
+  var rayons_primaire = [22, 32, 41, 47];
+  var debut_gauche = 145;
+  var fin_gauche = 215;
+  var rayons_gauche = [24, 35, 44];
+  var debut_droite = (-35);
+  var fin_droite = 35;
+  var rayons_droite = [24, 35, 44];
+  var debut_haut = (-130);
+  var fin_haut = (-50);
+  var rayons_haut = [24, 35, 44];
+  var debut_bas = 55;
+  var fin_bas = 125;
+  var rayons_bas = [24, 34, 42, 47];
+  var noeuds_primaire = [];
+  var noeuds_gauche = [];
+  var noeuds_droite = [];
+  var noeuds_haut = [];
+  var noeuds_bas = [];
+  var noeuds_freres = [];
+  var debut_freres = 0;
+  var fin_freres = 0;
+  var rayons_freres = [];
+  var a_secteur_freres = false;
+  if ((__ml_truthy(__ml_contains(t, "movement")) || __ml_truthy(__ml_contains(t, "mouvement")))) {
+    debut_bas = 18;
+    fin_bas = 162;
+    rayons_bas = [22, 31, 40, 46];
+    fin_primaire = 14;
+  }
+  if ((__ml_truthy(__ml_contains(t, "artist")) || __ml_truthy(__ml_contains(t, "artiste")))) {
+    fin_primaire = 50;
+    a_secteur_freres = true;
+    debut_freres = (-50);
+    fin_freres = 28;
+    rayons_freres = [38, 44, 48];
+  }
+  if ((__ml_truthy(__ml_contains(t, "work")) || __ml_truthy(__ml_contains(t, "oeuvre")))) {
+    debut_primaire = (-115);
+    fin_primaire = 42;
+    a_secteur_freres = true;
+    debut_freres = (-175);
+    fin_freres = (-135);
+    rayons_freres = [34, 42, 48];
+  }
+  if ((__ml_truthy((lentille_active == "influence")) || __ml_truthy((lentille_active == "time")))) {
+    debut_gauche = 130;
+    fin_gauche = 230;
+    rayons_gauche = [22, 33, 43, 48];
+    debut_droite = (-50);
+    fin_droite = 50;
+    rayons_droite = [22, 33, 43, 48];
+    debut_primaire = (-120);
+    fin_primaire = 120;
+  }
+  var regles_lentille = {};
+  if (__ml_truthy((lentille_active == "influence"))) {
+    regles_lentille = {["influenced_by"]: "left", ["influenced"]: "right", ["follows"]: "top", ["followed_by"]: "top", ["contains_movement"]: "top", ["contains_artist"]: "bottom"};
+  }
+  else if (__ml_truthy((lentille_active == "artist"))) {
+    regles_lentille = {["contains_artist"]: "primary", ["created"]: "bottom", ["influenced_by"]: "left", ["influenced"]: "right", ["follows"]: "top", ["followed_by"]: "top"};
+  }
+  else if (__ml_truthy((lentille_active == "place"))) {
+    regles_lentille = {["displayed_at"]: "top", ["houses_work"]: "top", ["contains_artist"]: "primary"};
+  }
+  else if (__ml_truthy((lentille_active == "time"))) {
+    regles_lentille = {["follows"]: "left", ["followed_by"]: "right", ["influenced_by"]: "left", ["influenced"]: "right", ["contains_movement"]: "top"};
+  }
+  else if (__ml_truthy((lentille_active == "work"))) {
+    regles_lentille = {["depicts"]: "left", ["made_of"]: "right", ["displayed_at"]: "top", ["houses_work"]: "top", ["created"]: "primary"};
+  }
+  var noeuds_secteurs = {["primary"]: noeuds_primaire, ["left"]: noeuds_gauche, ["right"]: noeuds_droite, ["top"]: noeuds_haut, ["bottom"]: noeuds_bas, ["siblings"]: noeuds_freres};
+  for (const noeud of __ml_iterate(noeuds)) {
+    var id_noeud = ((noeud)?.["id"] ?? "");
+    var relation = ((relations_par_cible)?.[id_noeud] ?? ((relations_par_source)?.[id_noeud] ?? ""));
+    var type_noeud = String(((noeud)?.["type"] ?? "")).toLowerCase();
+    var nom_secteur_lentille = ((regles_lentille)?.[relation] ?? "");
+    if ((__ml_truthy(nom_secteur_lentille) && __ml_truthy(relation))) {
+      __ml_add(((noeuds_secteurs)?.[nom_secteur_lentille] ?? noeuds_primaire), noeud);
+    }
+    else if ((__ml_truthy(__ml_contains(t, "artist")) || __ml_truthy(__ml_contains(t, "artiste")))) {
+      if (__ml_truthy((relation == "influenced_by"))) {
+        __ml_add(noeuds_gauche, noeud);
+      }
+      else if (__ml_truthy((relation == "influenced"))) {
+        __ml_add(noeuds_droite, noeud);
+      }
+      else if (__ml_truthy((relation == "created"))) {
+        __ml_add(noeuds_bas, noeud);
+      }
+      else if (__ml_truthy((relation == "contains_artist"))) {
+        __ml_add(noeuds_haut, noeud);
+      }
+      else if (((__ml_truthy(__ml_contains(type_noeud, "artist")) || __ml_truthy(__ml_contains(type_noeud, "artiste"))) && __ml_truthy(a_secteur_freres))) {
+        __ml_add(noeuds_freres, noeud);
+      }
+      else {
+        __ml_add(noeuds_primaire, noeud);
+      }
+    }
+    else if ((__ml_truthy(__ml_contains(t, "movement")) || __ml_truthy(__ml_contains(t, "mouvement")))) {
+      if ((__ml_truthy((relation == "follows")) || __ml_truthy((relation == "followed_by")) || __ml_truthy((relation == "contains_movement")))) {
+        __ml_add(noeuds_haut, noeud);
+      }
+      else if (__ml_truthy((relation == "contains_artist"))) {
+        __ml_add(noeuds_bas, noeud);
+      }
+      else {
+        __ml_add(noeuds_primaire, noeud);
+      }
+    }
+    else if ((__ml_truthy(__ml_contains(t, "museum")) || __ml_truthy(__ml_contains(t, "musee")))) {
+      if (__ml_truthy((relation == "houses_work"))) {
+        __ml_add(noeuds_primaire, noeud);
+      }
+      else {
+        __ml_add(noeuds_haut, noeud);
+      }
+    }
+    else if ((__ml_truthy(__ml_contains(t, "work")) || __ml_truthy(__ml_contains(t, "oeuvre")))) {
+      if (__ml_truthy((relation == "displayed_at"))) {
+        __ml_add(noeuds_haut, noeud);
+      }
+      else if (__ml_truthy((relation == "depicts"))) {
+        __ml_add(noeuds_gauche, noeud);
+      }
+      else if (__ml_truthy((relation == "made_of"))) {
+        __ml_add(noeuds_droite, noeud);
+      }
+      else if (__ml_truthy((relation == "created"))) {
+        __ml_add(noeuds_bas, noeud);
+      }
+      else if (((__ml_truthy(__ml_contains(type_noeud, "work")) || __ml_truthy(__ml_contains(type_noeud, "oeuvre"))) && __ml_truthy(a_secteur_freres))) {
+        __ml_add(noeuds_freres, noeud);
+      }
+      else {
+        __ml_add(noeuds_primaire, noeud);
+      }
+    }
+    else {
+      __ml_add(noeuds_primaire, noeud);
+    }
+  }
+  var secteurs = {["primary"]: {["debut"]: debut_primaire, ["fin"]: fin_primaire, ["noeuds"]: noeuds_primaire, ["rayons"]: rayons_primaire}, ["left"]: {["debut"]: debut_gauche, ["fin"]: fin_gauche, ["noeuds"]: noeuds_gauche, ["rayons"]: rayons_gauche}, ["right"]: {["debut"]: debut_droite, ["fin"]: fin_droite, ["noeuds"]: noeuds_droite, ["rayons"]: rayons_droite}, ["top"]: {["debut"]: debut_haut, ["fin"]: fin_haut, ["noeuds"]: noeuds_haut, ["rayons"]: rayons_haut}, ["bottom"]: {["debut"]: debut_bas, ["fin"]: fin_bas, ["noeuds"]: noeuds_bas, ["rayons"]: rayons_bas}};
+  if (__ml_truthy(a_secteur_freres)) {
+    secteurs["siblings"] = {["debut"]: debut_freres, ["fin"]: fin_freres, ["noeuds"]: noeuds_freres, ["rayons"]: rayons_freres};
+  }
+  return secteurs;
+}
+
+function calculer_disposition_constellation(noeud_selectionne, noeuds, relations_par_cible, relations_par_source, type_selectionne, lentille_active) {
+  var positions = {};
+  var id_selectionne = ((noeud_selectionne)?.["id"] ?? "");
+  positions[id_selectionne] = {["x"]: 50, ["y"]: 50};
+  var secteurs = _secteurs_disposition_semantique(noeud_selectionne, noeuds, relations_par_cible, relations_par_source, type_selectionne, lentille_active);
+  for (const nom_secteur of __ml_iterate(secteurs)) {
+    var secteur = ((secteurs)?.[nom_secteur] ?? {});
+    _placer_noeuds_secteur(positions, ((secteur)?.["noeuds"] ?? []), ((secteur)?.["debut"] ?? 0), ((secteur)?.["fin"] ?? 0), ((secteur)?.["rayons"] ?? []));
+  }
+  return positions;
+}
+
+window.ui = window.ui || {};
+window.ui.visualisations = window.ui.visualisations || {};
+window.ui.visualisations.graphe_vue = window.ui.visualisations.graphe_vue || {};
+Object.assign(window.ui.visualisations.graphe_vue, {_placer_noeuds_secteur: _placer_noeuds_secteur, _secteurs_disposition_semantique: _secteurs_disposition_semantique, calculer_disposition_constellation: calculer_disposition_constellation});
 })();
 
 async function charger_mouvement(mouvement_id) {

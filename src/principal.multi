@@ -14,6 +14,7 @@ importer donnees.requetes
 importer donnees.normalisation
 importer ui.visualisations.polyglot_studio_vue
 importer ui.visualisations.chronologie_vue
+importer ui.visualisations.graphe_vue
 importer semantique.intersections
 
 # ui.etat is intentionally owned by Multilingual. The browser shell may keep a

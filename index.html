@@ -23,64 +23,63 @@
         <a href="#main-content" class="sr-only-focusable">Skip to main content</a>
         <div class="shell" id="app-shell">
             <header class="topbar panel" role="banner">
-                <div class="brand">
-                    <span class="eyebrow" id="brand-eyebrow">Multilingual x Wikidata GraphQL</span>
-                    <h1 id="brand-title">MotusArtium</h1>
-                    <p id="brand-subtitle">Polyglot query observatory for tracing movements, artists, works, places, and
-                        influence across art history.</p>
+                <!-- Upper row: beacon brand · search · lang/theme -->
+                <div class="topbar-upper">
+                    <div class="brand">
+                        <span class="brand-beacon" aria-hidden="true">◉</span>
+                        <div class="brand-identity">
+                            <span class="eyebrow" id="brand-eyebrow">Multilingual × Wikidata</span>
+                            <h1 id="brand-title">MotusArtium</h1>
+                        </div>
+                    </div>
+
+                    <div class="search-bar-inline" role="search">
+                        <label for="search-input" class="sr-only">Search art entities</label>
+                        <input type="text" id="search-input" placeholder="⌕  Search movements, artists, works…"
+                            aria-label="Search art entities" autocomplete="off" />
+                    </div>
+
+                    <div class="lang-status" role="group" aria-label="Interface settings">
+                        <div class="lang-controls">
+                            <button type="button" class="lang-button is-active" data-language="fr" aria-pressed="true" title="French interface">FR</button>
+                            <span class="lang-sep" aria-hidden="true">·</span>
+                            <button type="button" class="lang-button" data-language="en" aria-pressed="false" title="English interface">EN</button>
+                        </div>
+                        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle between dark and light color modes" title="Toggle theme">
+                            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                <path d="M12 3 A9 9 0 0 1 12 21 Z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <nav class="mode-switcher" aria-label="Experience level and visualization modes" id="mode-switcher">
-                    <!-- Tier navigation (always visible) -->
-                    <div class="tier-nav" id="tier-nav" role="tablist" aria-label="Experience level">
-                        <button type="button" class="tier-button is-active" data-tier="story" role="tab" aria-selected="true" title="Story — read narratives, browse themes">
-                            <span class="tier-label">Story</span><small class="tier-hint">read &amp; discover</small>
-                        </button>
-                        <button type="button" class="tier-button" data-tier="explorer" role="tab" aria-selected="false" title="Explorer — search, compare, find connections">
-                            <span class="tier-label">Explorer</span><small class="tier-hint">search &amp; compare</small>
-                        </button>
-                        <button type="button" class="tier-button" data-tier="observatory" role="tab" aria-selected="false" title="Observatory — graph constellation and data tools">
-                            <span class="tier-label">Observatory</span><small class="tier-hint">graphs &amp; data</small>
-                        </button>
-                    </div>
-                    <!-- Observatory sub-modes (hidden until Observatory tier is active) -->
-                    <div class="observatory-subtabs" id="observatory-subtabs" hidden role="tablist" aria-label="Observatory sub-modes">
-                        <button type="button" class="mode-button is-active" data-mode="observatory" role="tab" aria-selected="true" title="Constellation graph exploration">Constellation</button>
-                        <button type="button" class="mode-button" data-mode="query-theater" role="tab" aria-selected="false" title="Live GraphQL query editor">Query Lab</button>
-                        <button type="button" class="mode-button" data-mode="polyglot-studio" role="tab" aria-selected="false" title="Multilingual entity surfaces">Languages</button>
-                        <button type="button" class="mode-button" data-mode="temporal-river" role="tab" aria-selected="false" title="Timeline and chronological analysis">Timeline</button>
-                    </div>
-                </nav>
+                <!-- Lower row: subtitle · mode rail with arc indicator -->
+                <div class="topbar-lower">
+                    <p id="brand-subtitle" class="brand-sub">Semantic Art History Atlas</p>
 
-                <div class="search-bar-inline" role="search">
-                    <label for="search-input" class="sr-only">Search art entities</label>
-                    <input type="text" id="search-input" placeholder="Search movements, artists, works..."
-                        aria-label="Search art entities" autocomplete="off" />
-                </div>
+                    <nav class="mode-rail" id="mode-switcher" aria-label="Experience modes">
+                        <div class="tier-nav" id="tier-nav" role="tablist" aria-label="Experience level">
+                            <button type="button" class="tier-button is-active" data-tier="story" role="tab" aria-selected="true" title="Story — read narratives, browse themes">
+                                <span class="tier-label">Story</span>
+                            </button>
+                            <span class="tier-connector" aria-hidden="true"></span>
+                            <button type="button" class="tier-button" data-tier="explorer" role="tab" aria-selected="false" title="Explorer — search, compare, find connections">
+                                <span class="tier-label">Explorer</span>
+                            </button>
+                            <span class="tier-connector" aria-hidden="true"></span>
+                            <button type="button" class="tier-button" data-tier="observatory" role="tab" aria-selected="false" title="Observatory — graph constellation and data tools">
+                                <span class="tier-label">Observatory</span>
+                            </button>
+                        </div>
 
-                <div class="lang-status" role="group" aria-label="Interface settings">
-                    <div class="lang-controls">
-                        <button type="button" class="lang-button is-active" data-language="fr" aria-pressed="true" title="French interface">FR</button>
-                        <button type="button" class="lang-button" data-language="en" aria-pressed="false" title="English interface">EN</button>
-                    </div>
-                    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle between dark and light color modes" title="Toggle theme (dark/light)">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <g class="sun-icon">
-                                <circle cx="12" cy="12" r="5"></circle>
-                                <line x1="12" y1="1" x2="12" y2="3"></line>
-                                <line x1="12" y1="21" x2="12" y2="23"></line>
-                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                                <line x1="1" y1="12" x2="3" y2="12"></line>
-                                <line x1="21" y1="12" x2="23" y2="12"></line>
-                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                            </g>
-                            <g class="moon-icon">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                            </g>
-                        </svg>
-                    </button>
+                        <div class="observatory-subtabs" id="observatory-subtabs" hidden role="tablist" aria-label="Observatory sub-modes">
+                            <button type="button" class="mode-button is-active" data-mode="observatory" role="tab" aria-selected="true" title="Constellation graph exploration">Constellation</button>
+                            <button type="button" class="mode-button" data-mode="query-theater" role="tab" aria-selected="false" title="Live GraphQL query editor">Query Lab</button>
+                            <button type="button" class="mode-button" data-mode="polyglot-studio" role="tab" aria-selected="false" title="Multilingual entity surfaces">Languages</button>
+                            <button type="button" class="mode-button" data-mode="temporal-river" role="tab" aria-selected="false" title="Timeline and chronological analysis">Timeline</button>
+                        </div>
+                    </nav>
                 </div>
             </header>
 

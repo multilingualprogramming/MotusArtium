@@ -30,7 +30,7 @@ class ReactiveList {
     this._value = Array.from(value || []);
     this._handlers = [];
   }
-  get() { return this._value.slice(); }
+  get() { return this._value; }
   set(value) {
     this._value = Array.from(value || []);
     this._notify();
@@ -43,7 +43,7 @@ class ReactiveList {
     this._handlers.push(handler);
   }
   _notify() {
-    const snapshot = this.get();
+    const snapshot = this._value.slice();
     for (const handler of this._handlers) {
       handler(snapshot);
     }
@@ -260,6 +260,7 @@ const floor = Math.floor;
 const cos = Math.cos;
 const sin = Math.sin;
 const pi = Math.PI;
+const int = Math.trunc;
 
 const _engine = new ReactiveEngine();
 const __ml_signals = _engine.signals;
@@ -2008,6 +2009,7 @@ async function reinitialiser_etat() {
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
 Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, obtenir_noeud_graphe: obtenir_noeud_graphe, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_sujets_oeuvres_graphe: obtenir_sujets_oeuvres_graphe, obtenir_annee_heatmap: obtenir_annee_heatmap, definir_annee_heatmap: definir_annee_heatmap, obtenir_plage_heatmap: obtenir_plage_heatmap, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, charger_musee: charger_musee, charger_sujet: charger_sujet, reinitialiser_etat: reinitialiser_etat});
+Object.defineProperties(window.ui.etat, {["entite_selectionnee_id"]: {get() { return _engine.get("entite_selectionnee_id").get(); }, set(value) { _engine.get("entite_selectionnee_id").set(value); }, enumerable: true}, ["entite_selectionnee_type"]: {get() { return _engine.get("entite_selectionnee_type").get(); }, set(value) { _engine.get("entite_selectionnee_type").set(value); }, enumerable: true}, ["mode_visualisation"]: {get() { return _engine.get("mode_visualisation").get(); }, set(value) { _engine.get("mode_visualisation").set(value); }, enumerable: true}, ["graphe"]: {get() { return _engine.get("graphe").get(); }, set(value) { _engine.get("graphe").set(value); }, enumerable: true}, ["affichage_chargement"]: {get() { return _engine.get("affichage_chargement").get(); }, set(value) { _engine.get("affichage_chargement").set(value); }, enumerable: true}, ["message_erreur"]: {get() { return _engine.get("message_erreur").get(); }, set(value) { _engine.get("message_erreur").set(value); }, enumerable: true}, ["cache_entites"]: {get() { return _engine.get("cache_entites").get(); }, set(value) { _engine.get("cache_entites").set(value); }, enumerable: true}, ["cache_relations"]: {get() { return _engine.get("cache_relations").get(); }, set(value) { _engine.get("cache_relations").set(value); }, enumerable: true}, ["etiquettes_multilingues"]: {get() { return _engine.get("etiquettes_multilingues").get(); }, set(value) { _engine.get("etiquettes_multilingues").set(value); }, enumerable: true}, ["plage_temporelle_debut"]: {get() { return _engine.get("plage_temporelle_debut").get(); }, set(value) { _engine.get("plage_temporelle_debut").set(value); }, enumerable: true}, ["plage_temporelle_fin"]: {get() { return _engine.get("plage_temporelle_fin").get(); }, set(value) { _engine.get("plage_temporelle_fin").set(value); }, enumerable: true}, ["filtres_actifs"]: {get() { return _engine.get("filtres_actifs").get(); }, set(value) { _engine.get("filtres_actifs").set(value); }, enumerable: true}, ["panneau_detail_visible"]: {get() { return _engine.get("panneau_detail_visible").get(); }, set(value) { _engine.get("panneau_detail_visible").set(value); }, enumerable: true}, ["barre_recherche_active"]: {get() { return _engine.get("barre_recherche_active").get(); }, set(value) { _engine.get("barre_recherche_active").set(value); }, enumerable: true}, ["resultats_recherche"]: {get() { return _engine.get("resultats_recherche").get(); }, set(value) { _engine.get("resultats_recherche").set(value); }, enumerable: true}, ["mouvement_etendu_id"]: {get() { return _engine.get("mouvement_etendu_id").get(); }, set(value) { _engine.get("mouvement_etendu_id").set(value); }, enumerable: true}, ["artiste_etendu_id"]: {get() { return _engine.get("artiste_etendu_id").get(); }, set(value) { _engine.get("artiste_etendu_id").set(value); }, enumerable: true}, ["oeuvre_etendue_id"]: {get() { return _engine.get("oeuvre_etendue_id").get(); }, set(value) { _engine.get("oeuvre_etendue_id").set(value); }, enumerable: true}, ["oeuvre_focus_id"]: {get() { return _engine.get("oeuvre_focus_id").get(); }, set(value) { _engine.get("oeuvre_focus_id").set(value); }, enumerable: true}, ["mode_langue_actif"]: {get() { return _engine.get("mode_langue_actif").get(); }, set(value) { _engine.get("mode_langue_actif").set(value); }, enumerable: true}, ["afficher_surfaces_paralleles"]: {get() { return _engine.get("afficher_surfaces_paralleles").get(); }, set(value) { _engine.get("afficher_surfaces_paralleles").set(value); }, enumerable: true}, ["entite_multilingue_focus"]: {get() { return _engine.get("entite_multilingue_focus").get(); }, set(value) { _engine.get("entite_multilingue_focus").set(value); }, enumerable: true}, ["lentille_compas"]: {get() { return _engine.get("lentille_compas").get(); }, set(value) { _engine.get("lentille_compas").set(value); }, enumerable: true}, ["preset_lentille"]: {get() { return _engine.get("preset_lentille").get(); }, set(value) { _engine.get("preset_lentille").set(value); }, enumerable: true}, ["filtre_actif"]: {get() { return _engine.get("filtre_actif").get(); }, set(value) { _engine.get("filtre_actif").set(value); }, enumerable: true}, ["zoom_constellation"]: {get() { return _engine.get("zoom_constellation").get(); }, set(value) { _engine.get("zoom_constellation").set(value); }, enumerable: true}, ["pan_constellation_x"]: {get() { return _engine.get("pan_constellation_x").get(); }, set(value) { _engine.get("pan_constellation_x").set(value); }, enumerable: true}, ["pan_constellation_y"]: {get() { return _engine.get("pan_constellation_y").get(); }, set(value) { _engine.get("pan_constellation_y").set(value); }, enumerable: true}, ["mode_recit"]: {get() { return _engine.get("mode_recit").get(); }, set(value) { _engine.get("mode_recit").set(value); }, enumerable: true}, ["entites_comparaison"]: {get() { return _engine.get("entites_comparaison").get(); }, set(value) { _engine.get("entites_comparaison").set(value); }, enumerable: true}, ["donnees_comparaison"]: {get() { return _engine.get("donnees_comparaison").get(); }, set(value) { _engine.get("donnees_comparaison").set(value); }, enumerable: true}, ["trajectoire_depart_id"]: {get() { return _engine.get("trajectoire_depart_id").get(); }, set(value) { _engine.get("trajectoire_depart_id").set(value); }, enumerable: true}, ["trajectoire_arrivee_id"]: {get() { return _engine.get("trajectoire_arrivee_id").get(); }, set(value) { _engine.get("trajectoire_arrivee_id").set(value); }, enumerable: true}, ["trajectoire_chemin"]: {get() { return _engine.get("trajectoire_chemin").get(); }, set(value) { _engine.get("trajectoire_chemin").set(value); }, enumerable: true}, ["trajectoire_labels"]: {get() { return _engine.get("trajectoire_labels").get(); }, set(value) { _engine.get("trajectoire_labels").set(value); }, enumerable: true}, ["annee_heatmap_courante"]: {get() { return _engine.get("annee_heatmap_courante").get(); }, set(value) { _engine.get("annee_heatmap_courante").set(value); }, enumerable: true}, ["curseur_artistes_mouvement"]: {get() { return _engine.get("curseur_artistes_mouvement").get(); }, set(value) { _engine.get("curseur_artistes_mouvement").set(value); }, enumerable: true}, ["a_page_suivante_artistes_mouvement"]: {get() { return _engine.get("a_page_suivante_artistes_mouvement").get(); }, set(value) { _engine.get("a_page_suivante_artistes_mouvement").set(value); }, enumerable: true}, ["source_id_artistes_mouvement"]: {get() { return _engine.get("source_id_artistes_mouvement").get(); }, set(value) { _engine.get("source_id_artistes_mouvement").set(value); }, enumerable: true}, ["curseur_oeuvres_artiste"]: {get() { return _engine.get("curseur_oeuvres_artiste").get(); }, set(value) { _engine.get("curseur_oeuvres_artiste").set(value); }, enumerable: true}, ["a_page_suivante_oeuvres_artiste"]: {get() { return _engine.get("a_page_suivante_oeuvres_artiste").get(); }, set(value) { _engine.get("a_page_suivante_oeuvres_artiste").set(value); }, enumerable: true}, ["source_id_oeuvres_artiste"]: {get() { return _engine.get("source_id_oeuvres_artiste").get(); }, set(value) { _engine.get("source_id_oeuvres_artiste").set(value); }, enumerable: true}, ["curseur_oeuvres_musee"]: {get() { return _engine.get("curseur_oeuvres_musee").get(); }, set(value) { _engine.get("curseur_oeuvres_musee").set(value); }, enumerable: true}, ["a_page_suivante_oeuvres_musee"]: {get() { return _engine.get("a_page_suivante_oeuvres_musee").get(); }, set(value) { _engine.get("a_page_suivante_oeuvres_musee").set(value); }, enumerable: true}, ["source_id_oeuvres_musee"]: {get() { return _engine.get("source_id_oeuvres_musee").get(); }, set(value) { _engine.get("source_id_oeuvres_musee").set(value); }, enumerable: true}});
 })();
 
 (() => {
@@ -2448,7 +2450,7 @@ function rendre_empreinte_thematique(frequences) {
   html = (html + "<div class=\"empreinte-bars\">");
   for (const lentille of __ml_iterate(frequences)) {
     var compteur = ((frequences)?.[lentille] ?? 0);
-    var pourcentage = round(((compteur * 100) / maximum));
+    var pourcentage = Math.round(((compteur * 100) / maximum));
     var label_lentille = semantique.empreinte.obtenir_label_lentille(lentille);
     html = (html + "<div class=\"empreinte-row\">");
     html = (((html + "<span class=\"empreinte-label\">") + label_lentille) + "</span>");
@@ -4086,8 +4088,8 @@ function construire_modele_temporel(type_entite, entite, langue) {
   if ((__ml_truthy(annee_debut) || __ml_truthy(annee_fin))) {
     var resolved_start = (__ml_truthy(annee_debut) ? annee_debut : annee_fin);
     var resolved_end = (__ml_truthy(annee_fin) ? annee_fin : annee_debut);
-    var ecart = max(20, abs((resolved_end - resolved_start)));
-    var marge = max(10, round((ecart * 0.2)));
+    var ecart = Math.max(20, Math.abs((resolved_end - resolved_start)));
+    var marge = Math.max(10, Math.round((ecart * 0.2)));
     var caption = ((formater_annee(resolved_start) + " - ") + formater_annee(resolved_end));
     return {["rangeStart"]: (resolved_start - marge), ["rangeEnd"]: (resolved_end + marge), ["windowStart"]: resolved_start, ["windowEnd"]: resolved_end, ["label"]: label, ["caption"]: caption};
   }
@@ -4109,12 +4111,12 @@ function _placer_noeuds_secteur(positions, noeuds, debut_degres, fin_degres, ray
   if (((!__ml_truthy(noeuds)) || (!__ml_truthy(((noeuds).length > 0))))) {
     return;
   }
-  var capacite_par_anneau = max(5, ceil(((fin_degres - debut_degres) / 13)));
+  var capacite_par_anneau = Math.max(5, Math.ceil(((fin_degres - debut_degres) / 13)));
   var index = 0;
   for (const noeud of __ml_iterate(noeuds)) {
-    var index_anneau = min(((rayons).length - 1), floor((index / capacite_par_anneau)));
+    var index_anneau = Math.min(((rayons).length - 1), Math.floor((index / capacite_par_anneau)));
     var slot = (index % capacite_par_anneau);
-    var noeuds_dans_anneau = min(capacite_par_anneau, ((noeuds).length - (index_anneau * capacite_par_anneau)));
+    var noeuds_dans_anneau = Math.min(capacite_par_anneau, ((noeuds).length - (index_anneau * capacite_par_anneau)));
     var fraction = 0.5;
     if (__ml_truthy((noeuds_dans_anneau > 1))) {
       fraction = (slot / (noeuds_dans_anneau - 1));
@@ -4132,12 +4134,12 @@ function _placer_noeuds_secteur(positions, noeuds, debut_degres, fin_degres, ray
       nudge_type = 0;
     }
     var rayon_de_base = rayons[index_anneau];
-    var anneau = min(49, ((rayon_de_base + nudge_type) + (floor((index / (capacite_par_anneau * (rayons).length))) * 4)));
+    var anneau = Math.min(49, ((rayon_de_base + nudge_type) + (Math.floor((index / (capacite_par_anneau * (rayons).length))) * 4)));
     var gigue = (((__ml_truthy(((index % 2) == 0)) ? 1 : (-1)) * 0.6) + (((index % 5) - 2) * 0.14));
-    var x = ((50 + (cos(angle) * anneau)) + ((sin(angle) * (anneau * 0.03)) * gigue));
-    var y = ((50 + ((sin(angle) * anneau) * 0.78)) + ((cos(angle) * (anneau * 0.03)) * gigue));
+    var x = ((50 + (Math.cos(angle) * anneau)) + ((Math.sin(angle) * (anneau * 0.03)) * gigue));
+    var y = ((50 + ((Math.sin(angle) * anneau) * 0.78)) + ((Math.cos(angle) * (anneau * 0.03)) * gigue));
     var id_noeud = ((noeud)?.["id"] ?? "");
-    positions[id_noeud] = {["x"]: max(7, min(93, x)), ["y"]: max(9, min(91, y))};
+    positions[id_noeud] = {["x"]: Math.max(7, Math.min(93, x)), ["y"]: Math.max(9, Math.min(91, y))};
     index = (index + 1);
   }
 }
@@ -4497,9 +4499,9 @@ function rendre_curseur_temps(debut, fin, actuelle) {
   if (__ml_truthy((debut >= fin))) {
     return "";
   }
-  var debut_str = String(round(debut));
-  var fin_str = String(round(fin));
-  var actuelle_str = String(round(actuelle));
+  var debut_str = String(Math.round(debut));
+  var fin_str = String(Math.round(fin));
+  var actuelle_str = String(Math.round(actuelle));
   var change_handler = "window.ui&&window.ui.etat&&window.ui.etat.definir_annee_heatmap&&window.ui.etat.definir_annee_heatmap(Number(this.value));window.filtrerHeatmapParAnnee&&window.filtrerHeatmapParAnnee(Number(this.value));window.renderCurseurTemps&&window.renderCurseurTemps()";
   var play_handler = (((("window.jouerAnimationHeatmap&&window.jouerAnimationHeatmap(" + debut_str) + ",") + fin_str) + ",60)");
   var pause_handler = "window.arreterAnimationHeatmap&&window.arreterAnimationHeatmap()";
@@ -4574,12 +4576,12 @@ class VueHeatmapGeographique {
     for (const point of __ml_iterate(points_chaleur)) {
       var pixel = this.convertir_coords_pixel(((point)?.["latitude"] ?? 0), ((point)?.["longitude"] ?? 0));
       var intensite = ((point)?.["intensite"] ?? 0);
-      var r = round((255 * intensite));
-      var b = round((255 * (1 - intensite)));
+      var r = Math.round((255 * intensite));
+      var b = Math.round((255 * (1 - intensite)));
       var g = 100;
       var couleur_hex = (((((("rgb(" + String(r)) + ",") + String(g)) + ",") + String(b)) + ")");
       var count = ((point)?.["count"] ?? 1);
-      var rayon = max(5, min(20, (math.sqrt(count) * 3)));
+      var rayon = Math.max(5, Math.min(20, (math.sqrt(count) * 3)));
       ctx.couleur_remplissage = couleur_hex;
       ctx.couleur_trait = "#000000";
       ctx.epaisseur_trait = 1;
@@ -4600,7 +4602,7 @@ class VueHeatmapGeographique {
       ctx.couleur_texte = "#FFFFFF";
       ctx.fonte = "bold 14px Arial";
       ctx.alignement_texte = "centre";
-      ctx.texte_rempli(String(round(this.annee_filtre)), (this.largeur_pixels / 2), 27);
+      ctx.texte_rempli(String(Math.round(this.annee_filtre)), (this.largeur_pixels / 2), 27);
     }
   }
   rendre_legende(ctx) {
@@ -4621,8 +4623,8 @@ class VueHeatmapGeographique {
     var i = 0;
     while (__ml_truthy((i < 10))) {
       var intensite = (i / 10.0);
-      var r = round((255 * intensite));
-      var b = round((255 * (1 - intensite)));
+      var r = Math.round((255 * intensite));
+      var b = Math.round((255 * (1 - intensite)));
       var g = 100;
       var couleur_hex = (((((("rgb(" + String(r)) + ",") + String(g)) + ",") + String(b)) + ")");
       ctx.couleur_remplissage = couleur_hex;
@@ -4636,7 +4638,7 @@ class VueHeatmapGeographique {
   gerer_zoom(x, y, direction) {
     "Gérer le zoom";
     var ancien_zoom = this.echelle_zoom;
-    this.echelle_zoom = max(10, min(500, (this.echelle_zoom + (direction * 20))));
+    this.echelle_zoom = Math.max(10, Math.min(500, (this.echelle_zoom + (direction * 20))));
     var coords = this.convertir_pixel_coords(x, y);
     this.centre_lat = ((coords)?.["latitude"] ?? 0);
     this.centre_lon = ((coords)?.["longitude"] ?? 0);

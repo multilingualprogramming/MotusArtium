@@ -300,6 +300,7 @@
         .topbar-lower {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 0;
             padding: 0 28px 10px;
         }
@@ -3790,6 +3791,19 @@
             background: rgba(219, 178, 94, 0.12);
         }
 
+        .journey-step.is-completed::before {
+            content: "✓";
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 0.6rem;
+            color: var(--accent-teal);
+        }
+
+        .journey-step {
+            position: relative;
+        }
+
         .journey-step:hover:not(.is-active) {
             border-color: var(--accent-teal);
             background: var(--bg-panel-strong);
@@ -4206,4 +4220,362 @@
             font-size: 1.35rem;
             line-height: 1;
             margin-bottom: 2px;
+        }
+
+        /* ================================================================= */
+        /* F9 — Explorer theme grid differentiation                          */
+        /* ================================================================= */
+
+        #__ml_explorer_themes_root .theme-tile::after {
+            content: "→ artworks";
+            display: block;
+            font-size: 0.6rem;
+            color: var(--accent-teal);
+            letter-spacing: 0.04em;
+            margin-top: 3px;
+        }
+
+        #__ml_explorer_themes_root .theme-tile {
+            border-color: rgba(90, 197, 184, 0.25);
+        }
+
+        /* ================================================================= */
+        /* F13 — Collapse hero entry cards in Observatory                    */
+        /* ================================================================= */
+
+        body[data-tier="observatory"] .hero-actions {
+            display: none;
+        }
+
+        body[data-tier="observatory"] .hero-journey {
+            display: none;
+        }
+
+        body[data-tier="observatory"] .hero-copy > p#hero-description {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            -webkit-line-clamp: 2;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ================================================================= */
+        /* F17 — Constellation minimap label                                 */
+        /* ================================================================= */
+
+        .constellation-minimap-label {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 0.58rem;
+            font-family: "Courier New", monospace;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: var(--bg-panel-strong);
+            padding: 1px 5px;
+            border-radius: 3px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* ================================================================= */
+        /* F18 — Response Shape "example" badge                              */
+        /* ================================================================= */
+
+        .section-title-badge {
+            font-family: "Courier New", monospace;
+            font-size: 0.6rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: var(--bg-soft);
+            border: 1px solid var(--line-soft);
+            padding: 1px 6px;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        .section-title-badge.is-live {
+            color: var(--accent-teal);
+            border-color: var(--accent-teal);
+        }
+
+        /* ================================================================= */
+        /* F22 — Language switch toast                                       */
+        /* ================================================================= */
+
+        .lang-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            background: var(--bg-panel-strong);
+            border: 1px solid var(--line-strong);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            padding: 9px 20px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-panel);
+            opacity: 0;
+            transition: opacity 200ms ease, transform 200ms ease;
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+        }
+
+        .lang-toast.is-visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ================================================================= */
+        /* F10 — Explorer onboarding card                                    */
+        /* ================================================================= */
+
+        .explorer-onboarding {
+            position: relative;
+            background: var(--bg-soft);
+            border: 1.5px solid var(--line-soft);
+            border-left: 3px solid var(--accent-teal);
+            border-radius: var(--radius-sm);
+            padding: 12px 36px 12px 14px;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+            color: var(--text-soft);
+        }
+
+        .explorer-onboarding strong {
+            display: block;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        .explorer-onboarding ol {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .explorer-onboarding li {
+            margin-bottom: 3px;
+            line-height: 1.5;
+        }
+
+        .explorer-onboarding-dismiss {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 2px 4px;
+        }
+
+        .explorer-onboarding-dismiss:hover {
+            color: var(--text-main);
+        }
+
+        /* ================================================================= */
+        /* F12 — Observatory guide 3-step walkthrough                       */
+        /* ================================================================= */
+
+        .guide-step {
+            display: none;
+        }
+
+        .guide-step.is-active {
+            display: block;
+        }
+
+        .guide-step-num {
+            font-family: "Courier New", monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent-teal);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        /* ================================================================= */
+        /* F16 — Lens concept tooltip                                        */
+        /* ================================================================= */
+
+        .lens-intro-tooltip {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-panel-strong);
+            border: 1.5px solid var(--accent-gold);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            max-width: 480px;
+            width: calc(100% - 40px);
+            box-shadow: var(--shadow-panel);
+            z-index: 800;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .lens-intro-tooltip[hidden] { display: none; }
+
+        .lens-intro-dismiss {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+
+        .lens-intro-cta {
+            margin-top: 4px;
+            font-size: 0.78rem;
+            padding: 4px 10px;
+        }
+
+        /* ================================================================= */
+        /* F23 — Keyboard shortcuts overlay                                  */
+        /* ================================================================= */
+
+        .shortcuts-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9000;
+        }
+
+        .shortcuts-overlay[hidden] { display: none; }
+
+        .shortcuts-card {
+            background: var(--bg-panel-strong);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            width: min(480px, calc(100vw - 40px));
+            box-shadow: var(--shadow-panel);
+        }
+
+        .shortcuts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .shortcuts-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-family: "Courier New", monospace;
+            letter-spacing: 0.05em;
+        }
+
+        .shortcuts-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+            margin: 0;
+        }
+
+        .shortcuts-list > div {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .shortcuts-list dt {
+            font-family: "Courier New", monospace;
+            font-size: 0.78rem;
+            white-space: nowrap;
+            min-width: 60px;
+        }
+
+        .shortcuts-list dd {
+            margin: 0;
+            font-size: 0.82rem;
+            color: var(--text-soft);
+        }
+
+        kbd {
+            display: inline-block;
+            background: var(--bg-soft);
+            border: 1px solid var(--line-soft);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: "Courier New", monospace;
+            font-size: 0.75rem;
+        }
+
+        .shortcuts-trigger {
+            margin-left: auto;
+            font-family: "Courier New", monospace;
+            font-weight: 700;
+            opacity: 0.6;
+        }
+
+        .shortcuts-trigger:hover { opacity: 1; }
+
+        /* ================================================================= */
+        /* F24 — Exploration trail breadcrumb                                */
+        /* ================================================================= */
+
+        .trail-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-family: "Courier New", monospace;
+            padding: 4px 0;
+        }
+
+        .trail-breadcrumb[hidden] { display: none; }
+
+        .trail-crumb {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-soft);
+            cursor: pointer;
+            transition: color var(--transition-fast);
+        }
+
+        .trail-crumb:hover { color: var(--accent-teal); }
+
+        .trail-crumb-type {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .trail-crumb-sep {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .topbar-lower .trail-breadcrumb {
+            width: 100%;
+            padding-top: 2px;
         }

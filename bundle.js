@@ -3574,13 +3574,13 @@ function _tuile_theme(sujet_id, label_cle, detail_cle, glyph) {
 function rendre_grille_themes() {
   "Rendre la grille de 8 tuiles thematiques pour la decouverte Story.";
   var html = (("<div class=\"theme-grid\" role=\"list\" aria-label=\"" + _t("themeGrid.aria")) + "\">");
-  html = (html + _tuile_theme("Q441", "themeGrid.nature.label", "themeGrid.nature.detail", "🌿"));
-  html = (html + _tuile_theme("Q34379", "themeGrid.mythology.label", "themeGrid.mythology.detail", "⚡"));
-  html = (html + _tuile_theme("Q45621", "themeGrid.religion.label", "themeGrid.religion.detail", "✶"));
+  html = (html + _tuile_theme("Q7860", "themeGrid.nature.label", "themeGrid.nature.detail", "🌿"));
+  html = (html + _tuile_theme("Q9134", "themeGrid.mythology.label", "themeGrid.mythology.detail", "⚡"));
+  html = (html + _tuile_theme("Q9174", "themeGrid.religion.label", "themeGrid.religion.detail", "✶"));
   html = (html + _tuile_theme("Q134307", "themeGrid.portrait.label", "themeGrid.portrait.detail", "◎"));
   html = (html + _tuile_theme("Q515", "themeGrid.city.label", "themeGrid.city.detail", "▦"));
-  html = (html + _tuile_theme("Q9415", "themeGrid.love.label", "themeGrid.love.detail", "♡"));
-  html = (html + _tuile_theme("Q1221", "themeGrid.sea.label", "themeGrid.sea.detail", "∿"));
+  html = (html + _tuile_theme("Q316", "themeGrid.love.label", "themeGrid.love.detail", "♡"));
+  html = (html + _tuile_theme("Q165", "themeGrid.sea.label", "themeGrid.sea.detail", "∿"));
   html = (html + _tuile_theme("Q198", "themeGrid.war.label", "themeGrid.war.detail", "✕"));
   html = (html + "</div>");
   return html;

@@ -94,7 +94,11 @@
             "story-to-explorer": "story.action.explorer",
             "story-to-observatory": "story.action.observatory",
             "search-mode-hint": "search.hint.entity",
-            "chronology-load-more": "collection.loadMoreMovements"
+            "chronology-load-more": "collection.loadMoreMovements",
+            "explorer-onboarding-title": "explorer.onboarding.title",
+            "explorer-onboarding-step1": "explorer.onboarding.step1",
+            "explorer-onboarding-step2": "explorer.onboarding.step2",
+            "explorer-onboarding-step3": "explorer.onboarding.step3"
         };
 
         const supportedLanguages = ["fr", "en", "es"];
@@ -856,9 +860,10 @@
             const count = Number(selectedRecord.artworkCount || relatedWorks.length || 0);
             let html = '<article class="explorer-focus-card">';
             html += '<header class="explorer-focus-header">';
-            html += '<div><span class="eyebrow">' + escapeHtml(traduireInterface("explorer.currentSelection")) + '</span>';
+            const typeLabel = selectedType ? (selectedType.charAt(0).toUpperCase() + selectedType.slice(1)) : traduireInterface("explorer.currentSelection");
+            html += '<div><span class="eyebrow">' + escapeHtml(typeLabel) + '</span>';
             html += '<h3>' + escapeHtml(label || selectedId) + '</h3></div>';
-            html += '<span class="chip">' + escapeHtml(selectedType || "entity") + '</span>';
+            html += '<span class="chip" aria-hidden="true">' + escapeHtml(selectedType || "entity") + '</span>';
             html += '</header>';
 
             if (selectedType === "sujet" || selectedType === "subject") {
@@ -920,6 +925,18 @@ function setActiveTier(tier, options = {}) {
                 panelEl.classList.remove("is-entering");
                 void panelEl.offsetWidth; // force reflow so animation restarts
                 panelEl.classList.add("is-entering");
+            }
+
+            // F20: update search placeholder per active tier
+            const searchInput = document.getElementById("search-input");
+            if (searchInput) {
+                if (tier === "story") {
+                    searchInput.placeholder = traduireInterface("search.placeholder.story");
+                } else if (tier === "observatory") {
+                    searchInput.placeholder = traduireInterface("search.placeholder.observatory");
+                } else {
+                    updateSearchModeSurface(typeof window.getActiveSearchMode === "function" ? window.getActiveSearchMode() : "entity");
+                }
             }
 
             if (tier === "story") {
@@ -2966,6 +2983,12 @@ function setActiveTier(tier, options = {}) {
                 name: derivedName || selectedEntity.id || traduireInterface("runtime.awaitingResponse"),
                 meta: describeEntityMeta(derivedType, selectedRecord) || fallbackMeta
             };
+            // F24: push to trail breadcrumb
+            if (typeof window.pushTrailCrumb === "function") {
+                window.pushTrailCrumb(runtimeState.selectedEntity.id, runtimeState.selectedEntity.type, runtimeState.selectedEntity.name);
+            }
+            // F16: signal entity loaded so lens tooltip can appear
+            window.dispatchEvent(new CustomEvent("motus:entity-loaded"));
             updateCompassCore();
         }
 
@@ -3639,8 +3662,25 @@ function setActiveTier(tier, options = {}) {
             window.renderStoryTier?.();
             renderExplorerFocus();
             renderRuntimeState();
+            // F22: show toast confirming language switch
+            showLangToast(language);
         }
         window.applyLanguage = applyLanguage;
+
+        // F22: language switch toast
+        function showLangToast(lang) {
+            const toast = document.getElementById("lang-toast");
+            if (!toast) return;
+            const key = "lang.switched." + lang;
+            toast.textContent = traduireInterface(key, {}, lang);
+            toast.removeAttribute("hidden");
+            toast.classList.add("is-visible");
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(() => {
+                toast.classList.remove("is-visible");
+                setTimeout(() => toast.setAttribute("hidden", ""), 220);
+            }, 2200);
+        }
 
         // Map HTML button modes to multilingual visualization modes
         const modeMapping = {
@@ -3976,3 +4016,191 @@ function setActiveTier(tier, options = {}) {
             renderStoryTier();
             applyTierFromUrl();
         });
+
+        // ================================================================
+        // F10 — Explorer onboarding dismiss
+        // ================================================================
+        (function () {
+            const ONBOARDING_KEY = "explorer-onboarding-seen";
+            const card = document.getElementById("explorer-onboarding");
+            if (!card) return;
+            if (localStorage.getItem(ONBOARDING_KEY)) {
+                card.hidden = true;
+                return;
+            }
+            const btn = document.getElementById("explorer-onboarding-dismiss");
+            if (btn) {
+                btn.addEventListener("click", () => {
+                    card.hidden = true;
+                    localStorage.setItem(ONBOARDING_KEY, "1");
+                });
+            }
+        })();
+
+        // ================================================================
+        // F3 — Journey step completion checkmarks
+        // ================================================================
+        (function () {
+            const completedSteps = new Set();
+            document.addEventListener("click", (e) => {
+                const step = e.target.closest(".journey-step");
+                if (!step) return;
+                document.querySelectorAll(".journey-step").forEach((s) => {
+                    if (s.classList.contains("is-active")) completedSteps.add(s.dataset.entityId);
+                });
+                completedSteps.forEach((id) => {
+                    const s = document.querySelector(`.journey-step[data-entity-id="${id}"]`);
+                    if (s && !s.classList.contains("is-active")) s.classList.add("is-completed");
+                });
+            });
+        })();
+
+        // ================================================================
+        // F16 — Lens intro tooltip in Story after first entity load
+        // ================================================================
+        (function () {
+            const LENS_KEY = "lens-intro-seen";
+            const tooltip = document.getElementById("lens-intro-tooltip");
+            if (!tooltip) return;
+            if (localStorage.getItem(LENS_KEY)) return;
+
+            function maybeShowLensTooltip() {
+                if (document.body.dataset.tier !== "story") return;
+                if (localStorage.getItem(LENS_KEY)) return;
+                const snap = typeof currentSnapshot === "function" ? currentSnapshot() : {};
+                if (snap.entite_selectionnee_id) {
+                    tooltip.removeAttribute("hidden");
+                }
+            }
+
+            const dismiss = document.getElementById("lens-intro-dismiss");
+            if (dismiss) dismiss.addEventListener("click", () => {
+                tooltip.setAttribute("hidden", "");
+                localStorage.setItem(LENS_KEY, "1");
+            });
+
+            const cta = document.getElementById("lens-intro-observatory");
+            if (cta) cta.addEventListener("click", () => {
+                tooltip.setAttribute("hidden", "");
+                localStorage.setItem(LENS_KEY, "1");
+                if (typeof window.setActiveTier === "function") window.setActiveTier("observatory");
+            });
+
+            window.addEventListener("motus:entity-loaded", maybeShowLensTooltip);
+            setTimeout(maybeShowLensTooltip, 3000);
+        })();
+
+        // ================================================================
+        // F23 — Keyboard shortcuts overlay
+        // ================================================================
+        (function () {
+            const overlay = document.getElementById("shortcuts-overlay");
+            const trigger = document.getElementById("shortcuts-trigger");
+            const dismiss = document.getElementById("shortcuts-dismiss");
+            if (!overlay) return;
+
+            function toggle() { overlay.hidden = !overlay.hidden; }
+
+            if (trigger) trigger.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
+            if (dismiss) dismiss.addEventListener("click", toggle);
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) toggle(); });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+                    const active = document.activeElement;
+                    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+                    toggle();
+                }
+                if (e.key === "Escape" && !overlay.hidden) { overlay.hidden = true; }
+                if (e.key === "1" && !e.ctrlKey && !e.metaKey) {
+                    const active = document.activeElement;
+                    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+                    if (typeof window.setActiveTier === "function") window.setActiveTier("story");
+                }
+                if (e.key === "2" && !e.ctrlKey && !e.metaKey) {
+                    const active = document.activeElement;
+                    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+                    if (typeof window.setActiveTier === "function") window.setActiveTier("explorer");
+                }
+                if (e.key === "3" && !e.ctrlKey && !e.metaKey) {
+                    const active = document.activeElement;
+                    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+                    if (typeof window.setActiveTier === "function") window.setActiveTier("observatory");
+                }
+                if ((e.key === "/" || e.key === "f") && !e.ctrlKey && !e.metaKey) {
+                    const active = document.activeElement;
+                    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+                    const input = document.getElementById("search-input");
+                    if (input) { e.preventDefault(); input.focus(); input.select(); }
+                }
+            });
+        })();
+
+        // ================================================================
+        // F12 — Observatory guide 3-step walkthrough
+        // ================================================================
+        (function () {
+            const guide = document.getElementById("observatory-guide");
+            if (!guide) return;
+            const steps = guide.querySelectorAll(".guide-step");
+            const prevBtn = document.getElementById("observatory-guide-prev");
+            const nextBtn = document.getElementById("observatory-guide-next");
+            const dismissBtn = document.getElementById("observatory-guide-dismiss");
+            const storyBtn = document.getElementById("observatory-guide-story");
+            let current = 1;
+
+            function showStep(n) {
+                current = n;
+                steps.forEach((s) => s.classList.toggle("is-active", +s.dataset.step === n));
+                if (prevBtn) prevBtn.hidden = (n <= 1);
+                if (nextBtn) nextBtn.hidden = (n >= steps.length);
+                if (dismissBtn) dismissBtn.hidden = (n < steps.length);
+            }
+
+            if (nextBtn) nextBtn.addEventListener("click", () => showStep(current + 1));
+            if (prevBtn) prevBtn.addEventListener("click", () => showStep(current - 1));
+
+            function dismissGuide() {
+                guide.hidden = true;
+                localStorage.setItem("observatory-guide-seen", "1");
+            }
+            if (dismissBtn) dismissBtn.addEventListener("click", dismissGuide);
+            if (storyBtn) storyBtn.addEventListener("click", () => {
+                dismissGuide();
+                if (typeof window.setActiveTier === "function") window.setActiveTier("story");
+            });
+        })();
+
+        // ================================================================
+        // F24 — Exploration trail breadcrumb
+        // ================================================================
+        (function () {
+            const trail = [];
+            const MAX_CRUMBS = 5;
+            const nav = document.getElementById("trail-breadcrumb");
+            if (!nav) return;
+
+            function renderTrailBreadcrumb() {
+                if (!trail.length) { nav.hidden = true; return; }
+                nav.hidden = false;
+                nav.innerHTML = trail.map((crumb, i) => {
+                    const sep = i > 0 ? '<span class="trail-crumb-sep" aria-hidden="true">›</span>' : "";
+                    return sep + '<span class="trail-crumb" data-trail-id="' + crumb.id + '" tabindex="0" role="button">'
+                        + '<span class="trail-crumb-type">' + crumb.type + '</span>'
+                        + ' ' + crumb.label
+                        + '</span>';
+                }).join("");
+            }
+
+            window.pushTrailCrumb = function(id, type, label) {
+                if (!id) return;
+                const existing = trail.findIndex(c => c.id === id);
+                if (existing !== -1) {
+                    trail.splice(existing + 1);
+                } else {
+                    trail.push({ id, type: type || "entity", label: label || id });
+                    if (trail.length > MAX_CRUMBS) trail.shift();
+                }
+                renderTrailBreadcrumb();
+            };
+        })();

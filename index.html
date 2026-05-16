@@ -78,10 +78,13 @@
                         <div class="observatory-subtabs" id="observatory-subtabs" hidden role="tablist" aria-label="Observatory sub-modes">
                             <button type="button" class="mode-button is-active" data-mode="observatory" role="tab" aria-selected="true" title="Constellation graph exploration">Constellation</button>
                             <button type="button" class="mode-button" data-mode="query-theater" role="tab" aria-selected="false" title="Live GraphQL query editor">Query Lab</button>
-                            <button type="button" class="mode-button" data-mode="polyglot-studio" role="tab" aria-selected="false" title="Multilingual entity surfaces">Languages</button>
+                            <button type="button" class="mode-button" data-mode="polyglot-studio" role="tab" aria-selected="false" title="Multilingual entity surfaces">Polyglot Studio</button>
                             <button type="button" class="mode-button" data-mode="temporal-river" role="tab" aria-selected="false" title="Timeline and chronological analysis">Timeline</button>
+                            <button type="button" class="mode-button shortcuts-trigger" id="shortcuts-trigger" title="Keyboard shortcuts" aria-label="Show keyboard shortcuts">?</button>
                         </div>
                     </nav>
+                    <!-- F24: Exploration trail breadcrumb — wraps below mode rail when visible -->
+                    <nav class="trail-breadcrumb" id="trail-breadcrumb" aria-label="Exploration trail" hidden></nav>
                 </div>
             </header>
 
@@ -154,6 +157,17 @@
                 </div>
                 <p class="search-mode-hint" id="search-mode-hint" role="status" aria-live="polite">Search for any movement, artist, artwork, museum, or theme using the search bar above.</p>
 
+                <!-- F10: Explorer onboarding card — dismissed after first search -->
+                <div class="explorer-onboarding" id="explorer-onboarding" role="note" aria-label="Explorer orientation">
+                    <button type="button" class="explorer-onboarding-dismiss" id="explorer-onboarding-dismiss" aria-label="Dismiss orientation">&times;</button>
+                    <strong id="explorer-onboarding-title">Three ways to explore</strong>
+                    <ol>
+                        <li id="explorer-onboarding-step1">Search any name in the bar above.</li>
+                        <li id="explorer-onboarding-step2">Click a theme tile to browse artworks by subject.</li>
+                        <li id="explorer-onboarding-step3">Use <em>+ Compare</em> to place two entities side by side.</li>
+                    </ol>
+                </div>
+
                 <section class="explorer-focus" id="explorer-focus-section" aria-label="Current explorer result">
                     <div id="__ml_explorer_focus_root"></div>
                 </section>
@@ -164,14 +178,14 @@
                         <h3 class="section-title">Browse by Theme</h3>
                         <div id="__ml_explorer_themes_root"></div>
                     </section>
-                    <!-- Promoted comparison panel -->
-                    <section class="explorer-inline-section" id="explorer-comparison-section" aria-label="Comparison panel">
+                    <!-- Promoted comparison panel — F8: hidden until an entity is queued -->
+                    <section class="explorer-inline-section" id="explorer-comparison-section" aria-label="Comparison panel" hidden>
                         <h3 class="section-title">Compare</h3>
                         <p class="explorer-section-hint">Use <em>+ Compare</em> in search results to add entities here.</p>
                         <div id="__ml_explorer_comparison_root"></div>
                     </section>
-                    <!-- Promoted trajectory panel -->
-                    <section class="explorer-inline-section" id="explorer-trajectory-section" aria-label="Influence trajectory">
+                    <!-- Promoted trajectory panel — F8: hidden until an artist is queued -->
+                    <section class="explorer-inline-section" id="explorer-trajectory-section" aria-label="Influence trajectory" hidden>
                         <h3 class="section-title">Influence Path</h3>
                         <p class="explorer-section-hint">Use <em>+ Trajectory</em> on artist results to trace influence paths.</p>
                         <div id="__ml_explorer_trajectoire_root"></div>
@@ -313,6 +327,7 @@
                         </svg>
                         <div class="constellation-nodes" id="constellation-nodes" role="group" aria-label="Interactive entity nodes"></div>
                         <canvas class="constellation-minimap" id="constellation-minimap" width="130" height="86" aria-hidden="true"></canvas>
+                        <span class="constellation-minimap-label" aria-hidden="true" title="Minimap — click or drag to navigate">Map</span>
                         <div class="constellation-controls" aria-label="Constellation zoom controls">
                             <button type="button" class="icon-button" id="constellation-zoom-out" aria-label="Zoom out" title="Zoom out (scroll down)">−</button>
                             <span class="zoom-readout" id="constellation-zoom-readout" aria-live="polite">100%</span>
@@ -387,7 +402,7 @@
                     </section>
 
                     <section class="subpanel mirror-response">
-                        <h3 class="section-title">Response Shape</h3>
+                        <h3 class="section-title">Response Shape <span class="section-title-badge" id="response-shape-badge">example</span></h3>
                         <pre class="response-box" id="query-response-shape">{
   item: {
     id,
@@ -476,17 +491,65 @@
                     <span class="chip is-live" id="status-chip">GraphQL Live - 0 docs</span>
                 </section>
             </footer>
-            <!-- Observatory guide overlay — first-time tooltip for constellation view -->
+            <!-- F12: Observatory guide — 3-step walkthrough -->
             <div id="observatory-guide" class="observatory-guide-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="observatory-guide-title">
                 <div class="observatory-guide-card">
-                    <h3 id="observatory-guide-title">Welcome to the Observatory</h3>
-                    <p>Each dot is an artist, artwork, or movement. Lines show influence and succession. Scroll to zoom, drag to pan. Click any dot to load its story.</p>
+                    <div class="guide-steps">
+                        <div class="guide-step is-active" data-step="1">
+                            <span class="guide-step-num">1 / 3</span>
+                            <h3 id="observatory-guide-title">The Constellation</h3>
+                            <p>Each dot is an artist, artwork, or movement. Lines show influence and succession.</p>
+                        </div>
+                        <div class="guide-step" data-step="2">
+                            <span class="guide-step-num">2 / 3</span>
+                            <h3>Interact</h3>
+                            <p>Click any dot to load its story and fire a live GraphQL query. Scroll to zoom, drag to pan.</p>
+                        </div>
+                        <div class="guide-step" data-step="3">
+                            <span class="guide-step-num">3 / 3</span>
+                            <h3>Switch views</h3>
+                            <p>Use the tabs above — <em>Query Lab</em> exposes the live GraphQL, <em>Timeline</em> shows chronology, <em>Polyglot Studio</em> compares languages.</p>
+                        </div>
+                    </div>
                     <div class="observatory-guide-actions">
-                        <button type="button" id="observatory-guide-dismiss" class="ghost-button">Got it, let me explore</button>
-                        <button type="button" id="observatory-guide-story" class="entry-card" style="display:inline-flex">Back to Story mode</button>
+                        <button type="button" id="observatory-guide-prev" class="ghost-button" hidden>← Back</button>
+                        <button type="button" id="observatory-guide-next" class="ghost-button">Next →</button>
+                        <button type="button" id="observatory-guide-dismiss" class="ghost-button" hidden>Got it, let me explore</button>
+                        <button type="button" id="observatory-guide-story" class="ghost-button">Back to Story</button>
                     </div>
                 </div>
             </div>
+
+            <!-- F16: Lens concept tooltip — shown once in Story after first entity load -->
+            <div id="lens-intro-tooltip" class="lens-intro-tooltip" hidden role="note">
+                <button type="button" class="lens-intro-dismiss" id="lens-intro-dismiss" aria-label="Dismiss">&times;</button>
+                <strong>Tip:</strong> You are reading through the <em>Movement</em> lens. Switch lenses in Observatory to see the same data differently.
+                <button type="button" class="ghost-button lens-intro-cta" id="lens-intro-observatory">Go to Observatory →</button>
+            </div>
+
+            <!-- F23: Keyboard shortcuts overlay -->
+            <div id="shortcuts-overlay" class="shortcuts-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+                <div class="shortcuts-card">
+                    <div class="shortcuts-header">
+                        <h3 id="shortcuts-title">Keyboard Shortcuts</h3>
+                        <button type="button" class="ghost-button" id="shortcuts-dismiss" aria-label="Close shortcuts">&times;</button>
+                    </div>
+                    <dl class="shortcuts-list">
+                        <div><dt><kbd>/</kbd></dt><dd>Focus search bar</dd></div>
+                        <div><dt><kbd>Esc</kbd></dt><dd>Close panel / dropdown</dd></div>
+                        <div><dt><kbd>1</kbd></dt><dd>Switch to Story</dd></div>
+                        <div><dt><kbd>2</kbd></dt><dd>Switch to Explorer</dd></div>
+                        <div><dt><kbd>3</kbd></dt><dd>Switch to Observatory</dd></div>
+                        <div><dt><kbd>+</kbd> / <kbd>−</kbd></dt><dd>Zoom constellation</dd></div>
+                        <div><dt><kbd>0</kbd></dt><dd>Reset constellation zoom</dd></div>
+                        <div><dt><kbd>Ctrl+L</kbd></dt><dd>Cycle interface language</dd></div>
+                        <div><dt><kbd>?</kbd></dt><dd>Show / hide this panel</dd></div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- F22: Language switch toast -->
+            <div id="lang-toast" class="lang-toast" hidden aria-live="polite" aria-atomic="true"></div>
         </div>
 
         <!-- Global search results dropdown (positioned via JS) -->

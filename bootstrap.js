@@ -29,6 +29,9 @@
                 if (container) {
                     container.hidden = !html;
                 }
+                // F8: reveal explorer comparison section only when content is present
+                const explorerCompSection = document.getElementById("explorer-comparison-section");
+                if (explorerCompSection) explorerCompSection.hidden = !html;
             } catch (e) {
                 console.warn("comparison panel render error:", e);
             }
@@ -50,6 +53,9 @@
                 if (container) {
                     container.hidden = !html;
                 }
+                // F8: reveal explorer trajectory section only when content is present
+                const explorerTrajSection = document.getElementById("explorer-trajectory-section");
+                if (explorerTrajSection) explorerTrajSection.hidden = !html;
             } catch (e) {
                 console.warn("trajectoire panel render error:", e);
             }

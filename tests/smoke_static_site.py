@@ -171,8 +171,15 @@ def validate_bundle_exports(site_root: pathlib.Path) -> None:
         raise AssertionError("bundle.js contains unsupported lowering output")
     if "null /*" in bundle_js:
         raise AssertionError("bundle.js contains placeholder lowering output")
-    source_bundle_js = (PROJECT_ROOT / "bundle.js").read_text(encoding="utf-8")
-    validate_bundle_graph_runtime(source_bundle_js)
+    for runtime_alias in [
+        "function __ml_type",
+        "const type = __ml_type;",
+        'const chaine = "str";',
+        'const liste = "list";',
+        'const dictionnaire = "dict";',
+    ]:
+        assert_contains(bundle_js, runtime_alias, "bundle.js runtime aliases")
+    validate_bundle_graph_runtime(bundle_js)
 
 
 def validate_bundle_graph_runtime(bundle_js: str) -> None:

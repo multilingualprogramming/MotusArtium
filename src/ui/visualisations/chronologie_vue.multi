@@ -1,248 +1,143 @@
-importer asyncio
-importer ui.etat
-importer ui.visualisations.utilitaires_rendu
+importer ui.i18n
 
 
-classe VueChronologie:
-    """Visualisation chronologique des mouvements artistiques"""
-
-    conteneur: element
-    rendeur: element
-    debut_annee: nombre
-    fin_annee: nombre
-    mouvements_affichables: liste
-
-    déf __init__(conteneur: element):
-        observer self.conteneur = conteneur
-        observer self.rendeur = utilitaires_rendu.RenduTimelineSVG(conteneur)
-        observer self.debut_annee = 1800
-        observer self.fin_annee = 2000
-        observer self.mouvements_affichables = []
-
-    asynchrone déf charger_periode(debut: nombre, fin: nombre):
-        """Charger et afficher une période"""
-        observer self.debut_annee = debut
-        observer self.fin_annee = fin
-
-        # Récupérer les mouvements de la période
-        mouvements_données = attendre interface.etat.donnees.requetes.obtenir_chronologie_mouvements(debut, fin)
-
-        # Transformer les données pour la visualisation
-        mouvements_affichables = []
-
-        pour mouvement in mouvements_données:
-            mouvement_id = mouvement.obtenir("movement", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
-            mouvement_label = mouvement.obtenir("movementLabel", {}).obtenir("value", "Mouvement inconnu")
-
-            debut_mouvement = mouvement.obtenir("startTime", {}).obtenir("value", "")[0:4]
-            fin_mouvement = mouvement.obtenir("endTime", {}).obtenir("value", "")[0:4]
-
-            si debut_mouvement et fin_mouvement:
-                chercher:
-                    debut_mouvement_num = nombre(debut_mouvement)
-                    fin_mouvement_num = nombre(fin_mouvement)
-
-                    mouvements_affichables.ajouter({
-                        "id": mouvement_id,
-                        "etiquette": mouvement_label,
-                        "type": "mouvement",
-                        "debut": debut_mouvement_num,
-                        "fin": fin_mouvement_num
-                    })
-
-                exception:
-                    passe  # Ignorer les erreurs de conversion
-
-        observer self.mouvements_affichables = mouvements_affichables
-
-        # Rendre la timeline
-        self.rendeur.rendre_timeline(
-            mouvements_affichables,
-            debut,
-            fin
-        )
-
-    déf gerer_clic_mouvement(mouvement_id: chaine):
-        """Gestionnaire de clic sur un mouvement"""
-        observer interface.etat.entite_selectionnee_id = mouvement_id
-        observer interface.etat.entite_selectionnee_type = "mouvement"
-
-        # Charger les détails du mouvement
-        attendre interface.etat.charger_mouvement(mouvement_id)
-
-    déf changer_plage_temporelle(debut: nombre, fin: nombre):
-        """Changer la plage temporelle affichée"""
-        attendre self.charger_periode(debut, fin)
-
-    déf zoom_in_temps(centre_annee: nombre):
-        """Zoomer dans la chronologie"""
-        intervalle = self.fin_annee - self.debut_annee
-        nouveau_intervalle = intervalle / 2
-
-        nouveau_debut = centre_annee - nouveau_intervalle / 2
-        nouvelle_fin = centre_annee + nouveau_intervalle / 2
-
-        attendre self.charger_periode(nouveau_debut, nouvelle_fin)
-
-    déf zoom_out_temps(centre_annee: nombre):
-        """Dézommer la chronologie"""
-        intervalle = self.fin_annee - self.debut_annee
-        nouveau_intervalle = intervalle * 2
-
-        nouveau_debut = centre_annee - nouveau_intervalle / 2
-        nouvelle_fin = centre_annee + nouveau_intervalle / 2
-
-        attendre self.charger_periode(nouveau_debut, nouvelle_fin)
-
-    déf deplacement_annees(nombre_annees: nombre):
-        """Déplacer la chronologie dans le temps"""
-        observer self.debut_annee = self.debut_annee + nombre_annees
-        observer self.fin_annee = self.fin_annee + nombre_annees
-
-        attendre self.charger_periode(self.debut_annee, self.fin_annee)
+déf _t(cle: chaine, langue: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, langue)
 
 
-classe VueRivière:
-    """Visualisation en rivière (flux temporel)"""
-
-    conteneur: element
-    canvas: element
-    mouvements: liste
-    echelle_temps: nombre  # pixels par année
-
-    déf __init__(conteneur: element):
-        observer self.conteneur = conteneur
-        observer self.canvas = nul
-        observer self.mouvements = []
-        observer self.echelle_temps = 2.0  # 2 pixels par année par défaut
-
-    asynchrone déf initialiser(debut: nombre, fin: nombre):
-        """Initialiser la rivière"""
-        # Créer le canvas
-        canvas = creer_element("canvas")
-        canvas.largeur = 1200
-        canvas.hauteur = 600
-        canvas.style = "border: 1px solid #ccc; background: #f5f5f5;"
-
-        observer self.canvas = canvas
-        observer self.conteneur.ajouter_enfant(canvas)
-
-        # Charger les mouvements
-        attendre self.charger_mouvements(debut, fin)
-
-    asynchrone déf charger_mouvements(debut: nombre, fin: nombre):
-        """Charger les mouvements pour la rivière"""
-        mouvements_données = attendre interface.etat.donnees.requetes.obtenir_chronologie_mouvements(debut, fin)
-
-        mouvements_affichables = []
-
-        pour mouvement in mouvements_données:
-            mouvement_id = mouvement.obtenir("movement", {}).obtenir("value", "").remplacer("http://www.wikidata.org/entity/", "")
-            mouvement_label = mouvement.obtenir("movementLabel", {}).obtenir("value", "")
-
-            debut_mouvement = mouvement.obtenir("startTime", {}).obtenir("value", "")[0:4]
-            fin_mouvement = mouvement.obtenir("endTime", {}).obtenir("value", "")[0:4]
-
-            si debut_mouvement et fin_mouvement:
-                chercher:
-                    debut_mouvement_num = nombre(debut_mouvement)
-                    fin_mouvement_num = nombre(fin_mouvement)
-
-                    mouvements_affichables.ajouter({
-                        "id": mouvement_id,
-                        "etiquette": mouvement_label,
-                        "debut": debut_mouvement_num,
-                        "fin": fin_mouvement_num
-                    })
-
-                exception:
-                    passe
-
-        observer self.mouvements = mouvements_affichables
-        self.rendre()
-
-    déf rendre():
-        """Rendre la rivière"""
-        si non self.canvas:
-            retour
-
-        ctx = self.canvas.obtenir_contexte("2d")
-        largeur = self.canvas.largeur
-        hauteur = self.canvas.hauteur
-
-        # Effacer le canvas
-        ctx.couleur_remplissage = "#FFFFFF"
-        ctx.rect_rempli(0, 0, largeur, hauteur)
-
-        # Marge
-        marge_gauche = 80
-        marge_droite = 40
-        marge_haut = 40
-        marge_bas = 60
-
-        zone_utile_largeur = largeur - marge_gauche - marge_droite
-        zone_utile_hauteur = hauteur - marge_haut - marge_bas
-
-        # Axe vertical (temps)
-        ctx.couleur_trait = "#333333"
-        ctx.epaisseur_trait = 2
-        ctx.debut_chemin()
-        ctx.deplacer_vers(marge_gauche, marge_haut)
-        ctx.ligner_vers(marge_gauche, hauteur - marge_bas)
-        ctx.tracer()
-
-        # Rendre les mouvements sous forme de rubans
-        pour i, mouvement in enumerate(self.mouvements):
-            debut = mouvement.obtenir("debut", 1800)
-            fin = mouvement.obtenir("fin", 2000)
-            etiquette = mouvement.obtenir("etiquette", "")
-
-            # Position Y basée sur le temps
-            progression_debut = (debut - 1400) / (2000 - 1400)
-            progression_fin = (fin - 1400) / (2000 - 1400)
-
-            y_debut = marge_haut + progression_debut * zone_utile_hauteur
-            y_fin = marge_haut + progression_fin * zone_utile_hauteur
-            hauteur_mouvement = y_fin - y_debut
-
-            # Position X basée sur l'index (empilage)
-            x = marge_gauche + 20 + (i % 3) * 120
-
-            # Largeur basée sur l'importance (simplifiée)
-            largeur_mouvement = 100
-
-            # Dessiner le ruban
-            couleur = utilitaires_rendu.obtenir_couleur_type("mouvement")
-            ctx.couleur_remplissage = couleur
-            ctx.couleur_trait = "#333333"
-            ctx.epaisseur_trait = 1
-
-            ctx.rect_rempli(x, y_debut, largeur_mouvement, hauteur_mouvement)
-            ctx.rect_contour(x, y_debut, largeur_mouvement, hauteur_mouvement)
-
-            # Étiquette
-            ctx.couleur_texte = "#000000"
-            ctx.fonte = "10px Arial"
-            ctx.alignement_texte = "centre"
-
-            ctx.texte_rempli(etiquette, x + largeur_mouvement / 2, y_debut + hauteur_mouvement / 2)
-
-    déf gerer_clic_mouvement(mouvement_id: chaine):
-        """Gestionnaire de clic"""
-        observer interface.etat.entite_selectionnee_id = mouvement_id
-        observer interface.etat.entite_selectionnee_type = "mouvement"
-        attendre interface.etat.charger_mouvement(mouvement_id)
+déf _deballer_valeur_date(candidat) -> chaine:
+    si non candidat:
+        retour ""
+    si type(candidat) == chaine:
+        retour candidat
+    si type(candidat) == liste:
+        pour entree dans candidat:
+            si type(entree) == chaine et entree:
+                retour entree
+            si type(entree) == dictionnaire:
+                t = entree.obtenir("time", "")
+                si type(t) == chaine et t:
+                    retour t
+                v = entree.obtenir("value", "")
+                si type(v) == chaine et v:
+                    retour v
+        retour ""
+    si type(candidat) == dictionnaire:
+        t = candidat.obtenir("time", "")
+        si type(t) == chaine et t:
+            retour t
+        v_raw = candidat.obtenir("value", "")
+        si type(v_raw) == chaine et v_raw:
+            retour v_raw
+        si type(v_raw) == dictionnaire:
+            t2 = v_raw.obtenir("time", "")
+            si type(t2) == chaine et t2:
+                retour t2
+            c2 = v_raw.obtenir("content", "")
+            si type(c2) == chaine et c2:
+                retour c2
+        c = candidat.obtenir("content", "")
+        si type(c) == chaine et c:
+            retour c
+    retour ""
 
 
-asynchrone déf creer_vue_chronologie(conteneur: element, debut: nombre, fin: nombre) -> VueChronologie:
-    """Créer une vue chronologie"""
-    vue = VueChronologie(conteneur)
-    attendre vue.charger_periode(debut, fin)
-    retour vue
+déf champ_date(entite: dictionnaire, cles: liste) -> chaine:
+    si non entite ou non (type(entite) == dictionnaire):
+        retour ""
+    pour cle dans cles:
+        v = _deballer_valeur_date(entite.obtenir(cle, ""))
+        si v:
+            retour v
+    retour ""
 
 
-asynchrone déf creer_vue_riviere(conteneur: element, debut: nombre, fin: nombre) -> VueRivière:
-    """Créer une vue rivière"""
-    vue = VueRivière(conteneur)
-    attendre vue.initialiser(debut, fin)
-    retour vue
+déf extraire_annee(valeur_date):
+    si non valeur_date:
+        retour nul
+    s = chaine(valeur_date)
+    negatif = faux
+    si s[:1] == "-":
+        negatif = vrai
+        s = s[1:]
+    sinon si s[:1] == "+":
+        s = s[1:]
+    annee_str = s[:4]
+    si non annee_str:
+        retour nul
+    n = nombre(annee_str)
+    si n != n:
+        retour nul
+    si negatif:
+        retour -n
+    retour n
+
+
+déf formater_annee(annee) -> chaine:
+    si non annee:
+        retour ""
+    si annee < 0:
+        retour chaine(-annee) + " BCE"
+    retour chaine(annee)
+
+
+déf construire_modele_temporel(type_entite: chaine, entite: dictionnaire, langue: chaine) -> dictionnaire:
+    t = chaine(type_entite ou "").lower()
+    date_debut = ""
+    date_fin = ""
+    date_point = ""
+    label = _t("timeline.noDatedField", langue)
+
+    si "movement" dans t ou "mouvement" dans t:
+        date_debut = champ_date(entite, ["startTime", "startDate", "inceptionDate"])
+        date_fin = champ_date(entite, ["endTime", "endDate", "dissolvedDate"])
+        si date_debut ou date_fin:
+            label = _t("timeline.temporalField", langue)
+    sinon si "artist" dans t ou "artiste" dans t:
+        date_debut = champ_date(entite, ["birthDate", "birthTime"])
+        date_fin = champ_date(entite, ["deathDate", "deathTime"])
+        si date_debut ou date_fin:
+            label = _t("timeline.temporalField", langue)
+    sinon si "work" dans t ou "oeuvre" dans t:
+        date_point = champ_date(entite, ["inceptionDate", "creationDate"])
+        si date_point:
+            label = _t("timeline.temporalField", langue)
+
+    annee_debut = extraire_annee(date_debut)
+    annee_fin = extraire_annee(date_fin)
+    annee_point = extraire_annee(date_point)
+
+    si annee_debut ou annee_fin:
+        resolved_start = annee_debut si annee_debut sinon annee_fin
+        resolved_end = annee_fin si annee_fin sinon annee_debut
+        ecart = max(20, abs(resolved_end - resolved_start))
+        marge = max(10, round(ecart * 0.2))
+        caption = formater_annee(resolved_start) + " - " + formater_annee(resolved_end)
+        retour {
+            "rangeStart": resolved_start - marge,
+            "rangeEnd": resolved_end + marge,
+            "windowStart": resolved_start,
+            "windowEnd": resolved_end,
+            "label": label,
+            "caption": caption
+        }
+
+    si annee_point:
+        caption = formater_annee(annee_point)
+        retour {
+            "rangeStart": annee_point - 20,
+            "rangeEnd": annee_point + 20,
+            "windowStart": annee_point,
+            "windowEnd": annee_point,
+            "label": label,
+            "caption": caption
+        }
+
+    retour {
+        "rangeStart": 1400,
+        "rangeEnd": 2000,
+        "windowStart": 1540,
+        "windowEnd": 1760,
+        "label": label,
+        "caption": _t("timeline.noDatedField", langue)
+    }

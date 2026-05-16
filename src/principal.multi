@@ -12,11 +12,12 @@ importer ui.etat
 importer ui.i18n
 importer donnees.requetes
 importer donnees.normalisation
+importer ui.visualisations.polyglot_studio_vue
+importer ui.visualisations.chronologie_vue
 importer semantique.intersections
 
 # ui.etat is intentionally owned by Multilingual. The browser shell may keep a
 # temporary compatibility fallback, but new application state belongs here.
-# Note: ui.visualisations.polyglot_studio_vue is not bundled; the shell renders it directly.
 
 asynchrone déf charger_mouvement(mouvement_id):
     """Charger un mouvement et retour l'entité sélectionnée"""

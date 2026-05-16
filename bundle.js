@@ -192,6 +192,19 @@ function __ml_slice(start, stop, step) {
   return { start, stop, step };
 }
 
+function __ml_type(v) {
+  if (v === null || v === undefined) return "nul";
+  if (typeof v === "string") return "chaine";
+  if (Array.isArray(v)) return "liste";
+  if (typeof v === "number") return "nombre";
+  if (typeof v === "boolean") return "booleen";
+  return "dictionnaire";
+}
+const type = __ml_type;
+const chaine = "chaine";
+const liste = "liste";
+const dictionnaire = "dictionnaire";
+
 const _engine = new ReactiveEngine();
 const __ml_signals = _engine.signals;
 
@@ -3336,6 +3349,548 @@ function normaliser_influences_artiste(element) {
 window.donnees = window.donnees || {};
 window.donnees.normalisation = window.donnees.normalisation || {};
 Object.assign(window.donnees.normalisation, {premier_element: premier_element, elements: elements, _premiere_valeur_temps: _premiere_valeur_temps, _premiere_valeur_contenu: _premiere_valeur_contenu, _envelopper_elements: _envelopper_elements, _etiquettes_jointes: _etiquettes_jointes, normaliser_mouvement: normaliser_mouvement, normaliser_artistes_mouvement: normaliser_artistes_mouvement, normaliser_artiste: normaliser_artiste, normaliser_oeuvre: normaliser_oeuvre, normaliser_musee: normaliser_musee, normaliser_influences_artiste: normaliser_influences_artiste});
+})();
+
+(() => {
+function _t(cle, langue) {
+  return ui.i18n.obtenir_texte(cle, langue);
+}
+
+function _extraire_valeur(champ) {
+  if ((!__ml_truthy(champ))) {
+    return "";
+  }
+  if (__ml_truthy((type(champ) == chaine))) {
+    return champ;
+  }
+  if (__ml_truthy((type(champ) == dictionnaire))) {
+    for (const cle of __ml_iterate(["value", "label", "content", "time"])) {
+      var v = ((champ)?.[cle] ?? "");
+      if ((__ml_truthy((type(v) == chaine)) && __ml_truthy(v))) {
+        return v;
+      }
+    }
+  }
+  return "";
+}
+
+function _valeurs_liees(entite, champ, champ_etiquette) {
+  var valeurs = [];
+  var direct = ((entite)?.[champ] ?? []);
+  if ((!__ml_truthy((type(direct) == liste)))) {
+    if (__ml_truthy(direct)) {
+      direct = [direct];
+    }
+    else {
+      direct = [];
+    }
+  }
+  for (const entree of __ml_iterate(direct)) {
+    var v = _extraire_valeur(entree);
+    if ((__ml_truthy(v) && (!__ml_truthy(__ml_contains(String(v), "wikidata.org/entity/"))))) {
+      if (__ml_truthy((!__ml_contains(valeurs, v)))) {
+        __ml_add(valeurs, v);
+      }
+    }
+    else if (__ml_truthy((type(entree) == dictionnaire))) {
+      var noeud = ((entree)?.["value"] ?? entree);
+      if (__ml_truthy((type(noeud) == dictionnaire))) {
+        var lb = ((noeud)?.["label"] ?? "");
+        if ((__ml_truthy((type(lb) == chaine)) && __ml_truthy(lb) && __ml_truthy((!__ml_contains(valeurs, lb))))) {
+          __ml_add(valeurs, lb);
+        }
+      }
+    }
+  }
+  var label_direct = _extraire_valeur(((entite)?.[champ_etiquette] ?? ""));
+  if ((__ml_truthy(label_direct) && __ml_truthy((!__ml_contains(valeurs, label_direct))))) {
+    __ml_add(valeurs, label_direct);
+  }
+  return valeurs;
+}
+
+function _traduire_type_entite(type_entite, langue) {
+  var t = String(String(type_entite)).toLowerCase();
+  if ((__ml_truthy(__ml_contains(t, "mouvement")) || __ml_truthy(__ml_contains(t, "movement")))) {
+    return _t("runtime.entityType.movement", langue);
+  }
+  if ((__ml_truthy(__ml_contains(t, "artiste")) || __ml_truthy(__ml_contains(t, "artist")))) {
+    return _t("runtime.entityType.artist", langue);
+  }
+  if ((__ml_truthy(__ml_contains(t, "oeuvre")) || __ml_truthy(__ml_contains(t, "work")))) {
+    return _t("runtime.entityType.work", langue);
+  }
+  if ((__ml_truthy(__ml_contains(t, "musee")) || __ml_truthy(__ml_contains(t, "museum")) || __ml_truthy(__ml_contains(t, "gallery")) || __ml_truthy(__ml_contains(t, "galerie")))) {
+    return _t("runtime.entityType.museum", langue);
+  }
+  return String(type_entite);
+}
+
+function _rendre_proprietes_mouvement(entite, langue) {
+  var html = "";
+  html = "<div class='property-section'>";
+  html = (("<div class='section-title'>" + _t("polyglot.section.primary", langue)) + "</div>");
+  var debut = _extraire_valeur(((entite)?.["startTime"] ?? ""));
+  var fin = _extraire_valeur(((entite)?.["endTime"] ?? ""));
+  if ((__ml_truthy(debut) || __ml_truthy(fin))) {
+    var periode = (((debut || "?") + " - ") + (fin || "?"));
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.period", langue)) + "</span>");
+    html = (("<span class='property-value'>" + periode) + "</span>");
+    html = "</div>";
+  }
+  var pays_vals = _valeurs_liees(entite, "country", "countryLabel");
+  if (__ml_truthy(((pays_vals).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.countries", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (pays_vals).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  html = "</div>";
+  var prec = ((entite)?.["follows"] ?? []);
+  var suiv = ((entite)?.["followedBy"] ?? []);
+  if ((!__ml_truthy((type(prec) == liste)))) {
+    if (__ml_truthy(prec)) {
+      prec = [prec];
+    }
+    else {
+      prec = [];
+    }
+  }
+  if ((!__ml_truthy((type(suiv) == liste)))) {
+    if (__ml_truthy(suiv)) {
+      suiv = [suiv];
+    }
+    else {
+      suiv = [];
+    }
+  }
+  if ((__ml_truthy(((prec).length > 0)) || __ml_truthy(((suiv).length > 0)))) {
+    html = "<div class='property-section'>";
+    html = (("<div class='section-title'>" + _t("polyglot.section.historical", langue)) + "</div>");
+    var prec_labels = _valeurs_liees(entite, "follows", "followsLabel");
+    if (__ml_truthy(((prec_labels).length > 0))) {
+      html = "<div class='property-group'>";
+      html = (("<span class='property-label'>" + _t("polyglot.property.precedingMovements", langue)) + "</span>");
+      html = (("<span class='property-value'>" + (prec_labels).join(", ")) + "</span>");
+      html = "</div>";
+    }
+    var suiv_labels = _valeurs_liees(entite, "followedBy", "followedByLabel");
+    if (__ml_truthy(((suiv_labels).length > 0))) {
+      html = "<div class='property-group'>";
+      html = (("<span class='property-label'>" + _t("polyglot.property.succeedingMovements", langue)) + "</span>");
+      html = (("<span class='property-value'>" + (suiv_labels).join(", ")) + "</span>");
+      html = "</div>";
+    }
+    html = "</div>";
+  }
+  return html;
+}
+
+function _rendre_proprietes_artiste(entite, langue) {
+  var html = "";
+  html = "<div class='property-section'>";
+  html = (("<div class='section-title'>" + _t("polyglot.section.biography", langue)) + "</div>");
+  var naissance = _extraire_valeur(((entite)?.["birthDate"] ?? ""));
+  var mort = _extraire_valeur(((entite)?.["deathDate"] ?? ""));
+  if ((__ml_truthy(naissance) || __ml_truthy(mort))) {
+    var duree = (((naissance || "?") + " - ") + (mort || "?"));
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.lifespan", langue)) + "</span>");
+    html = (("<span class='property-value'>" + duree) + "</span>");
+    html = "</div>";
+  }
+  var lieux_naissance = _valeurs_liees(entite, "birthplace", "birthplaceLabel");
+  if (__ml_truthy(((lieux_naissance).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.birthplace", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (lieux_naissance).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  var lieux_deces = _valeurs_liees(entite, "deathplace", "deathplaceLabel");
+  if (__ml_truthy(((lieux_deces).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.deathplace", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (lieux_deces).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  html = "</div>";
+  var mouvements = ((entite)?.["movement"] ?? []);
+  if ((!__ml_truthy((type(mouvements) == liste)))) {
+    if (__ml_truthy(mouvements)) {
+      mouvements = [mouvements];
+    }
+    else {
+      mouvements = [];
+    }
+  }
+  if (__ml_truthy(((mouvements).length > 0))) {
+    html = "<div class='property-section'>";
+    html = (("<div class='section-title'>" + _t("polyglot.section.affiliations", langue)) + "</div>");
+    var mvmt_labels = _valeurs_liees(entite, "movement", "movementLabel");
+    if (__ml_truthy(((mvmt_labels).length > 0))) {
+      html = "<div class='property-group'>";
+      html = (("<span class='property-label'>" + _t("polyglot.property.artisticMovements", langue)) + "</span>");
+      html = (("<span class='property-value'>" + (mvmt_labels).join(", ")) + "</span>");
+      html = "</div>";
+    }
+    html = "</div>";
+  }
+  return html;
+}
+
+function _extraire_annee_date(val_date, longueur) {
+  var annee = String(val_date);
+  var premier = annee.slice(undefined, 1);
+  if ((__ml_truthy((premier == "+")) || __ml_truthy((premier == "-")))) {
+    annee = annee.slice(1, undefined);
+  }
+  if (__ml_truthy(((annee).length > longueur))) {
+    annee = annee.slice(undefined, longueur);
+  }
+  return annee;
+}
+
+function _rendre_proprietes_oeuvre(entite, langue) {
+  var html = "";
+  html = "<div class='property-section'>";
+  html = (("<div class='section-title'>" + _t("polyglot.section.primary", langue)) + "</div>");
+  var createurs = _valeurs_liees(entite, "creator", "creatorLabel");
+  if (__ml_truthy(((createurs).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.creator", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (createurs).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  var champ_inception = ((entite)?.["inceptionDate"] ?? "");
+  var champ_creation = ((entite)?.["creationDate"] ?? "");
+  var champ_date = (champ_inception || champ_creation);
+  var val_date = _extraire_valeur(champ_date);
+  if (__ml_truthy(val_date)) {
+    var annee = _extraire_annee_date(val_date, 4);
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.creationDate", langue)) + "</span>");
+    html = (("<span class='property-value'>" + annee) + "</span>");
+    html = "</div>";
+  }
+  var musees = _valeurs_liees(entite, "museum", "museumLabel");
+  if (__ml_truthy(((musees).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.location", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (musees).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  html = "</div>";
+  var mat_labels = _valeurs_liees(entite, "material", "materialLabel");
+  var sujets_depicts = _valeurs_liees(entite, "depicts", "depictsLabel");
+  var sujets_subject = _valeurs_liees(entite, "subject", "subjectLabel");
+  var sujet_labels = [];
+  for (const s of __ml_iterate((sujets_depicts + sujets_subject))) {
+    if (__ml_truthy((!__ml_contains(sujet_labels, s)))) {
+      __ml_add(sujet_labels, s);
+    }
+  }
+  if ((__ml_truthy(((mat_labels).length > 0)) || __ml_truthy(((sujet_labels).length > 0)))) {
+    html = "<div class='property-section'>";
+    html = (("<div class='section-title'>" + _t("polyglot.section.physical", langue)) + "</div>");
+    if (__ml_truthy(((mat_labels).length > 0))) {
+      html = "<div class='property-group'>";
+      html = (("<span class='property-label'>" + _t("polyglot.property.materials", langue)) + "</span>");
+      html = (("<span class='property-value'>" + (mat_labels).join(", ")) + "</span>");
+      html = "</div>";
+    }
+    if (__ml_truthy(((sujet_labels).length > 0))) {
+      html = "<div class='property-group'>";
+      html = (("<span class='property-label'>" + _t("polyglot.property.depicts", langue)) + "</span>");
+      html = (("<span class='property-value'>" + (sujet_labels).join(", ")) + "</span>");
+      html = "</div>";
+    }
+    html = "</div>";
+  }
+  return html;
+}
+
+function _rendre_proprietes_musee(entite, langue) {
+  var html = "";
+  html = "<div class='property-section'>";
+  html = (("<div class='section-title'>" + _t("polyglot.section.primary", langue)) + "</div>");
+  var champ_inception = ((entite)?.["inceptionDate"] ?? "");
+  var champ_founded = ((entite)?.["foundedDate"] ?? "");
+  var champ_fondation = (champ_inception || champ_founded);
+  var val_fondation = _extraire_valeur(champ_fondation);
+  if (__ml_truthy(val_fondation)) {
+    var date_affichage = _extraire_annee_date(val_fondation, 10);
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.founded", langue)) + "</span>");
+    html = (("<span class='property-value'>" + date_affichage) + "</span>");
+    html = "</div>";
+  }
+  var pays_vals = _valeurs_liees(entite, "country", "countryLabel");
+  if (__ml_truthy(((pays_vals).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.country", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (pays_vals).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  var lieux_vals = _valeurs_liees(entite, "location", "locationLabel");
+  if (__ml_truthy(((lieux_vals).length > 0))) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.place", langue)) + "</span>");
+    html = (("<span class='property-value'>" + (lieux_vals).join(", ")) + "</span>");
+    html = "</div>";
+  }
+  var champ_site_web = ((entite)?.["officialWebsite"] ?? "");
+  var champ_website = ((entite)?.["website"] ?? "");
+  var champ_site = (champ_site_web || champ_website);
+  var site = _extraire_valeur(champ_site);
+  if (__ml_truthy(site)) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.website", langue)) + "</span>");
+    html = (("<span class='property-value'>" + site) + "</span>");
+    html = "</div>";
+  }
+  var nb_oeuvres_artwork = ((entite)?.["artworkCount"] ?? "");
+  var nb_oeuvres_collection = ((entite)?.["collectionCount"] ?? "");
+  var nb_oeuvres = (nb_oeuvres_artwork || nb_oeuvres_collection);
+  if (__ml_truthy(nb_oeuvres)) {
+    html = "<div class='property-group'>";
+    html = (("<span class='property-label'>" + _t("polyglot.property.loadedWorks", langue)) + "</span>");
+    html = (("<span class='property-value'>" + String(nb_oeuvres)) + "</span>");
+    html = "</div>";
+  }
+  html = "</div>";
+  return html;
+}
+
+function rendre_surface_polyglotte(entite_selectionnee, labels, langue, entite_id) {
+  if (((!__ml_truthy(entite_selectionnee)) || (!__ml_truthy((type(entite_selectionnee) == dictionnaire))))) {
+    return "";
+  }
+  var entite_donnees = ((entite_selectionnee)?.["donnees"] ?? entite_selectionnee);
+  if (((!__ml_truthy(entite_donnees)) || (!__ml_truthy((type(entite_donnees) == dictionnaire))))) {
+    var entite = {};
+  }
+  else {
+    entite = entite_donnees;
+  }
+  var type_entite = String(((entite_selectionnee)?.["type"] ?? ""));
+  var t = String(type_entite).toLowerCase();
+  var labels_langue = ((labels)?.[langue] ?? {});
+  var etiquette = "";
+  if (__ml_truthy((type(labels_langue) == chaine))) {
+    etiquette = labels_langue;
+  }
+  else if (__ml_truthy((type(labels_langue) == dictionnaire))) {
+    etiquette = ((labels_langue)?.["label"] ?? "");
+  }
+  if ((!__ml_truthy(etiquette))) {
+    if ((__ml_truthy(__ml_contains(t, "mouvement")) || __ml_truthy(__ml_contains(t, "movement")))) {
+      etiquette = (_extraire_valeur(((entite)?.["movementLabel"] ?? "")) || ((entite)?.["label"] ?? "") || _t("runtime.entityType.movement", langue));
+    }
+    else if ((__ml_truthy(__ml_contains(t, "artiste")) || __ml_truthy(__ml_contains(t, "artist")))) {
+      etiquette = (_extraire_valeur(((entite)?.["artistLabel"] ?? "")) || ((entite)?.["label"] ?? "") || _t("runtime.entityType.artist", langue));
+    }
+    else if ((__ml_truthy(__ml_contains(t, "oeuvre")) || __ml_truthy(__ml_contains(t, "work")))) {
+      etiquette = (_extraire_valeur(((entite)?.["artworkLabel"] ?? "")) || ((entite)?.["label"] ?? "") || _t("runtime.entityType.work", langue));
+    }
+    else if ((__ml_truthy(__ml_contains(t, "musee")) || __ml_truthy(__ml_contains(t, "museum")) || __ml_truthy(__ml_contains(t, "gallery")) || __ml_truthy(__ml_contains(t, "galerie")))) {
+      etiquette = (_extraire_valeur(((entite)?.["museumLabel"] ?? "")) || ((entite)?.["label"] ?? "") || _t("runtime.entityType.museum", langue));
+    }
+    else {
+      etiquette = (((entite)?.["label"] ?? "") || _t("runtime.entity", langue));
+    }
+  }
+  var etiquette_tronquee = String(etiquette).slice(undefined, 100);
+  var badge_type = _traduire_type_entite(type_entite, langue);
+  var html = (((((((("<div class='polyglot-surface surface-" + langue) + "' lang='") + langue) + "' role='region' aria-label='") + _t("polyglot.surface.aria", langue)) + " ") + langue.upper()) + "'>");
+  html = "<div class='entity-header'>";
+  html = "<div style='flex: 1'>";
+  html = (("<h3 class='entity-label'>" + etiquette_tronquee) + "</h3>");
+  html = "</div>";
+  html = "<div style='display: flex; gap: 8px; align-items: center'>";
+  html = (("<span class='entity-type-badge'>" + badge_type) + "</span>");
+  html = (("<span class='entity-id' title='Wikidata ID'>" + entite_id) + "</span>");
+  html = "</div>";
+  html = "</div>";
+  html = "<div class='entity-properties'>";
+  if ((__ml_truthy(__ml_contains(t, "mouvement")) || __ml_truthy(__ml_contains(t, "movement")))) {
+    html = _rendre_proprietes_mouvement(entite, langue);
+  }
+  else if ((__ml_truthy(__ml_contains(t, "artiste")) || __ml_truthy(__ml_contains(t, "artist")))) {
+    html = _rendre_proprietes_artiste(entite, langue);
+  }
+  else if ((__ml_truthy(__ml_contains(t, "oeuvre")) || __ml_truthy(__ml_contains(t, "work")))) {
+    html = _rendre_proprietes_oeuvre(entite, langue);
+  }
+  else if ((__ml_truthy(__ml_contains(t, "musee")) || __ml_truthy(__ml_contains(t, "museum")) || __ml_truthy(__ml_contains(t, "gallery")) || __ml_truthy(__ml_contains(t, "galerie")))) {
+    html = _rendre_proprietes_musee(entite, langue);
+  }
+  html = "</div>";
+  html = "</div>";
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.visualisations = window.ui.visualisations || {};
+window.ui.visualisations.polyglot_studio_vue = window.ui.visualisations.polyglot_studio_vue || {};
+Object.assign(window.ui.visualisations.polyglot_studio_vue, {_t: _t, _extraire_valeur: _extraire_valeur, _valeurs_liees: _valeurs_liees, _traduire_type_entite: _traduire_type_entite, _rendre_proprietes_mouvement: _rendre_proprietes_mouvement, _rendre_proprietes_artiste: _rendre_proprietes_artiste, _extraire_annee_date: _extraire_annee_date, _rendre_proprietes_oeuvre: _rendre_proprietes_oeuvre, _rendre_proprietes_musee: _rendre_proprietes_musee, rendre_surface_polyglotte: rendre_surface_polyglotte});
+})();
+
+(() => {
+function _t(cle, langue) {
+  return ui.i18n.obtenir_texte(cle, langue);
+}
+
+function _deballer_valeur_date(candidat) {
+  if ((!__ml_truthy(candidat))) {
+    return "";
+  }
+  if (__ml_truthy((type(candidat) == chaine))) {
+    return candidat;
+  }
+  if (__ml_truthy((type(candidat) == liste))) {
+    for (const entree of __ml_iterate(candidat)) {
+      if ((__ml_truthy((type(entree) == chaine)) && __ml_truthy(entree))) {
+        return entree;
+      }
+      if (__ml_truthy((type(entree) == dictionnaire))) {
+        var t = ((entree)?.["time"] ?? "");
+        if ((__ml_truthy((type(t) == chaine)) && __ml_truthy(t))) {
+          return t;
+        }
+        var v = ((entree)?.["value"] ?? "");
+        if ((__ml_truthy((type(v) == chaine)) && __ml_truthy(v))) {
+          return v;
+        }
+      }
+    }
+    return "";
+  }
+  if (__ml_truthy((type(candidat) == dictionnaire))) {
+    t = ((candidat)?.["time"] ?? "");
+    if ((__ml_truthy((type(t) == chaine)) && __ml_truthy(t))) {
+      return t;
+    }
+    var v_raw = ((candidat)?.["value"] ?? "");
+    if ((__ml_truthy((type(v_raw) == chaine)) && __ml_truthy(v_raw))) {
+      return v_raw;
+    }
+    if (__ml_truthy((type(v_raw) == dictionnaire))) {
+      var t2 = ((v_raw)?.["time"] ?? "");
+      if ((__ml_truthy((type(t2) == chaine)) && __ml_truthy(t2))) {
+        return t2;
+      }
+      var c2 = ((v_raw)?.["content"] ?? "");
+      if ((__ml_truthy((type(c2) == chaine)) && __ml_truthy(c2))) {
+        return c2;
+      }
+    }
+    var c = ((candidat)?.["content"] ?? "");
+    if ((__ml_truthy((type(c) == chaine)) && __ml_truthy(c))) {
+      return c;
+    }
+  }
+  return "";
+}
+
+function champ_date(entite, cles) {
+  if (((!__ml_truthy(entite)) || (!__ml_truthy((type(entite) == dictionnaire))))) {
+    return "";
+  }
+  for (const cle of __ml_iterate(cles)) {
+    var v = _deballer_valeur_date(((entite)?.[cle] ?? ""));
+    if (__ml_truthy(v)) {
+      return v;
+    }
+  }
+  return "";
+}
+
+function extraire_annee(valeur_date) {
+  if ((!__ml_truthy(valeur_date))) {
+    return null;
+  }
+  var s = String(valeur_date);
+  var negatif = false;
+  if (__ml_truthy((s.slice(undefined, 1) == "-"))) {
+    negatif = true;
+    s = s.slice(1, undefined);
+  }
+  else if (__ml_truthy((s.slice(undefined, 1) == "+"))) {
+    s = s.slice(1, undefined);
+  }
+  var annee_str = s.slice(undefined, 4);
+  if ((!__ml_truthy(annee_str))) {
+    return null;
+  }
+  var n = Number(annee_str);
+  if (__ml_truthy((n != n))) {
+    return null;
+  }
+  if (__ml_truthy(negatif)) {
+    return (-n);
+  }
+  return n;
+}
+
+function formater_annee(annee) {
+  if ((!__ml_truthy(annee))) {
+    return "";
+  }
+  if (__ml_truthy((annee < 0))) {
+    return (String((-annee)) + " BCE");
+  }
+  return String(annee);
+}
+
+function construire_modele_temporel(type_entite, entite, langue) {
+  var t = String(String((type_entite || ""))).toLowerCase();
+  var date_debut = "";
+  var date_fin = "";
+  var date_point = "";
+  var label = _t("timeline.noDatedField", langue);
+  if ((__ml_truthy(__ml_contains(t, "movement")) || __ml_truthy(__ml_contains(t, "mouvement")))) {
+    date_debut = champ_date(entite, ["startTime", "startDate", "inceptionDate"]);
+    date_fin = champ_date(entite, ["endTime", "endDate", "dissolvedDate"]);
+    if ((__ml_truthy(date_debut) || __ml_truthy(date_fin))) {
+      label = _t("timeline.temporalField", langue);
+    }
+  }
+  else if ((__ml_truthy(__ml_contains(t, "artist")) || __ml_truthy(__ml_contains(t, "artiste")))) {
+    date_debut = champ_date(entite, ["birthDate", "birthTime"]);
+    date_fin = champ_date(entite, ["deathDate", "deathTime"]);
+    if ((__ml_truthy(date_debut) || __ml_truthy(date_fin))) {
+      label = _t("timeline.temporalField", langue);
+    }
+  }
+  else if ((__ml_truthy(__ml_contains(t, "work")) || __ml_truthy(__ml_contains(t, "oeuvre")))) {
+    date_point = champ_date(entite, ["inceptionDate", "creationDate"]);
+    if (__ml_truthy(date_point)) {
+      label = _t("timeline.temporalField", langue);
+    }
+  }
+  var annee_debut = extraire_annee(date_debut);
+  var annee_fin = extraire_annee(date_fin);
+  var annee_point = extraire_annee(date_point);
+  if ((__ml_truthy(annee_debut) || __ml_truthy(annee_fin))) {
+    var resolved_start = (__ml_truthy(annee_debut) ? annee_debut : annee_fin);
+    var resolved_end = (__ml_truthy(annee_fin) ? annee_fin : annee_debut);
+    var ecart = max(20, abs((resolved_end - resolved_start)));
+    var marge = max(10, round((ecart * 0.2)));
+    var caption = ((formater_annee(resolved_start) + " - ") + formater_annee(resolved_end));
+    return {["rangeStart"]: (resolved_start - marge), ["rangeEnd"]: (resolved_end + marge), ["windowStart"]: resolved_start, ["windowEnd"]: resolved_end, ["label"]: label, ["caption"]: caption};
+  }
+  if (__ml_truthy(annee_point)) {
+    caption = formater_annee(annee_point);
+    return {["rangeStart"]: (annee_point - 20), ["rangeEnd"]: (annee_point + 20), ["windowStart"]: annee_point, ["windowEnd"]: annee_point, ["label"]: label, ["caption"]: caption};
+  }
+  return {["rangeStart"]: 1400, ["rangeEnd"]: 2000, ["windowStart"]: 1540, ["windowEnd"]: 1760, ["label"]: label, ["caption"]: _t("timeline.noDatedField", langue)};
+}
+
+window.ui = window.ui || {};
+window.ui.visualisations = window.ui.visualisations || {};
+window.ui.visualisations.chronologie_vue = window.ui.visualisations.chronologie_vue || {};
+Object.assign(window.ui.visualisations.chronologie_vue, {_t: _t, _deballer_valeur_date: _deballer_valeur_date, champ_date: champ_date, extraire_annee: extraire_annee, formater_annee: formater_annee, construire_modele_temporel: construire_modele_temporel});
 })();
 
 async function charger_mouvement(mouvement_id) {

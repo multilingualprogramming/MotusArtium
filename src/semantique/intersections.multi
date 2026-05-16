@@ -1,6 +1,22 @@
 importer ui.etat
 
 
+déf _obtenir_ids_elements(donnees: dictionnaire) -> liste:
+    """Retourner les IDs comparables, avec compatibilité pour l'ancien format artistes."""
+    items = donnees.obtenir("items_ids", nul)
+    si items est nul:
+        items = donnees.obtenir("artistes_ids", [])
+    retour items
+
+
+déf _obtenir_labels_elements(donnees: dictionnaire) -> dictionnaire:
+    """Retourner les labels comparables, avec compatibilité pour l'ancien format artistes."""
+    labels = donnees.obtenir("items_labels", nul)
+    si labels est nul:
+        labels = donnees.obtenir("artistes_labels", {})
+    retour labels
+
+
 déf calculer_intersection_artistes(ids_entites: liste) -> liste:
     """Calculer les artistes communs à toutes les entités données"""
     si len(ids_entites) < 2:
@@ -10,12 +26,12 @@ déf calculer_intersection_artistes(ids_entites: liste) -> liste:
     premiere_entite = ids_entites[0]
     donnees0 = ui.etat.obtenir_donnees_comparaison().obtenir(premiere_entite, {})
     communs = {}
-    pour artiste_id dans donnees0.obtenir("artistes_ids", []):
+    pour artiste_id dans _obtenir_ids_elements(donnees0):
         communs[artiste_id] = vrai
 
     pour entite_id dans ids_entites[1:]:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
-        ids_entite = donnees.obtenir("artistes_ids", [])
+        ids_entite = _obtenir_ids_elements(donnees)
         dict_entite = {}
         pour a dans ids_entite:
             dict_entite[a] = vrai
@@ -41,7 +57,7 @@ déf calculer_artistes_uniques(ids_entites: liste) -> dictionnaire:
     pour entite_id dans ids_entites:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
         d = {}
-        pour a dans donnees.obtenir("artistes_ids", []):
+        pour a dans _obtenir_ids_elements(donnees):
             d[a] = vrai
         ensembles[entite_id] = d
 
@@ -65,7 +81,7 @@ déf obtenir_etiquette_artiste(artiste_id: chaine, ids_entites: liste) -> chaine
     """Chercher l'étiquette d'un artiste dans les données de comparaison chargées"""
     pour entite_id dans ids_entites:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
-        labels = donnees.obtenir("artistes_labels", {})
+        labels = _obtenir_labels_elements(donnees)
         label = labels.obtenir(artiste_id, "")
         si label:
             retour label
@@ -84,7 +100,7 @@ déf obtenir_statistiques(ids_entites: liste) -> dictionnaire:
     total_par_entite = {}
     pour entite_id dans ids_entites:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
-        total_par_entite[entite_id] = len(donnees.obtenir("artistes_ids", []))
+        total_par_entite[entite_id] = len(_obtenir_ids_elements(donnees))
 
     uniques_par_entite = {}
     pour eid, u dans artistes_uniques.items():

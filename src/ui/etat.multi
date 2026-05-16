@@ -45,7 +45,7 @@ observer var pan_constellation_y = 0
 # Etat du mode recit et de la comparaison
 observer var mode_recit = faux
 observer var entites_comparaison = []   # [{id, type, label}, ...]
-observer var donnees_comparaison = {}   # id -> {label, artistes_ids, artistes_labels}
+observer var donnees_comparaison = {}   # id -> {label, items_ids, items_labels, items_kind, artistes_ids, artistes_labels}
 
 # Etat de la trajectoire d'influence
 observer var trajectoire_depart_id = ""
@@ -609,6 +609,40 @@ déf obtenir_artistes_mouvement(mouvement_id: chaine) -> liste:
     retour ids
 
 
+déf _id_depuis_champ_entite(champ: dictionnaire) -> chaine:
+    """Extraire un Q-id depuis un champ normalisé {value: uri}."""
+    retour _extraire_id_entite(champ)
+
+
+déf _enregistrer_donnees_comparaison(entite_id: chaine, etiquette: chaine, ids: liste, labels: dictionnaire, kind: chaine):
+    """Stocker une collection comparable pour une entité."""
+    donnees_courantes = donnees_comparaison.obtenir(entite_id, {})
+    donnees_courantes["label"] = etiquette ou donnees_courantes.obtenir("label", entite_id)
+    donnees_courantes["items_ids"] = ids
+    donnees_courantes["items_labels"] = labels
+    donnees_courantes["items_kind"] = kind
+
+    # Compatibilité avec l'ancien panneau orienté mouvements/artistes.
+    si kind == "artists":
+        donnees_courantes["artistes_ids"] = ids
+        donnees_courantes["artistes_labels"] = labels
+
+    donnees_comparaison[entite_id] = donnees_courantes
+
+
+déf _extraire_oeuvres_comparaison(oeuvres: liste) -> dictionnaire:
+    ids = []
+    labels = {}
+    pour oeuvre dans oeuvres:
+        oeuvre_id = _id_depuis_champ_entite(oeuvre.obtenir("artwork", {}))
+        label_oeuvre = _etiquette_entite(oeuvre, ["artworkLabel"], "")
+        si oeuvre_id:
+            ids.ajouter(oeuvre_id)
+            si label_oeuvre:
+                labels[oeuvre_id] = label_oeuvre
+    retour {"ids": ids, "labels": labels}
+
+
 déf basculer_comparaison(entite_id: chaine, type_entite: chaine, etiquette: chaine) -> booleen:
     """Ajouter ou retirer une entité du panneau de comparaison. Retourne vrai si ajoutée."""
     pour entite dans entites_comparaison:
@@ -639,18 +673,14 @@ déf basculer_comparaison(entite_id: chaine, type_entite: chaine, etiquette: cha
             si noeud:
                 artistes_labels[artiste_id] = noeud.etiquette
 
-    donnees_comparaison[entite_id] = {
-        "label": etiquette,
-        "artistes_ids": artistes_ids,
-        "artistes_labels": artistes_labels
-    }
+    _enregistrer_donnees_comparaison(entite_id, etiquette, artistes_ids, artistes_labels, "artists")
     retour vrai
 
 
 asynchrone déf charger_donnees_comparaison(entite_id: chaine, type_entite: chaine):
     """Charger les données d'une entité pour la comparaison sans modifier le graphe principal"""
     existantes = donnees_comparaison.obtenir(entite_id, {})
-    si existantes.obtenir("artistes_ids", []):
+    si existantes.obtenir("items_ids", []):
         retour
 
     si type_entite == "mouvement":
@@ -668,10 +698,28 @@ asynchrone déf charger_donnees_comparaison(entite_id: chaine, type_entite: chai
                         ids.ajouter(artiste_id)
                         si label_art:
                             labels[artiste_id] = label_art
-            donnees_courantes = donnees_comparaison.obtenir(entite_id, {})
-            donnees_courantes["artistes_ids"] = ids
-            donnees_courantes["artistes_labels"] = labels
-            donnees_comparaison[entite_id] = donnees_courantes
+            _enregistrer_donnees_comparaison(entite_id, existantes.obtenir("label", entite_id), ids, labels, "artists")
+        sauf erreur:
+            passe
+    sinon si type_entite == "artiste":
+        essayer:
+            oeuvres = attendre donnees.requetes.obtenir_oeuvres_artiste(entite_id, 50, mode_langue_actif)
+            extraites = _extraire_oeuvres_comparaison(oeuvres)
+            _enregistrer_donnees_comparaison(entite_id, existantes.obtenir("label", entite_id), extraites.obtenir("ids", []), extraites.obtenir("labels", {}), "artworks")
+        sauf erreur:
+            passe
+    sinon si type_entite == "musee":
+        essayer:
+            oeuvres = attendre donnees.requetes.obtenir_oeuvres_musee(entite_id, 50, mode_langue_actif)
+            extraites = _extraire_oeuvres_comparaison(oeuvres)
+            _enregistrer_donnees_comparaison(entite_id, existantes.obtenir("label", entite_id), extraites.obtenir("ids", []), extraites.obtenir("labels", {}), "artworks")
+        sauf erreur:
+            passe
+    sinon si type_entite == "sujet":
+        essayer:
+            oeuvres = attendre donnees.requetes.obtenir_oeuvres_par_sujet(entite_id, 50, mode_langue_actif)
+            extraites = _extraire_oeuvres_comparaison(oeuvres)
+            _enregistrer_donnees_comparaison(entite_id, existantes.obtenir("label", entite_id), extraites.obtenir("ids", []), extraites.obtenir("labels", {}), "artworks")
         sauf erreur:
             passe
 
@@ -713,10 +761,35 @@ asynchrone déf trouver_trajectoire_influence(depart_id: chaine, arrivee_id: cha
     affichage_chargement = vrai
 
     essayer:
-        attendre construire_graphe_influences(depart_id)
-        attendre construire_graphe_influences(arrivee_id)
+        chemin = []
+        visites = {depart_id}
+        queue = [[depart_id]]
+        profondeur_max = 4
 
-        chemin = graphe.chemin_plus_court(depart_id, arrivee_id)
+        # Le graphe courant est incomplet: enrichir les voisins d'influence à mesure du BFS.
+        tantque len(queue) > 0 et non chemin:
+            chemin_courant = queue.pop(0)
+            noeud_courant = chemin_courant[len(chemin_courant) - 1]
+
+            si len(chemin_courant) - 1 < profondeur_max:
+                attendre construire_graphe_influences(noeud_courant)
+                voisins = graphe.obtenir_voisins(noeud_courant, "a_influence")
+
+                pour voisin_id dans voisins:
+                    si non chemin:
+                        nouveau_chemin = []
+                        pour etape_id dans chemin_courant:
+                            nouveau_chemin.ajouter(etape_id)
+                        nouveau_chemin.ajouter(voisin_id)
+
+                        si voisin_id == arrivee_id:
+                            chemin = nouveau_chemin
+                        sinon si voisin_id non dans visites:
+                            visites.ajouter(voisin_id)
+                            queue.ajouter(nouveau_chemin)
+
+        si non chemin:
+            chemin = graphe.chemin_plus_court(depart_id, arrivee_id)
 
         labels = {}
         pour noeud_id dans chemin:

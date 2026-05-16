@@ -14,6 +14,29 @@ déf _ti(cle: chaine, params: dictionnaire) -> chaine:
     retour texte
 
 
+déf _obtenir_kind_comparaison(ids_entites: liste) -> chaine:
+    pour entite_id dans ids_entites:
+        donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
+        kind = donnees.obtenir("items_kind", "")
+        si kind:
+            retour kind
+    retour "artists"
+
+
+déf _cle_comparaison(kind: chaine, suffixe: chaine) -> chaine:
+    si kind == "artists":
+        retour "comparison." + suffixe
+    retour "comparison.generic." + suffixe
+
+
+déf _libelle_kind(kind: chaine) -> chaine:
+    si kind == "artworks":
+        retour _t("comparison.kind.artworks")
+    si kind == "artists":
+        retour _t("comparison.kind.artists")
+    retour _t("comparison.kind.items")
+
+
 déf rendre_panneau_comparaison() -> chaine:
     """Rendre le panneau de comparaison entre entités sélectionnées"""
     entites = ui.etat.obtenir_entites_comparaison()
@@ -45,6 +68,8 @@ déf rendre_panneau_comparaison() -> chaine:
     pour entite dans entites:
         ids_entites.ajouter(entite.obtenir("id", ""))
 
+    kind = _obtenir_kind_comparaison(ids_entites)
+    kind_label = _libelle_kind(kind)
     artistes_communs = semantique.intersections.calculer_intersection_artistes(ids_entites)
     artistes_uniques = semantique.intersections.calculer_artistes_uniques(ids_entites)
     stats = semantique.intersections.obtenir_statistiques(ids_entites)
@@ -53,7 +78,7 @@ déf rendre_panneau_comparaison() -> chaine:
     toutes_chargees = vrai
     pour entite_id dans ids_entites:
         donnees = ui.etat.obtenir_donnees_comparaison().obtenir(entite_id, {})
-        si donnees.obtenir("artistes_ids", nul) est nul:
+        si donnees.obtenir("items_ids", donnees.obtenir("artistes_ids", nul)) est nul:
             toutes_chargees = faux
 
     si non toutes_chargees:
@@ -67,9 +92,9 @@ déf rendre_panneau_comparaison() -> chaine:
     nb_communs = stats.obtenir("artistes_communs_count", 0)
     html = html + '<div class="comparaison-resume">'
     si nb_communs > 0:
-        html = html + '<p class="comparaison-resume-texte">' + _ti("comparison.commonArtists", {"count": '<strong>' + chaine(nb_communs) + '</strong>'}) + '</p>'
+        html = html + '<p class="comparaison-resume-texte">' + _ti(_cle_comparaison(kind, "commonArtists"), {"count": '<strong>' + chaine(nb_communs) + '</strong>', "kind": kind_label}) + '</p>'
     sinon:
-        html = html + '<p class="comparaison-resume-texte">' + _t("comparison.noCommonArtists") + '</p>'
+        html = html + '<p class="comparaison-resume-texte">' + _ti(_cle_comparaison(kind, "noCommonArtists"), {"kind": kind_label}) + '</p>'
     html = html + '</div>'
 
     # Grille: colonnes entités + colonne centrale commune
@@ -84,7 +109,7 @@ déf rendre_panneau_comparaison() -> chaine:
 
         html = html + '<div class="comparaison-colonne">'
         html = html + '<h4 class="comparaison-col-titre">' + entite_label + '</h4>'
-        html = html + '<span class="comparaison-col-meta">' + _ti("comparison.columnMeta", {"total": total, "unique": len(uniques)}) + '</span>'
+        html = html + '<span class="comparaison-col-meta">' + _ti(_cle_comparaison(kind, "columnMeta"), {"total": total, "unique": len(uniques), "kind": kind_label}) + '</span>'
 
         si uniques:
             html = html + '<ul class="comparaison-liste">'
@@ -95,14 +120,14 @@ déf rendre_panneau_comparaison() -> chaine:
                 html = html + '<li class="comparaison-item comparaison-plus">+ ' + _ti("comparison.moreOthers", {"count": len(uniques) - 8}) + '</li>'
             html = html + '</ul>'
         sinon:
-            html = html + '<p class="comparaison-vide">' + _t("comparison.noUniqueArtist") + '</p>'
+            html = html + '<p class="comparaison-vide">' + _ti(_cle_comparaison(kind, "noUniqueArtist"), {"kind": kind_label}) + '</p>'
 
         html = html + '</div>'
 
     # Colonne centrale — artistes communs
     html = html + '<div class="comparaison-colonne comparaison-colonne-commun">'
     html = html + '<h4 class="comparaison-col-titre comparaison-col-titre-commun">' + _t("comparison.commonColumn") + '</h4>'
-    html = html + '<span class="comparaison-col-meta">' + _ti("comparison.artistCount", {"count": nb_communs}) + '</span>'
+    html = html + '<span class="comparaison-col-meta">' + _ti(_cle_comparaison(kind, "artistCount"), {"count": nb_communs, "kind": kind_label}) + '</span>'
 
     si artistes_communs:
         html = html + '<ul class="comparaison-liste">'
@@ -111,7 +136,7 @@ déf rendre_panneau_comparaison() -> chaine:
             html = html + '<li class="comparaison-item comparaison-commun">' + nom + '</li>'
         html = html + '</ul>'
     sinon:
-        html = html + '<p class="comparaison-vide">' + _t("comparison.noSharedArtist") + '</p>'
+        html = html + '<p class="comparaison-vide">' + _ti(_cle_comparaison(kind, "noSharedArtist"), {"kind": kind_label}) + '</p>'
 
     html = html + '</div>'
     html = html + '</div>'

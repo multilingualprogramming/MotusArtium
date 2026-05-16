@@ -135,15 +135,20 @@ classe Graphe:
 
         tantque len(queue) > 0:
             chemin = queue.pop(0)
-            noeud_actuel = chemin[-1]
+            noeud_actuel = chemin[len(chemin) - 1]
 
             pour voisin_id dans self.obtenir_voisins(noeud_actuel):
+                nouveau_chemin = []
+                pour etape_id dans chemin:
+                    nouveau_chemin.ajouter(etape_id)
+                nouveau_chemin.ajouter(voisin_id)
+
                 si voisin_id == noeud_arrivee_id:
-                    retour chemin + [voisin_id]
+                    retour nouveau_chemin
 
                 si voisin_id non dans visites:
                     visites.ajouter(voisin_id)
-                    queue.ajouter(chemin + [voisin_id])
+                    queue.ajouter(nouveau_chemin)
 
         retour []
 

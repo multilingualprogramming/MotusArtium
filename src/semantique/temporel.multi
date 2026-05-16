@@ -211,7 +211,7 @@ classe AnalyseArtiste:
             retour 0
 
         oeuvres_triees = sorted(self.oeuvres)
-        retour oeuvres_triees[-1] - oeuvres_triees[0]
+        retour oeuvres_triees[len(oeuvres_triees) - 1] - oeuvres_triees[0]
 
     déf obtenir_productivite_moyenne() -> nombre:
         """Calculer les œuvres par année"""

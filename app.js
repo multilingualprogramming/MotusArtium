@@ -19,6 +19,7 @@
         const stageTrailTextEl = document.getElementById("stage-trail-text");
         const explorationTrailEl = document.getElementById("exploration-trail");
         const selectedEntityNameEl = document.getElementById("selected-entity-name");
+        const selectedEntityImageEl = document.getElementById("selected-entity-image");
         const selectedEntityTypeEl = document.getElementById("selected-entity-type");
         const selectedEntityMetaEl = document.getElementById("selected-entity-meta");
         const selectedEntityActionEl = document.getElementById("selected-entity-action");
@@ -143,6 +144,7 @@
             lastError: "",
             lastRequestedEntityId: "",
             multilingualEntityLabels: {},
+            entityImageCache: {},
             stateSnapshot: null,
             querySession: [],
             requestPhase: "idle",
@@ -327,6 +329,61 @@
 
         function trimText(value, maxLength = 140) {
             return _sr()?.raccourcir_texte(value, maxLength) ?? "";
+        }
+
+        function buildCommonsThumbnail(fileName, width = 240) {
+            const cleaned = String(fileName || "").trim().replace(/\s+/g, "_");
+            return cleaned ? "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(cleaned) + "?width=" + width : "";
+        }
+
+        function extractWikidataP18Filename(data, entityId) {
+            const entityClaims = data && data.entities && data.entities[entityId] && data.entities[entityId].claims;
+            const claims = entityClaims || (data && data.claims) || {};
+            const imageClaim = claims && claims.P18 && claims.P18[0];
+            return imageClaim?.mainsnak?.datavalue?.value || "";
+        }
+
+        async function fetchSelectedEntityImageFilename(entityId) {
+            if (!/^Q\d+$/.test(String(entityId || ""))) {
+                return "";
+            }
+            if (Object.prototype.hasOwnProperty.call(runtimeState.entityImageCache, entityId)) {
+                return await runtimeState.entityImageCache[entityId];
+            }
+
+            const request = fetch("https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=" + encodeURIComponent(entityId) + "&property=P18&format=json&origin=*")
+                .then((response) => response.ok ? response.json() : null)
+                .then((data) => extractWikidataP18Filename(data, entityId))
+                .catch(() => "");
+
+            runtimeState.entityImageCache[entityId] = request;
+            const fileName = await request;
+            runtimeState.entityImageCache[entityId] = fileName || "";
+            return fileName || "";
+        }
+
+        async function hydrateSelectedEntityImage(entityId) {
+            const fileName = await fetchSelectedEntityImageFilename(entityId);
+            if (!fileName || runtimeState.selectedEntity.id !== entityId || !selectedEntityImageEl) {
+                if (selectedEntityImageEl && runtimeState.selectedEntity.id === entityId) {
+                    selectedEntityImageEl.dataset.imageStatus = "missing";
+                }
+                return;
+            }
+
+            const wrappedImage = { value: fileName };
+            browserAdapterState.cache_entites[entityId] = {
+                ...(browserAdapterState.cache_entites[entityId] || {}),
+                image: wrappedImage
+            };
+            if (window.ui?.etat?.cache_entites?.[entityId]) {
+                window.ui.etat.cache_entites[entityId].image = wrappedImage;
+            }
+
+            selectedEntityImageEl.src = buildCommonsThumbnail(fileName, 240);
+            selectedEntityImageEl.alt = runtimeState.selectedEntity.name || entityId;
+            selectedEntityImageEl.dataset.imageStatus = "loaded";
+            selectedEntityImageEl.hidden = false;
         }
 
         function summariseVariables(variables) {
@@ -1405,6 +1462,20 @@ function setActiveTier(tier, options = {}) {
         function renderSelectedEntity() {
             const activeEntity = currentEntityRecord();
             let metaText = describeEntityMeta(runtimeState.selectedEntity.type, activeEntity) || runtimeState.selectedEntity.meta || runtimeState.selectedEntity.id || traduireInterface("runtime.liveGraphQL");
+            const imageValue = fieldValue(activeEntity, "image");
+            const imageUrl = buildCommonsThumbnail(imageValue, 240);
+            if (selectedEntityImageEl) {
+                if (imageUrl) {
+                    selectedEntityImageEl.src = imageUrl;
+                    selectedEntityImageEl.alt = runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || "";
+                    selectedEntityImageEl.hidden = false;
+                } else {
+                    selectedEntityImageEl.removeAttribute("src");
+                    selectedEntityImageEl.alt = "";
+                    selectedEntityImageEl.hidden = true;
+                    hydrateSelectedEntityImage(runtimeState.selectedEntity.id);
+                }
+            }
             selectedEntityNameEl.textContent = runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || traduireInterface("runtime.awaitingSelection");
             selectedEntityTypeEl.textContent = runtimeState.selectedEntity.type || traduireInterface("runtime.entity");
             selectedEntityMetaEl.textContent = metaText;

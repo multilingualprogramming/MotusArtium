@@ -173,7 +173,8 @@ déf _normaliser_artiste_detail(item: dictionnaire) -> dictionnaire:
         "deathplace": _champ_entite(lieu_deces.obtenir("id", "")),
         "deathplaceLabel": _champ_valeur(lieu_deces.obtenir("label", "")),
         "movement": _champ_entite(mouvement.obtenir("id", "")),
-        "movementLabel": _champ_valeur(mouvement.obtenir("label", ""))
+        "movementLabel": _champ_valeur(mouvement.obtenir("label", "")),
+        "image": _champ_valeur(_extraire_texte(item.obtenir("image", [])))
     }
 
 

@@ -96,12 +96,9 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     donnees = entite.obtenir("donnees", {})
     entite_id = entite.obtenir("id", "")
     label = donnees.obtenir("artistLabel", {}).obtenir("value", "")
-    naissance = donnees.obtenir("birthTime", {}).obtenir("value", "")
-    deces = donnees.obtenir("deathTime", {}).obtenir("value", "")
-    lieu_naissance = donnees.obtenir("birthPlace", {})
-    lieu_naissance_label = ""
-    si lieu_naissance:
-        lieu_naissance_label = lieu_naissance.obtenir("label", "")
+    naissance = donnees.obtenir("birthDate", {}).obtenir("value", "")
+    deces = donnees.obtenir("deathDate", {}).obtenir("value", "")
+    lieu_naissance_label = donnees.obtenir("birthplaceLabel", {}).obtenir("value", "")
 
     # Etat de la trajectoire pour cet artiste
     est_depart = ui.etat.obtenir_trajectoire_depart_id() == entite_id
@@ -147,15 +144,9 @@ déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
     """Rendre les détails d'une œuvre"""
     donnees = entite.obtenir("donnees", {})
     label = donnees.obtenir("artworkLabel", {}).obtenir("value", "")
-    createur = donnees.obtenir("creator", {})
-    createur_label = ""
-    si createur:
-        createur_label = createur.obtenir("label", "")
-    date = donnees.obtenir("creationDate", {}).obtenir("value", "")
-    musee = donnees.obtenir("museum", {})
-    musee_label = ""
-    si musee:
-        musee_label = musee.obtenir("label", "")
+    createur_label = donnees.obtenir("creatorLabel", {}).obtenir("value", "")
+    date = donnees.obtenir("inceptionDate", {}).obtenir("value", "")
+    musee_label = donnees.obtenir("museumLabel", {}).obtenir("value", "")
     image_val = donnees.obtenir("image", {}).obtenir("value", "")
 
     html = '<div class="detail-section">'

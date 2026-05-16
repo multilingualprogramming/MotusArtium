@@ -401,7 +401,7 @@ function _normaliser_artiste_detail(item) {
   var lieu_naissance = _extraire_item(((item)?.["birthplace"] ?? []));
   var lieu_deces = _extraire_item(((item)?.["deathplace"] ?? []));
   var mouvement = _extraire_item(((item)?.["movement"] ?? []));
-  return {["artist"]: _champ_entite(((item)?.["id"] ?? "")), ["artistLabel"]: _champ_valeur(((item)?.["artistLabel"] ?? "")), ["birthDate"]: _champ_valeur(_extraire_temps(((item)?.["birthDate"] ?? []))), ["deathDate"]: _champ_valeur(_extraire_temps(((item)?.["deathDate"] ?? []))), ["birthplace"]: _champ_entite(((lieu_naissance)?.["id"] ?? "")), ["birthplaceLabel"]: _champ_valeur(((lieu_naissance)?.["label"] ?? "")), ["deathplace"]: _champ_entite(((lieu_deces)?.["id"] ?? "")), ["deathplaceLabel"]: _champ_valeur(((lieu_deces)?.["label"] ?? "")), ["movement"]: _champ_entite(((mouvement)?.["id"] ?? "")), ["movementLabel"]: _champ_valeur(((mouvement)?.["label"] ?? ""))};
+  return {["artist"]: _champ_entite(((item)?.["id"] ?? "")), ["artistLabel"]: _champ_valeur(((item)?.["artistLabel"] ?? "")), ["birthDate"]: _champ_valeur(_extraire_temps(((item)?.["birthDate"] ?? []))), ["deathDate"]: _champ_valeur(_extraire_temps(((item)?.["deathDate"] ?? []))), ["birthplace"]: _champ_entite(((lieu_naissance)?.["id"] ?? "")), ["birthplaceLabel"]: _champ_valeur(((lieu_naissance)?.["label"] ?? "")), ["deathplace"]: _champ_entite(((lieu_deces)?.["id"] ?? "")), ["deathplaceLabel"]: _champ_valeur(((lieu_deces)?.["label"] ?? "")), ["movement"]: _champ_entite(((mouvement)?.["id"] ?? "")), ["movementLabel"]: _champ_valeur(((mouvement)?.["label"] ?? "")), ["image"]: _champ_valeur(_extraire_texte(((item)?.["image"] ?? [])))};
 }
 
 function _normaliser_oeuvre_detail(item) {
@@ -2582,13 +2582,9 @@ function _rendre_detail_artiste(entite) {
   var donnees = ((entite)?.["donnees"] ?? {});
   var entite_id = ((entite)?.["id"] ?? "");
   var label = ((((donnees)?.["artistLabel"] ?? {}))?.["value"] ?? "");
-  var naissance = ((((donnees)?.["birthTime"] ?? {}))?.["value"] ?? "");
-  var deces = ((((donnees)?.["deathTime"] ?? {}))?.["value"] ?? "");
-  var lieu_naissance = ((donnees)?.["birthPlace"] ?? {});
-  var lieu_naissance_label = "";
-  if (__ml_truthy(lieu_naissance)) {
-    lieu_naissance_label = ((lieu_naissance)?.["label"] ?? "");
-  }
+  var naissance = ((((donnees)?.["birthDate"] ?? {}))?.["value"] ?? "");
+  var deces = ((((donnees)?.["deathDate"] ?? {}))?.["value"] ?? "");
+  var lieu_naissance_label = ((((donnees)?.["birthplaceLabel"] ?? {}))?.["value"] ?? "");
   var est_depart = (ui.etat.obtenir_trajectoire_depart_id() == entite_id);
   var est_arrivee = (ui.etat.obtenir_trajectoire_arrivee_id() == entite_id);
   var label_esc = label.replace("'", "\\'");
@@ -2635,17 +2631,9 @@ function _rendre_detail_oeuvre(entite) {
   "Rendre les détails d'une œuvre";
   var donnees = ((entite)?.["donnees"] ?? {});
   var label = ((((donnees)?.["artworkLabel"] ?? {}))?.["value"] ?? "");
-  var createur = ((donnees)?.["creator"] ?? {});
-  var createur_label = "";
-  if (__ml_truthy(createur)) {
-    createur_label = ((createur)?.["label"] ?? "");
-  }
-  var date = ((((donnees)?.["creationDate"] ?? {}))?.["value"] ?? "");
-  var musee = ((donnees)?.["museum"] ?? {});
-  var musee_label = "";
-  if (__ml_truthy(musee)) {
-    musee_label = ((musee)?.["label"] ?? "");
-  }
+  var createur_label = ((((donnees)?.["creatorLabel"] ?? {}))?.["value"] ?? "");
+  var date = ((((donnees)?.["inceptionDate"] ?? {}))?.["value"] ?? "");
+  var musee_label = ((((donnees)?.["museumLabel"] ?? {}))?.["value"] ?? "");
   var image_val = ((((donnees)?.["image"] ?? {}))?.["value"] ?? "");
   var html = "<div class=\"detail-section\">";
   if (__ml_truthy(image_val)) {

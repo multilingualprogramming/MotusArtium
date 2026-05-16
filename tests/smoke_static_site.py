@@ -370,6 +370,7 @@ def validate_recit_comparaison_contract(site_root: pathlib.Path) -> None:
         'id="comparison-panel-container"',
         'id="__ml_recit_root"',
         'id="__ml_comparison_root"',
+        'id="selected-entity-image"',
     ]
     for marker in html_markers:
         assert_contains(index_html, marker, "index.html récit/comparaison")
@@ -393,12 +394,32 @@ def validate_recit_comparaison_contract(site_root: pathlib.Path) -> None:
     for marker in bundle_recit_markers:
         assert_contains(bundle_js, marker, "bundle.js récit/comparaison")
 
+    detail_multi = site_root / "src/ui/composants/panneau_detail.multi"
+    if detail_multi.exists():
+        src = detail_multi.read_text(encoding="utf-8")
+        assert_contains(src, 'donnees.obtenir("image"', "panneau_detail.multi image")
+        assert_contains(src, '<img src="', "panneau_detail.multi image")
+        assert_contains(src, 'donnees.obtenir("birthDate"', "panneau_detail.multi artist fields")
+        assert_contains(src, 'donnees.obtenir("birthplaceLabel"', "panneau_detail.multi artist fields")
+        assert_contains(src, 'donnees.obtenir("inceptionDate"', "panneau_detail.multi artwork fields")
+        assert_contains(src, 'donnees.obtenir("creatorLabel"', "panneau_detail.multi artwork fields")
+
+    requetes_multi = site_root / "src/donnees/requetes.multi"
+    if requetes_multi.exists():
+        src = requetes_multi.read_text(encoding="utf-8")
+        assert_contains(src, '"image": _champ_valeur(_extraire_texte(item.obtenir("image", [])))', "requetes.multi artist image")
+
     # app.js: Récit mode visibility handling uses the correct deep module path
     app_markers = [
         "isRecitMode",
         "recit-visualization",
         "window.ui?.composants?.recit?.rendre_recit",
         "rendre_recit",
+        "function buildCommonsThumbnail",
+        "function fetchSelectedEntityImageFilename",
+        "wbgetclaims",
+        "extractWikidataP18Filename",
+        "selectedEntityImageEl",
     ]
     for marker in app_markers:
         assert_contains(app_js, marker, "app.js récit mode")

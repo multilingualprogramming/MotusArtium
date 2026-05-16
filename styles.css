@@ -118,7 +118,8 @@
             }
         }
 
-        .sr-only {
+        .sr-only,
+        .sr-only-focusable {
             position: absolute;
             width: 1px;
             height: 1px;

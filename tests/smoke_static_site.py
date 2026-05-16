@@ -205,6 +205,8 @@ def validate_bundle_graph_runtime(bundle_js: str) -> None:
         raise AssertionError("bundle.js lowers the movement loaded guard with ||")
     if "async function obtenir_artistes_mouvement(mouvement_id, limite)" in bundle_js:
         raise AssertionError("bundle.js dropped the artist query default limit")
+    if ".upper()" in bundle_js:
+        raise AssertionError("bundle.js contains a Python-style string upper() call")
 
     leaked_top_level_locals = [
         "\nvar uri = _uri_entite(entite_id);",

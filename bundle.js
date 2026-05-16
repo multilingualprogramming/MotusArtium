@@ -3915,7 +3915,11 @@ function rendre_surface_polyglotte(entite_selectionnee, labels, langue, entite_i
   }
   var etiquette_tronquee = String(etiquette).slice(undefined, 100);
   var badge_type = _traduire_type_entite(type_entite, langue);
-  var html = (((((((("<div class='polyglot-surface surface-" + langue) + "' lang='") + langue) + "' role='region' aria-label='") + _t("polyglot.surface.aria", langue)) + " ") + langue.upper()) + "'>");
+  var langue_badge = "FR";
+  if (__ml_truthy((langue == "en"))) {
+    langue_badge = "EN";
+  }
+  var html = (((((((("<div class='polyglot-surface surface-" + langue) + "' lang='") + langue) + "' role='region' aria-label='") + _t("polyglot.surface.aria", langue)) + " ") + langue_badge) + "'>");
   html = "<div class='entity-header'>";
   html = "<div style='flex: 1'>";
   html = (("<h3 class='entity-label'>" + etiquette_tronquee) + "</h3>");

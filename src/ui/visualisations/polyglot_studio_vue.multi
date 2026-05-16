@@ -330,8 +330,11 @@ déf rendre_surface_polyglotte(entite_selectionnee: dictionnaire, labels: dictio
 
     etiquette_tronquee = chaine(etiquette)[:100]
     badge_type = _traduire_type_entite(type_entite, langue)
+    langue_badge = "FR"
+    si langue == "en":
+        langue_badge = "EN"
 
-    html = "<div class='polyglot-surface surface-" + langue + "' lang='" + langue + "' role='region' aria-label='" + _t("polyglot.surface.aria", langue) + " " + langue.upper() + "'>"
+    html = "<div class='polyglot-surface surface-" + langue + "' lang='" + langue + "' role='region' aria-label='" + _t("polyglot.surface.aria", langue) + " " + langue_badge + "'>"
 
     html += "<div class='entity-header'>"
     html += "<div style='flex: 1'>"

@@ -3558,12 +3558,13 @@ function _t(cle) {
   return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
 }
 
-function _tuile_theme(sujet_id, label_cle, detail_cle) {
+function _tuile_theme(sujet_id, label_cle, detail_cle, glyph) {
   "Rendre une tuile thematique cliquable.";
   var label = _t(label_cle);
   var detail = _t(detail_cle);
   var html = "<button class=\"theme-tile\" role=\"listitem\" data-action=\"charger-sujet\" data-sujet-id=\"";
   html = ((((((((html + sujet_id) + "\" data-sujet-label=\"") + label) + "\" aria-label=\"") + _t("themeGrid.tile.ariaPrefix")) + " ") + label) + "\">");
+  html = (((html + "<span class=\"theme-tile-glyph\" aria-hidden=\"true\">") + glyph) + "</span>");
   html = (((html + "<span class=\"theme-tile-label\">") + label) + "</span>");
   html = (((html + "<span class=\"theme-tile-detail\">") + detail) + "</span>");
   html = (html + "</button>");
@@ -3573,14 +3574,14 @@ function _tuile_theme(sujet_id, label_cle, detail_cle) {
 function rendre_grille_themes() {
   "Rendre la grille de 8 tuiles thematiques pour la decouverte Story.";
   var html = (("<div class=\"theme-grid\" role=\"list\" aria-label=\"" + _t("themeGrid.aria")) + "\">");
-  html = (html + _tuile_theme("Q441", "themeGrid.nature.label", "themeGrid.nature.detail"));
-  html = (html + _tuile_theme("Q34379", "themeGrid.mythology.label", "themeGrid.mythology.detail"));
-  html = (html + _tuile_theme("Q45621", "themeGrid.religion.label", "themeGrid.religion.detail"));
-  html = (html + _tuile_theme("Q134307", "themeGrid.portrait.label", "themeGrid.portrait.detail"));
-  html = (html + _tuile_theme("Q515", "themeGrid.city.label", "themeGrid.city.detail"));
-  html = (html + _tuile_theme("Q9415", "themeGrid.love.label", "themeGrid.love.detail"));
-  html = (html + _tuile_theme("Q1221", "themeGrid.sea.label", "themeGrid.sea.detail"));
-  html = (html + _tuile_theme("Q198", "themeGrid.war.label", "themeGrid.war.detail"));
+  html = (html + _tuile_theme("Q441", "themeGrid.nature.label", "themeGrid.nature.detail", "🌿"));
+  html = (html + _tuile_theme("Q34379", "themeGrid.mythology.label", "themeGrid.mythology.detail", "⚡"));
+  html = (html + _tuile_theme("Q45621", "themeGrid.religion.label", "themeGrid.religion.detail", "✶"));
+  html = (html + _tuile_theme("Q134307", "themeGrid.portrait.label", "themeGrid.portrait.detail", "◎"));
+  html = (html + _tuile_theme("Q515", "themeGrid.city.label", "themeGrid.city.detail", "▦"));
+  html = (html + _tuile_theme("Q9415", "themeGrid.love.label", "themeGrid.love.detail", "♡"));
+  html = (html + _tuile_theme("Q1221", "themeGrid.sea.label", "themeGrid.sea.detail", "∿"));
+  html = (html + _tuile_theme("Q198", "themeGrid.war.label", "themeGrid.war.detail", "✕"));
   html = (html + "</div>");
   return html;
 }

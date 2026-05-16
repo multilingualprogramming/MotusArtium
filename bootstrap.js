@@ -173,11 +173,8 @@
                         }
                     } else {
                         await initialiser_application();
-                        // Set default selected entity for Impressionism
-                        if (window.ui && window.ui.etat) {
-                            window.ui.etat.entite_selectionnee_id = "Q40415";
-                            window.ui.etat.entite_selectionnee_type = "mouvement";
-                        }
+                        // F1: Actually load the default Impressionism entity so Story starts with content
+                        await loadInitialEntity("Q40415", "mouvement");
                     }
 
                     // Make detail panel visible for initial entity

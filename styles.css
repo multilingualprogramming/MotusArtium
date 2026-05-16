@@ -4167,3 +4167,43 @@
         .search-results-dropdown.is-active {
             display: block;
         }
+
+        /* ================================================================= */
+        /* F4 — Story progression CTAs: filled teal                          */
+        /* ================================================================= */
+
+        .story-actions .story-cta {
+            background: var(--accent-teal);
+            border-color: var(--accent-teal);
+            color: #fff;
+            font-weight: 600;
+            padding: 9px 20px;
+        }
+
+        .story-actions .story-cta:hover {
+            background: color-mix(in srgb, var(--accent-teal) 85%, #fff);
+            border-color: color-mix(in srgb, var(--accent-teal) 85%, #fff);
+        }
+
+        /* ================================================================= */
+        /* F19 — Tier panel fade-in animation on switch                      */
+        /* ================================================================= */
+
+        @keyframes panel-fade-in {
+            from { opacity: 0; transform: translateY(7px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel.is-entering {
+            animation: panel-fade-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        /* ================================================================= */
+        /* F2 — Theme tile glyph                                             */
+        /* ================================================================= */
+
+        .theme-tile-glyph {
+            font-size: 1.35rem;
+            line-height: 1;
+            margin-bottom: 2px;
+        }

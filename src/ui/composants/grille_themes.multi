@@ -7,12 +7,13 @@ déf _t(cle: chaine) -> chaine:
     retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
 
 
-déf _tuile_theme(sujet_id: chaine, label_cle: chaine, detail_cle: chaine) -> chaine:
+déf _tuile_theme(sujet_id: chaine, label_cle: chaine, detail_cle: chaine, glyph: chaine) -> chaine:
     """Rendre une tuile thematique cliquable."""
     label = _t(label_cle)
     detail = _t(detail_cle)
     html = '<button class="theme-tile" role="listitem" data-action="charger-sujet" data-sujet-id="'
     html = html + sujet_id + '" data-sujet-label="' + label + '" aria-label="' + _t("themeGrid.tile.ariaPrefix") + ' ' + label + '">'
+    html = html + '<span class="theme-tile-glyph" aria-hidden="true">' + glyph + '</span>'
     html = html + '<span class="theme-tile-label">' + label + '</span>'
     html = html + '<span class="theme-tile-detail">' + detail + '</span>'
     html = html + '</button>'
@@ -22,13 +23,13 @@ déf _tuile_theme(sujet_id: chaine, label_cle: chaine, detail_cle: chaine) -> ch
 déf rendre_grille_themes() -> chaine:
     """Rendre la grille de 8 tuiles thematiques pour la decouverte Story."""
     html = '<div class="theme-grid" role="list" aria-label="' + _t("themeGrid.aria") + '">'
-    html = html + _tuile_theme("Q441",    "themeGrid.nature.label",    "themeGrid.nature.detail")
-    html = html + _tuile_theme("Q34379",  "themeGrid.mythology.label", "themeGrid.mythology.detail")
-    html = html + _tuile_theme("Q45621",  "themeGrid.religion.label",  "themeGrid.religion.detail")
-    html = html + _tuile_theme("Q134307", "themeGrid.portrait.label",  "themeGrid.portrait.detail")
-    html = html + _tuile_theme("Q515",    "themeGrid.city.label",      "themeGrid.city.detail")
-    html = html + _tuile_theme("Q9415",   "themeGrid.love.label",      "themeGrid.love.detail")
-    html = html + _tuile_theme("Q1221",   "themeGrid.sea.label",       "themeGrid.sea.detail")
-    html = html + _tuile_theme("Q198",    "themeGrid.war.label",       "themeGrid.war.detail")
+    html = html + _tuile_theme("Q7860",    "themeGrid.nature.label",    "themeGrid.nature.detail",    "🌿")
+    html = html + _tuile_theme("Q9134",  "themeGrid.mythology.label", "themeGrid.mythology.detail", "⚡")
+    html = html + _tuile_theme("Q9174",  "themeGrid.religion.label",  "themeGrid.religion.detail",  "✶")
+    html = html + _tuile_theme("Q134307", "themeGrid.portrait.label",  "themeGrid.portrait.detail",  "◎")
+    html = html + _tuile_theme("Q515",    "themeGrid.city.label",      "themeGrid.city.detail",      "▦")
+    html = html + _tuile_theme("Q316",   "themeGrid.love.label",      "themeGrid.love.detail",      "♡")
+    html = html + _tuile_theme("Q165",   "themeGrid.sea.label",       "themeGrid.sea.detail",       "∿")
+    html = html + _tuile_theme("Q198",    "themeGrid.war.label",       "themeGrid.war.detail",       "✕")
     html = html + '</div>'
     retour html

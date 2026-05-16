@@ -84,7 +84,6 @@
             "entry-artists-copy": "shell.entry.artists.copy",
             "entry-themes-title": "shell.entry.themes.title",
             "entry-themes-copy": "shell.entry.themes.copy",
-            "app-root-hint": "shell.appRoot.hint",
             "polyglot-card-1-title": "shell.polyglot.card1.title",
             "polyglot-card-1-copy": "shell.polyglot.card1.copy",
             "polyglot-card-2-title": "shell.polyglot.card2.title",
@@ -94,7 +93,8 @@
             "story-subheading": "story.subheading",
             "story-to-explorer": "story.action.explorer",
             "story-to-observatory": "story.action.observatory",
-            "search-mode-hint": "search.hint.entity"
+            "search-mode-hint": "search.hint.entity",
+            "chronology-load-more": "collection.loadMoreMovements"
         };
 
         const supportedLanguages = ["fr", "en", "es"];
@@ -622,11 +622,7 @@
                     return;
                 }
                 const value = traduireInterface(key, {}, languageCode);
-                if (id === "app-root-hint") {
-                    element.innerHTML = value;
-                } else {
-                    element.textContent = value;
-                }
+                element.textContent = value;
             });
 
             langButtons.forEach((button) => {
@@ -918,15 +914,26 @@ function setActiveTier(tier, options = {}) {
                 observatorySubtabs.hidden = (tier !== "observatory");
             }
 
+            // F19: fade-in animation on the newly active panel
+            function animatePanel(panelEl) {
+                if (!panelEl) return;
+                panelEl.classList.remove("is-entering");
+                void panelEl.offsetWidth; // force reflow so animation restarts
+                panelEl.classList.add("is-entering");
+            }
+
             if (tier === "story") {
+                animatePanel(document.getElementById("story-panel"));
                 renderStoryTier();
                 if (runtimeState.currentMode !== "recit") {
                     applyShellMode("recit", { updateUrl: false });
                 }
             } else if (tier === "explorer") {
+                animatePanel(document.getElementById("explorer-panel"));
                 renderStoryTier();
                 renderExplorerFocus();
             } else if (tier === "observatory") {
+                animatePanel(document.querySelector(".stage.panel"));
                 const guideKey = "observatory-guide-seen";
                 if (!localStorage.getItem(guideKey)) {
                     const guide = document.getElementById("observatory-guide");
@@ -935,6 +942,9 @@ function setActiveTier(tier, options = {}) {
                 if (runtimeState.currentMode === "recit") {
                     applyShellMode("observatory", { updateUrl: false });
                 }
+                // F21: refresh constellation with current entity when arriving at Observatory
+                renderConstellation();
+                renderRuntimeState();
             }
 
             if (options.updateUrl !== false) {

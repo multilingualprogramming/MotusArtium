@@ -59,6 +59,7 @@ déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
 
     # Format simplifié (render: block)
     html = '<div class="detail-section">'
+    html = html + '<p class="detail-kicker">' + _t("runtime.entityType.movement") + '</p>'
     html = html + '<h3>' + label + '</h3>'
 
     si debut ou fin:
@@ -118,8 +119,10 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     image_val = donnees.obtenir("image", {}).obtenir("value", "")
     html = '<div class="detail-section">'
     si image_val:
-        url_vignette = utilitaires.media.construire_url_vignette(image_val, 200)
+        url_vignette = utilitaires.media.construire_url_vignette(image_val, 150)
         html = html + '<div class="detail-image"><img src="' + url_vignette + '" alt="' + label + '" loading="lazy" class="detail-thumb" /></div>'
+    html = html + '<div class="detail-body">'
+    html = html + '<p class="detail-kicker">' + _t("runtime.entityType.artist") + '</p>'
     html = html + '<h3>' + label + '</h3>'
 
     si naissance ou deces:
@@ -137,6 +140,7 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
     html = html + '<button class="detail-traj-btn" onclick="' + traj_onclick + '">' + traj_label + '</button>'
     html = html + '</div>'
     html = html + '</div>'
+    html = html + '</div>'
     retour html
 
 
@@ -151,8 +155,10 @@ déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
 
     html = '<div class="detail-section">'
     si image_val:
-        url_vignette = utilitaires.media.construire_url_vignette(image_val, 300)
+        url_vignette = utilitaires.media.construire_url_vignette(image_val, 200)
         html = html + '<div class="detail-image"><img src="' + url_vignette + '" alt="' + label + '" loading="lazy" class="detail-thumb" /></div>'
+    html = html + '<div class="detail-body">'
+    html = html + '<p class="detail-kicker">' + _t("runtime.entityType.work") + '</p>'
     html = html + '<h3>' + label + '</h3>'
 
     si createur_label:
@@ -164,6 +170,7 @@ déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
     si musee_label:
         html = html + '<p class="detail-row">' + _ti("detail.artwork.museum", {"value": musee_label}) + '</p>'
 
+    html = html + '</div>'
     html = html + '</div>'
     retour html
 

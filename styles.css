@@ -2476,22 +2476,16 @@
             display: none;
             overflow: hidden;
             margin-top: 20px;
-            border: 2px solid var(--line-soft);
-            border-radius: var(--radius-xl);
-            background:
-                linear-gradient(180deg, rgba(7, 14, 24, 0.96), rgba(10, 18, 30, 0.94)),
-                radial-gradient(circle at top right, rgba(214, 164, 88, 0.08), transparent 35%);
-            box-shadow: var(--shadow-panel), 0 0 36px rgba(139, 233, 253, 0.12);
-            -webkit-backdrop-filter: blur(22px);
-            backdrop-filter: blur(22px);
+            border: 1px solid var(--line-soft);
+            border-radius: var(--radius-sm);
+            background: var(--bg-panel);
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
         }
 
         html.theme-light .detail-panel-overlay {
-            background:
-                linear-gradient(180deg, rgba(248, 246, 242, 0.98), rgba(245, 243, 240, 0.96)),
-                radial-gradient(circle at top right, rgba(43, 143, 134, 0.06), transparent 35%) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
-            box-shadow: var(--shadow-panel), 0 0 36px rgba(77, 182, 172, 0.08) !important;
+            background: rgba(248, 246, 242, 0.98) !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
         }
 
         .detail-panel-overlay.is-active {
@@ -2535,25 +2529,86 @@
 
         #__ml_detail_root .detail-section {
             background: none;
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            align-items: flex-start;
         }
 
         #__ml_detail_root .detail-image {
-            margin: 0 0 14px;
+            flex: 0 0 88px;
+            width: 88px;
             overflow: hidden;
-            border-radius: 8px;
+            border-radius: 4px;
             background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         #__ml_detail_root .detail-thumb {
             display: block;
-            width: 100%;
-            max-height: 260px;
+            width: 88px;
+            height: 120px;
             object-fit: cover;
+        }
+
+        #__ml_detail_root .detail-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         html.theme-light #__ml_detail_root .detail-section {
             background: none !important;
+        }
+
+        html.theme-light #__ml_detail_root .detail-image {
+            background: rgba(0, 0, 0, 0.04) !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+
+        #__ml_detail_root .detail-section h3 {
+            margin: 0 0 6px;
+            font-size: 1.05rem;
+            line-height: 1.25;
+        }
+
+        #__ml_detail_root .detail-row {
+            margin: 4px 0 0;
+            font-size: 0.87rem;
+        }
+
+        #__ml_detail_root .detail-actions {
+            margin-top: 10px;
+        }
+
+        #__ml_detail_root .detail-traj-btn,
+        #__ml_detail_root .detail-geo-btn {
+            display: inline-block;
+            padding: 4px 10px;
+            font-family: "Courier New", monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 3px;
+            background: transparent;
+            cursor: pointer;
+            transition: box-shadow var(--transition-fast), background var(--transition-fast);
+        }
+
+        #__ml_detail_root .detail-traj-btn:hover,
+        #__ml_detail_root .detail-geo-btn:hover {
+            box-shadow: 0 0 8px var(--accent-cyan);
+            background: rgba(139, 233, 253, 0.06);
+        }
+
+        html.theme-light #__ml_detail_root .detail-traj-btn,
+        html.theme-light #__ml_detail_root .detail-geo-btn {
+            color: #007aaa !important;
+            border-color: #007aaa !important;
         }
 
         #__ml_detail_root button,

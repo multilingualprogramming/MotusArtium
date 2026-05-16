@@ -2637,6 +2637,7 @@ function _rendre_detail_mouvement(entite) {
     pays_label = ((pays)?.["label"] ?? "");
   }
   var html = "<div class=\"detail-section\">";
+  html = (((html + "<p class=\"detail-kicker\">") + _t("runtime.entityType.movement")) + "</p>");
   html = (((html + "<h3>") + label) + "</h3>");
   if ((__ml_truthy(debut) || __ml_truthy(fin))) {
     var periodes = [];
@@ -2695,9 +2696,11 @@ function _rendre_detail_artiste(entite) {
   var image_val = ((((donnees)?.["image"] ?? {}))?.["value"] ?? "");
   var html = "<div class=\"detail-section\">";
   if (__ml_truthy(image_val)) {
-    var url_vignette = utilitaires.media.construire_url_vignette(image_val, 200);
+    var url_vignette = utilitaires.media.construire_url_vignette(image_val, 150);
     html = (((((html + "<div class=\"detail-image\"><img src=\"") + url_vignette) + "\" alt=\"") + label) + "\" loading=\"lazy\" class=\"detail-thumb\" /></div>");
   }
+  html = (html + "<div class=\"detail-body\">");
+  html = (((html + "<p class=\"detail-kicker\">") + _t("runtime.entityType.artist")) + "</p>");
   html = (((html + "<h3>") + label) + "</h3>");
   if ((__ml_truthy(naissance) || __ml_truthy(deces))) {
     var periodes = [];
@@ -2716,6 +2719,7 @@ function _rendre_detail_artiste(entite) {
   html = (((((html + "<button class=\"detail-traj-btn\" onclick=\"") + traj_onclick) + "\">") + traj_label) + "</button>");
   html = (html + "</div>");
   html = (html + "</div>");
+  html = (html + "</div>");
   return html;
 }
 
@@ -2729,9 +2733,11 @@ function _rendre_detail_oeuvre(entite) {
   var image_val = ((((donnees)?.["image"] ?? {}))?.["value"] ?? "");
   var html = "<div class=\"detail-section\">";
   if (__ml_truthy(image_val)) {
-    var url_vignette = utilitaires.media.construire_url_vignette(image_val, 300);
+    var url_vignette = utilitaires.media.construire_url_vignette(image_val, 200);
     html = (((((html + "<div class=\"detail-image\"><img src=\"") + url_vignette) + "\" alt=\"") + label) + "\" loading=\"lazy\" class=\"detail-thumb\" /></div>");
   }
+  html = (html + "<div class=\"detail-body\">");
+  html = (((html + "<p class=\"detail-kicker\">") + _t("runtime.entityType.work")) + "</p>");
   html = (((html + "<h3>") + label) + "</h3>");
   if (__ml_truthy(createur_label)) {
     html = (((html + "<p class=\"detail-row\">") + _ti("detail.artwork.creator", {["value"]: createur_label})) + "</p>");
@@ -2742,6 +2748,7 @@ function _rendre_detail_oeuvre(entite) {
   if (__ml_truthy(musee_label)) {
     html = (((html + "<p class=\"detail-row\">") + _ti("detail.artwork.museum", {["value"]: musee_label})) + "</p>");
   }
+  html = (html + "</div>");
   html = (html + "</div>");
   return html;
 }

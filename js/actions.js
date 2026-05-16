@@ -40,6 +40,13 @@
                 }
             });
 
+            register("replay-session", async function(el) {
+                const sessionId = parseInt(el.dataset.sessionId, 10);
+                if (typeof window.replayQuerySessionById === "function") {
+                    await window.replayQuerySessionById(sessionId);
+                }
+            });
+
             // Expose for app.js / bootstrap.js to register additional actions.
             window.motusActions = { register };
         }());

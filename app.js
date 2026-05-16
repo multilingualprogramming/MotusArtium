@@ -253,24 +253,7 @@
         }
 
         function findSelectedEntityId(variables) {
-            if (!variables) {
-                return "";
-            }
-            return variables.id || variables.movementId || variables.artistId || variables.subjectId || variables.museumId || "";
-        }
-
-        function inferLabelFromRecord(record) {
-            if (!record || typeof record !== "object") {
-                return "";
-            }
-            return fieldValue(record, "subjectLabel") || fieldValue(record, "museumLabel") || fieldValue(record, "movementLabel") || fieldValue(record, "artistLabel") || fieldValue(record, "artworkLabel") || fieldValue(record, "countryLabel") || fieldValue(record, "label") || "";
-        }
-
-        function inferIdFromRecord(record) {
-            if (!record || typeof record !== "object") {
-                return "";
-            }
-            return record.id || "";
+            return _sr()?.trouver_id_entite(variables || {}) ?? "";
         }
 
         function buildShapeTree(value, depth = 0) {
@@ -311,39 +294,15 @@
         }
 
         function trimText(value, maxLength = 140) {
-            const text = String(value || "").replace(/\s+/g, " ").trim();
-            if (!text) {
-                return "";
-            }
-            return text.length > maxLength ? text.slice(0, maxLength - 1) + "…" : text;
+            return _sr()?.raccourcir_texte(value, maxLength) ?? "";
         }
 
         function summariseVariables(variables) {
-            const entries = Object.entries(variables || {}).filter(([, value]) => value !== "" && value != null);
-            if (!entries.length) {
-                return traduireInterface("query.variables.none");
-            }
-            return entries.slice(0, 3).map(([key, value]) => key + ": " + value).join(" · ");
+            return _sr()?.decrire_variables(variables || {}, runtimeState.currentLanguage || "fr") ?? "";
         }
 
         function narrativeForDocument(documentName, variables) {
-            const selectedId = findSelectedEntityId(variables);
-            const target = selectedId || traduireInterface("query.target.currentSelection");
-            const narrativeKeys = {
-                "movement_details.graphql": "queryNarrative.movement_details",
-                "movement_evolution.graphql": "queryNarrative.movement_evolution",
-                "artists_by_movement.graphql": "queryNarrative.artists_by_movement",
-                "artist_details.graphql": "queryNarrative.artist_details",
-                "artist_influences.graphql": "queryNarrative.artist_influences",
-                "artworks_by_artist.graphql": "queryNarrative.artworks_by_artist",
-                "artwork_details.graphql": "queryNarrative.artwork_details",
-                "artworks_by_museum.graphql": "queryNarrative.artworks_by_museum",
-                "artworks_by_subject.graphql": "queryNarrative.artworks_by_subject",
-                "movements_catalog.graphql": "queryNarrative.movements_catalog",
-                "entity_label.graphql": "queryNarrative.entity_label"
-            };
-            const key = narrativeKeys[documentName] || "queryNarrative.default";
-            return traduireInterface(key, { documentName, target });
+            return _sr()?.narratif_document(documentName, variables || {}, runtimeState.currentLanguage || "fr") ?? "";
         }
 
         function beginQuerySession(documentName, variables) {
@@ -388,68 +347,14 @@
         }
 
         function extractPrimaryEntity(data) {
-            if (!data || typeof data !== "object") {
-                return null;
-            }
-
-            if (data.item && typeof data.item === "object") {
-                return {
-                    id: inferIdFromRecord(data.item),
-                    label: inferLabelFromRecord(data.item),
-                    source: "item",
-                    count: 1
-                };
-            }
-
-            if (Array.isArray(data.itemsById) && data.itemsById.length) {
-                const first = data.itemsById[0];
-                return {
-                    id: inferIdFromRecord(first),
-                    label: inferLabelFromRecord(first),
-                    source: "itemsById",
-                    count: data.itemsById.length
-                };
-            }
-
-            if (data.searchItems && Array.isArray(data.searchItems.edges)) {
-                const edges = data.searchItems.edges;
-                const firstNode = edges[0] && edges[0].node ? edges[0].node : {};
-                return {
-                    id: inferIdFromRecord(firstNode),
-                    label: inferLabelFromRecord(firstNode),
-                    source: "searchItems",
-                    count: edges.length
-                };
-            }
-
-            const rootKeys = Object.keys(data);
-            for (const key of rootKeys) {
-                const candidate = data[key];
-                if (Array.isArray(candidate) && candidate.length && typeof candidate[0] === "object") {
-                    return {
-                        id: inferIdFromRecord(candidate[0]),
-                        label: inferLabelFromRecord(candidate[0]),
-                        source: key,
-                        count: candidate.length
-                    };
-                }
-            }
-
-            return null;
+            const sr = _sr();
+            if (!sr) return null;
+            const result = sr.extraire_entite_principale(data || {});
+            return result && result.source ? result : null;
         }
 
         function describeResponse(data) {
-            const primary = extractPrimaryEntity(data);
-            if (primary && primary.source === "searchItems") {
-                return traduireInterface("runtime.response.searchItems", { count: primary.count });
-            }
-            if (primary && primary.source === "itemsById") {
-                return traduireInterface("runtime.response.itemsById", { count: primary.count });
-            }
-            if (primary && primary.source === "item") {
-                return traduireInterface("runtime.response.item");
-            }
-            return traduireInterface("runtime.liveGraphQLResponse");
+            return _sr()?.decrire_reponse(data, runtimeState.currentLanguage || "fr") ?? "";
         }
 
         function renderQueryDocList() {
@@ -485,40 +390,14 @@
         }
 
         function renderQuerySession() {
-            if (!querySessionListEl) {
-                return;
-            }
-
-            const entries = runtimeState.querySession || [];
-            if (!entries.length) {
-                querySessionListEl.innerHTML = '<div class="session-entry"><strong>' + escapeHtml(traduireInterface("session.emptyTitle")) + '</strong><small>' + escapeHtml(traduireInterface("session.emptyDetail")) + '</small></div>';
-                return;
-            }
-
-            querySessionListEl.innerHTML = "";
-            entries.forEach((entry, index) => {
-                const wrapper = document.createElement("button");
-                wrapper.type = "button";
-                wrapper.className = "session-entry" + (index === 0 ? " is-live" : "") + (entry.status === "error" ? " is-error" : "") + (entry.id === runtimeState.replayingSessionId ? " is-replaying" : "");
-                wrapper.title = traduireInterface("session.replayTitle");
-
-                const title = document.createElement("strong");
-                title.textContent = entry.documentName;
-
-                const meta = document.createElement("small");
-                meta.textContent = entry.summary || summariseVariables(entry.variables);
-
-                const detail = document.createElement("small");
-                detail.textContent = entry.narrative;
-
-                wrapper.appendChild(title);
-                wrapper.appendChild(meta);
-                wrapper.appendChild(detail);
-                wrapper.addEventListener("click", async () => {
-                    await replayQuerySession(entry);
-                });
-                querySessionListEl.appendChild(wrapper);
-            });
+            if (!querySessionListEl) return;
+            const sr = _sr();
+            if (!sr) return;
+            querySessionListEl.innerHTML = sr.rendre_session_requetes(
+                runtimeState.querySession || [],
+                runtimeState.replayingSessionId || 0,
+                runtimeState.currentLanguage || "fr"
+            );
         }
 
         function resetRuntimePresentationState() {
@@ -937,6 +816,11 @@ function setActiveTier(tier, options = {}) {
         }
 
         window.setActiveTier = setActiveTier;
+
+        window.replayQuerySessionById = async function(sessionId) {
+            const entry = (runtimeState.querySession || []).find((e) => e.id === sessionId);
+            if (entry) await replayQuerySession(entry);
+        };
 
         function applyTierFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -2631,6 +2515,7 @@ function setActiveTier(tier, options = {}) {
         }
 
         const _graphe = () => window.ui?.visualisations?.graphe_vue || null;
+        const _sr = () => window.ui?.composants?.session_requete || null;
 
         function computeConstellationLayout() {
             const g = _graphe();

@@ -4158,6 +4158,180 @@ window.ui.visualisations.graphe_vue = window.ui.visualisations.graphe_vue || {};
 Object.assign(window.ui.visualisations.graphe_vue, {_placer_noeuds_secteur: _placer_noeuds_secteur, _secteurs_disposition_semantique: _secteurs_disposition_semantique, calculer_disposition_constellation: calculer_disposition_constellation});
 })();
 
+(() => {
+function _t(cle, langue) {
+  return ui.i18n.obtenir_texte(cle, langue);
+}
+
+function trouver_id_entite(variables) {
+  if ((!__ml_truthy(variables))) {
+    return "";
+  }
+  var v = ((variables)?.["id"] ?? ((variables)?.["movementId"] ?? ((variables)?.["artistId"] ?? ((variables)?.["subjectId"] ?? ((variables)?.["museumId"] ?? "")))));
+  return String(v);
+}
+
+function _inferer_id(enregistrement) {
+  if (((!__ml_truthy(enregistrement)) || (!__ml_truthy((type(enregistrement) == dictionnaire))))) {
+    return "";
+  }
+  return String(((enregistrement)?.["id"] ?? ""));
+}
+
+function _inferer_label(enregistrement) {
+  if (((!__ml_truthy(enregistrement)) || (!__ml_truthy((type(enregistrement) == dictionnaire))))) {
+    return "";
+  }
+  for (const cle of __ml_iterate(["subjectLabel", "museumLabel", "movementLabel", "artistLabel", "artworkLabel", "countryLabel", "label"])) {
+    var val = ((enregistrement)?.[cle] ?? "");
+    if (__ml_truthy((type(val) == dictionnaire))) {
+      var v = ((val)?.["value"] ?? "");
+      if (__ml_truthy(v)) {
+        return String(v);
+      }
+    }
+    else if (__ml_truthy(val)) {
+      return String(val);
+    }
+  }
+  return "";
+}
+
+function raccourcir_texte(valeur, longueur) {
+  var texte = String((valeur || ""));
+  if ((!__ml_truthy(texte))) {
+    return "";
+  }
+  if (__ml_truthy(((texte).length > longueur))) {
+    return (texte.slice(undefined, (longueur - 1)) + "…");
+  }
+  return texte;
+}
+
+function decrire_variables(variables, langue) {
+  if ((!__ml_truthy(variables))) {
+    return _t("query.variables.none", langue);
+  }
+  var parties = [];
+  for (const cle of __ml_iterate(variables)) {
+    if (__ml_truthy(((parties).length < 3))) {
+      var val = ((variables)?.[cle] ?? "");
+      if (__ml_truthy((String(val) != ""))) {
+        __ml_add(parties, ((cle + ": ") + String(val)));
+      }
+    }
+  }
+  if ((!__ml_truthy(parties))) {
+    return _t("query.variables.none", langue);
+  }
+  return (parties).join(" · ");
+}
+
+function narratif_document(nom_doc, variables, langue) {
+  var id_selectionne = trouver_id_entite(variables);
+  var cible = (__ml_truthy(id_selectionne) ? id_selectionne : _t("query.target.currentSelection", langue));
+  var cles_narratifs = {["movement_details.graphql"]: "queryNarrative.movement_details", ["movement_evolution.graphql"]: "queryNarrative.movement_evolution", ["artists_by_movement.graphql"]: "queryNarrative.artists_by_movement", ["artist_details.graphql"]: "queryNarrative.artist_details", ["artist_influences.graphql"]: "queryNarrative.artist_influences", ["artworks_by_artist.graphql"]: "queryNarrative.artworks_by_artist", ["artwork_details.graphql"]: "queryNarrative.artwork_details", ["artworks_by_museum.graphql"]: "queryNarrative.artworks_by_museum", ["artworks_by_subject.graphql"]: "queryNarrative.artworks_by_subject", ["movements_catalog.graphql"]: "queryNarrative.movements_catalog", ["entity_label.graphql"]: "queryNarrative.entity_label"};
+  var cle = ((cles_narratifs)?.[nom_doc] ?? "queryNarrative.default");
+  var modele = _t(cle, langue);
+  return modele.replace("{target}", cible).replace("{documentName}", nom_doc);
+}
+
+function extraire_entite_principale(donnees) {
+  if (((!__ml_truthy(donnees)) || (!__ml_truthy((type(donnees) == dictionnaire))))) {
+    return {};
+  }
+  var element = ((donnees)?.["item"] ?? null);
+  if ((__ml_truthy(element) && __ml_truthy((type(element) == dictionnaire)))) {
+    return {["id"]: _inferer_id(element), ["label"]: _inferer_label(element), ["source"]: "item", ["count"]: 1};
+  }
+  var elements_par_id = ((donnees)?.["itemsById"] ?? []);
+  if ((__ml_truthy((type(elements_par_id) == liste)) && __ml_truthy(((elements_par_id).length > 0)))) {
+    var premier = elements_par_id[0];
+    return {["id"]: _inferer_id(premier), ["label"]: _inferer_label(premier), ["source"]: "itemsById", ["count"]: (elements_par_id).length};
+  }
+  var resultats = ((donnees)?.["searchItems"] ?? {});
+  var aretes = [];
+  if (__ml_truthy((type(resultats) == dictionnaire))) {
+    aretes = ((resultats)?.["edges"] ?? []);
+  }
+  if ((__ml_truthy((type(aretes) == liste)) && __ml_truthy(((aretes).length > 0)))) {
+    var premier_noeud = ((aretes[0])?.["node"] ?? {});
+    return {["id"]: _inferer_id(premier_noeud), ["label"]: _inferer_label(premier_noeud), ["source"]: "searchItems", ["count"]: (aretes).length};
+  }
+  for (const cle of __ml_iterate(donnees)) {
+    var candidat = ((donnees)?.[cle] ?? []);
+    if ((__ml_truthy((type(candidat) == liste)) && __ml_truthy(((candidat).length > 0)))) {
+      premier = candidat[0];
+      if (__ml_truthy((type(premier) == dictionnaire))) {
+        return {["id"]: _inferer_id(premier), ["label"]: _inferer_label(premier), ["source"]: cle, ["count"]: (candidat).length};
+      }
+    }
+  }
+  return {};
+}
+
+function decrire_reponse(donnees, langue) {
+  var principal = extraire_entite_principale(donnees);
+  if ((!__ml_truthy(principal))) {
+    return _t("runtime.liveGraphQLResponse", langue);
+  }
+  var source = ((principal)?.["source"] ?? "");
+  var compte = String(((principal)?.["count"] ?? 0));
+  if (__ml_truthy((source == "searchItems"))) {
+    return _t("runtime.response.searchItems", langue).replace("{count}", compte);
+  }
+  if (__ml_truthy((source == "itemsById"))) {
+    return _t("runtime.response.itemsById", langue).replace("{count}", compte);
+  }
+  if (__ml_truthy((source == "item"))) {
+    return _t("runtime.response.item", langue);
+  }
+  return _t("runtime.liveGraphQLResponse", langue);
+}
+
+function rendre_session_requetes(entrees, id_replay, langue) {
+  if (((!__ml_truthy(entrees)) || (!__ml_truthy(((entrees).length > 0))))) {
+    var titre_vide = _t("session.emptyTitle", langue);
+    var detail_vide = _t("session.emptyDetail", langue);
+    return (((("<div class='session-entry'><strong>" + titre_vide) + "</strong><small>") + detail_vide) + "</small></div>");
+  }
+  var html = "";
+  var index = 0;
+  for (const entree of __ml_iterate(entrees)) {
+    var classes = "session-entry";
+    if (__ml_truthy((index == 0))) {
+      classes = (classes + " is-live");
+    }
+    if (__ml_truthy((((entree)?.["status"] ?? "") == "error"))) {
+      classes = (classes + " is-error");
+    }
+    var id_entree = ((entree)?.["id"] ?? 0);
+    if ((__ml_truthy((id_entree == id_replay)) && __ml_truthy((id_replay > 0)))) {
+      classes = (classes + " is-replaying");
+    }
+    var id_session = String(id_entree);
+    var nom_doc = ((entree)?.["documentName"] ?? "");
+    var resume = ((entree)?.["summary"] ?? "");
+    if ((!__ml_truthy(resume))) {
+      resume = decrire_variables(((entree)?.["variables"] ?? {}), langue);
+    }
+    var narratif = ((entree)?.["narrative"] ?? "");
+    html = (((((html + "<button type='button' class='") + classes) + "' data-session-id='") + id_session) + "' data-action='replay-session'>");
+    html = (((html + "<strong>") + nom_doc) + "</strong>");
+    html = (((html + "<small>") + resume) + "</small>");
+    html = (((html + "<small>") + narratif) + "</small>");
+    html = (html + "</button>");
+    index = (index + 1);
+  }
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.session_requete = window.ui.composants.session_requete || {};
+Object.assign(window.ui.composants.session_requete, {_t: _t, trouver_id_entite: trouver_id_entite, _inferer_id: _inferer_id, _inferer_label: _inferer_label, raccourcir_texte: raccourcir_texte, decrire_variables: decrire_variables, narratif_document: narratif_document, extraire_entite_principale: extraire_entite_principale, decrire_reponse: decrire_reponse, rendre_session_requetes: rendre_session_requetes});
+})();
+
 async function charger_mouvement(mouvement_id) {
   "Charger un mouvement et retour l'entité sélectionnée";
   await ui.etat.charger_mouvement(mouvement_id);

@@ -1,0 +1,174 @@
+importer ui.i18n
+
+
+déf _t(cle: chaine, langue: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, langue)
+
+
+déf trouver_id_entite(variables: dictionnaire) -> chaine:
+    si non variables:
+        retour ""
+    v = variables.obtenir("id", variables.obtenir("movementId", variables.obtenir("artistId", variables.obtenir("subjectId", variables.obtenir("museumId", "")))))
+    retour chaine(v)
+
+
+déf _inferer_id(enregistrement: dictionnaire) -> chaine:
+    si non enregistrement ou non (type(enregistrement) == dictionnaire):
+        retour ""
+    retour chaine(enregistrement.obtenir("id", ""))
+
+
+déf _inferer_label(enregistrement: dictionnaire) -> chaine:
+    si non enregistrement ou non (type(enregistrement) == dictionnaire):
+        retour ""
+    pour cle dans ["subjectLabel", "museumLabel", "movementLabel", "artistLabel", "artworkLabel", "countryLabel", "label"]:
+        val = enregistrement.obtenir(cle, "")
+        si type(val) == dictionnaire:
+            v = val.obtenir("value", "")
+            si v:
+                retour chaine(v)
+        sinon si val:
+            retour chaine(val)
+    retour ""
+
+
+déf raccourcir_texte(valeur, longueur: nombre) -> chaine:
+    texte = chaine(valeur ou "")
+    si non texte:
+        retour ""
+    si len(texte) > longueur:
+        retour texte[:longueur - 1] + "…"
+    retour texte
+
+
+déf decrire_variables(variables: dictionnaire, langue: chaine) -> chaine:
+    si non variables:
+        retour _t("query.variables.none", langue)
+    parties = []
+    pour cle dans variables:
+        si len(parties) < 3:
+            val = variables.obtenir(cle, "")
+            si chaine(val) != "":
+                parties.ajouter(cle + ": " + chaine(val))
+    si non parties:
+        retour _t("query.variables.none", langue)
+    retour " · ".joindre(parties)
+
+
+déf narratif_document(nom_doc: chaine, variables: dictionnaire, langue: chaine) -> chaine:
+    id_selectionne = trouver_id_entite(variables)
+    cible = id_selectionne si id_selectionne sinon _t("query.target.currentSelection", langue)
+    cles_narratifs = {
+        "movement_details.graphql": "queryNarrative.movement_details",
+        "movement_evolution.graphql": "queryNarrative.movement_evolution",
+        "artists_by_movement.graphql": "queryNarrative.artists_by_movement",
+        "artist_details.graphql": "queryNarrative.artist_details",
+        "artist_influences.graphql": "queryNarrative.artist_influences",
+        "artworks_by_artist.graphql": "queryNarrative.artworks_by_artist",
+        "artwork_details.graphql": "queryNarrative.artwork_details",
+        "artworks_by_museum.graphql": "queryNarrative.artworks_by_museum",
+        "artworks_by_subject.graphql": "queryNarrative.artworks_by_subject",
+        "movements_catalog.graphql": "queryNarrative.movements_catalog",
+        "entity_label.graphql": "queryNarrative.entity_label"
+    }
+    cle = cles_narratifs.obtenir(nom_doc, "queryNarrative.default")
+    modele = _t(cle, langue)
+    retour modele.remplacer("{target}", cible).remplacer("{documentName}", nom_doc)
+
+
+déf extraire_entite_principale(donnees: dictionnaire) -> dictionnaire:
+    si non donnees ou non (type(donnees) == dictionnaire):
+        retour {}
+
+    element = donnees.obtenir("item", nul)
+    si element et type(element) == dictionnaire:
+        retour {
+            "id": _inferer_id(element),
+            "label": _inferer_label(element),
+            "source": "item",
+            "count": 1
+        }
+
+    elements_par_id = donnees.obtenir("itemsById", [])
+    si type(elements_par_id) == liste et len(elements_par_id) > 0:
+        premier = elements_par_id[0]
+        retour {
+            "id": _inferer_id(premier),
+            "label": _inferer_label(premier),
+            "source": "itemsById",
+            "count": len(elements_par_id)
+        }
+
+    resultats = donnees.obtenir("searchItems", {})
+    aretes = []
+    si type(resultats) == dictionnaire:
+        aretes = resultats.obtenir("edges", [])
+    si type(aretes) == liste et len(aretes) > 0:
+        premier_noeud = aretes[0].obtenir("node", {})
+        retour {
+            "id": _inferer_id(premier_noeud),
+            "label": _inferer_label(premier_noeud),
+            "source": "searchItems",
+            "count": len(aretes)
+        }
+
+    pour cle dans donnees:
+        candidat = donnees.obtenir(cle, [])
+        si type(candidat) == liste et len(candidat) > 0:
+            premier = candidat[0]
+            si type(premier) == dictionnaire:
+                retour {
+                    "id": _inferer_id(premier),
+                    "label": _inferer_label(premier),
+                    "source": cle,
+                    "count": len(candidat)
+                }
+
+    retour {}
+
+
+déf decrire_reponse(donnees: dictionnaire, langue: chaine) -> chaine:
+    principal = extraire_entite_principale(donnees)
+    si non principal:
+        retour _t("runtime.liveGraphQLResponse", langue)
+    source = principal.obtenir("source", "")
+    compte = chaine(principal.obtenir("count", 0))
+    si source == "searchItems":
+        retour _t("runtime.response.searchItems", langue).remplacer("{count}", compte)
+    si source == "itemsById":
+        retour _t("runtime.response.itemsById", langue).remplacer("{count}", compte)
+    si source == "item":
+        retour _t("runtime.response.item", langue)
+    retour _t("runtime.liveGraphQLResponse", langue)
+
+
+déf rendre_session_requetes(entrees: liste, id_replay: nombre, langue: chaine) -> chaine:
+    si non entrees ou non (len(entrees) > 0):
+        titre_vide = _t("session.emptyTitle", langue)
+        detail_vide = _t("session.emptyDetail", langue)
+        retour "<div class='session-entry'><strong>" + titre_vide + "</strong><small>" + detail_vide + "</small></div>"
+
+    html = ""
+    index = 0
+    pour entree dans entrees:
+        classes = "session-entry"
+        si index == 0:
+            classes = classes + " is-live"
+        si entree.obtenir("status", "") == "error":
+            classes = classes + " is-error"
+        id_entree = entree.obtenir("id", 0)
+        si id_entree == id_replay et id_replay > 0:
+            classes = classes + " is-replaying"
+        id_session = chaine(id_entree)
+        nom_doc = entree.obtenir("documentName", "")
+        resume = entree.obtenir("summary", "")
+        si non resume:
+            resume = decrire_variables(entree.obtenir("variables", {}), langue)
+        narratif = entree.obtenir("narrative", "")
+        html = html + "<button type='button' class='" + classes + "' data-session-id='" + id_session + "' data-action='replay-session'>"
+        html = html + "<strong>" + nom_doc + "</strong>"
+        html = html + "<small>" + resume + "</small>"
+        html = html + "<small>" + narratif + "</small>"
+        html = html + "</button>"
+        index = index + 1
+    retour html

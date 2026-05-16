@@ -274,13 +274,13 @@ asynchrone déf _recuperer_mouvements_catalogue() -> liste:
 # Requêtes pour les mouvements artistiques
 # ============================================================================
 
-asynchrone déf obtenir_mouvement_details(mouvement_id: chaine) -> dictionnaire:
+asynchrone déf obtenir_mouvement_details(mouvement_id: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère les détails d'un mouvement artistique via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "movement_details.graphql",
         {
             "id": mouvement_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -337,13 +337,13 @@ asynchrone déf obtenir_mouvements_evolution(mouvement_id: chaine) -> dictionnai
 # Requêtes pour les artistes
 # ============================================================================
 
-asynchrone déf obtenir_artiste_details(artiste_id: chaine) -> dictionnaire:
+asynchrone déf obtenir_artiste_details(artiste_id: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère les détails d'un artiste via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artist_details.graphql",
         {
             "id": artiste_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -353,13 +353,13 @@ asynchrone déf obtenir_artiste_details(artiste_id: chaine) -> dictionnaire:
     retour {}
 
 
-asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre = 50) -> liste:
+asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre = 50, langue: chaine = LANGUE_PAR_DEFAUT) -> liste:
     """Récupère les artistes associés à un mouvement via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artists_by_movement.graphql",
         {
             "movementId": mouvement_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -374,13 +374,13 @@ asynchrone déf obtenir_artistes_mouvement(mouvement_id: chaine, limite: nombre 
     retour resultats
 
 
-asynchrone déf obtenir_influences_artiste(artiste_id: chaine) -> dictionnaire:
+asynchrone déf obtenir_influences_artiste(artiste_id: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère le réseau d'influences d'un artiste via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artist_influences.graphql",
         {
             "id": artiste_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -422,13 +422,13 @@ asynchrone déf obtenir_influences_artiste_complet(artiste_id: chaine) -> dictio
 # Requêtes pour les œuvres d'art
 # ============================================================================
 
-asynchrone déf obtenir_oeuvre_details(oeuvre_id: chaine) -> dictionnaire:
+asynchrone déf obtenir_oeuvre_details(oeuvre_id: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère les détails d'une œuvre via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artwork_details.graphql",
         {
             "id": oeuvre_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -438,13 +438,13 @@ asynchrone déf obtenir_oeuvre_details(oeuvre_id: chaine) -> dictionnaire:
     retour {}
 
 
-asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50) -> liste:
+asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50, langue: chaine = LANGUE_PAR_DEFAUT) -> liste:
     """Récupère les œuvres notables d'un artiste via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artworks_by_artist.graphql",
         {
             "artistId": artiste_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -459,13 +459,13 @@ asynchrone déf obtenir_oeuvres_artiste(artiste_id: chaine, limite: nombre = 50)
     retour resultats
 
 
-asynchrone déf obtenir_oeuvres_par_sujet(sujet_id: chaine, limite: nombre = 50) -> liste:
+asynchrone déf obtenir_oeuvres_par_sujet(sujet_id: chaine, limite: nombre = 50, langue: chaine = LANGUE_PAR_DEFAUT) -> liste:
     """Récupère les œuvres qui dépeignent un sujet via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artworks_by_subject.graphql",
         {
             "subjectId": sujet_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -537,13 +537,13 @@ asynchrone déf obtenir_diffusion_geographique(mouvement_id: chaine) -> liste:
     retour resultats
 
 
-asynchrone déf obtenir_oeuvres_musee(musee_id: chaine, limite: nombre = 50) -> liste:
+asynchrone déf obtenir_oeuvres_musee(musee_id: chaine, limite: nombre = 50, langue: chaine = LANGUE_PAR_DEFAUT) -> liste:
     """Récupère les œuvres d'un musée via GraphQL"""
     donnees = attendre executer_requete_graphql(
         "artworks_by_museum.graphql",
         {
             "museumId": musee_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -599,7 +599,7 @@ asynchrone déf obtenir_etiquette_entite(entite_id: chaine, langue: chaine = LAN
     }
 
 
-asynchrone déf obtenir_etiquettes_entite(entite_id: chaine, langues: liste = ["fr", "en"]) -> dictionnaire:
+asynchrone déf obtenir_etiquettes_entite(entite_id: chaine, langues: liste = ["fr", "en", "es"]) -> dictionnaire:
     """Recuperer plusieurs etiquettes d'une meme entite."""
     etiquettes = {}
 
@@ -613,10 +613,10 @@ asynchrone déf obtenir_etiquettes_entite(entite_id: chaine, langues: liste = ["
     retour etiquettes
 
 
-asynchrone déf obtenir_graphe_mouvement(mouvement_id: chaine, limite: nombre = 50) -> dictionnaire:
+asynchrone déf obtenir_graphe_mouvement(mouvement_id: chaine, limite: nombre = 50, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Retourner le contrat de graphe canonique pour un mouvement."""
-    mouvement = attendre obtenir_mouvement_details(mouvement_id)
-    artistes = attendre obtenir_artistes_mouvement(mouvement_id, limite)
+    mouvement = attendre obtenir_mouvement_details(mouvement_id, langue)
+    artistes = attendre obtenir_artistes_mouvement(mouvement_id, limite, langue)
 
     retour {
         "mouvement": mouvement,
@@ -624,11 +624,11 @@ asynchrone déf obtenir_graphe_mouvement(mouvement_id: chaine, limite: nombre = 
     }
 
 
-asynchrone déf obtenir_graphe_artiste(artiste_id: chaine, limite: nombre = 50) -> dictionnaire:
+asynchrone déf obtenir_graphe_artiste(artiste_id: chaine, limite: nombre = 50, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Retourner le contrat de graphe canonique pour un artiste."""
-    artiste = attendre obtenir_artiste_details(artiste_id)
-    oeuvres = attendre obtenir_oeuvres_artiste(artiste_id, limite)
-    influences = attendre obtenir_influences_artiste(artiste_id)
+    artiste = attendre obtenir_artiste_details(artiste_id, langue)
+    oeuvres = attendre obtenir_oeuvres_artiste(artiste_id, limite, langue)
+    influences = attendre obtenir_influences_artiste(artiste_id, langue)
 
     retour {
         "artiste": artiste,
@@ -637,13 +637,13 @@ asynchrone déf obtenir_graphe_artiste(artiste_id: chaine, limite: nombre = 50) 
     }
 
 
-asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
+asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine, langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Retourner le contrat de graphe canonique pour une oeuvre."""
     donnees = attendre executer_requete_graphql(
         "artwork_details.graphql",
         {
             "id": oeuvre_id,
-            "languageCode": LANGUE_PAR_DEFAUT
+            "languageCode": langue
         }
     )
 
@@ -666,11 +666,11 @@ asynchrone déf obtenir_graphe_oeuvre(oeuvre_id: chaine) -> dictionnaire:
 # Requêtes paginées (curseur) pour le chargement progressif
 # ============================================================================
 
-asynchrone déf obtenir_artistes_mouvement_page(mouvement_id: chaine, premier: nombre = 20, apres: chaine = "") -> dictionnaire:
+asynchrone déf obtenir_artistes_mouvement_page(mouvement_id: chaine, premier: nombre = 20, apres: chaine = "", langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère une page d'artistes pour un mouvement avec pagination curseur."""
     variables = {
         "movementId": mouvement_id,
-        "languageCode": LANGUE_PAR_DEFAUT,
+        "languageCode": langue,
         "first": premier
     }
     si apres:
@@ -694,11 +694,11 @@ asynchrone déf obtenir_artistes_mouvement_page(mouvement_id: chaine, premier: n
     }
 
 
-asynchrone déf obtenir_oeuvres_artiste_page(artiste_id: chaine, premier: nombre = 20, apres: chaine = "") -> dictionnaire:
+asynchrone déf obtenir_oeuvres_artiste_page(artiste_id: chaine, premier: nombre = 20, apres: chaine = "", langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère une page d'œuvres pour un artiste avec pagination curseur."""
     variables = {
         "artistId": artiste_id,
-        "languageCode": LANGUE_PAR_DEFAUT,
+        "languageCode": langue,
         "first": premier
     }
     si apres:
@@ -722,11 +722,11 @@ asynchrone déf obtenir_oeuvres_artiste_page(artiste_id: chaine, premier: nombre
     }
 
 
-asynchrone déf obtenir_oeuvres_musee_page(musee_id: chaine, premier: nombre = 20, apres: chaine = "") -> dictionnaire:
+asynchrone déf obtenir_oeuvres_musee_page(musee_id: chaine, premier: nombre = 20, apres: chaine = "", langue: chaine = LANGUE_PAR_DEFAUT) -> dictionnaire:
     """Récupère une page d'œuvres pour un musée avec pagination curseur."""
     variables = {
         "museumId": musee_id,
-        "languageCode": LANGUE_PAR_DEFAUT,
+        "languageCode": langue,
         "first": premier
     }
     si apres:

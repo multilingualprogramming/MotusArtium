@@ -456,9 +456,9 @@ async function _recuperer_mouvements_catalogue() {
   return resultats;
 }
 
-async function obtenir_mouvement_details(mouvement_id) {
+async function obtenir_mouvement_details(mouvement_id, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les détails d'un mouvement artistique via GraphQL";
-  var donnees = await executer_requete_graphql("movement_details.graphql", {["id"]: mouvement_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("movement_details.graphql", {["id"]: mouvement_id, ["languageCode"]: langue});
   var item = ((donnees)?.["item"] ?? {});
   if (__ml_truthy(item)) {
     return _normaliser_mouvement_detail(item);
@@ -491,9 +491,9 @@ async function obtenir_mouvements_evolution(mouvement_id) {
   return {["movement"]: _champ_entite(((item)?.["id"] ?? "")), ["movementLabel"]: _champ_valeur(((item)?.["movementLabel"] ?? "")), ["follows"]: _champ_entite(((precedent)?.["id"] ?? "")), ["followsLabel"]: _champ_valeur(((precedent)?.["label"] ?? "")), ["followedBy"]: _champ_entite(((suivant)?.["id"] ?? "")), ["followedByLabel"]: _champ_valeur(((suivant)?.["label"] ?? "")), ["partOf"]: _champ_entite(((parent)?.["id"] ?? "")), ["partOfLabel"]: _champ_valeur(((parent)?.["label"] ?? ""))};
 }
 
-async function obtenir_artiste_details(artiste_id) {
+async function obtenir_artiste_details(artiste_id, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les détails d'un artiste via GraphQL";
-  var donnees = await executer_requete_graphql("artist_details.graphql", {["id"]: artiste_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artist_details.graphql", {["id"]: artiste_id, ["languageCode"]: langue});
   var item = ((donnees)?.["item"] ?? {});
   if (__ml_truthy(item)) {
     return _normaliser_artiste_detail(item);
@@ -501,9 +501,9 @@ async function obtenir_artiste_details(artiste_id) {
   return {};
 }
 
-async function obtenir_artistes_mouvement(mouvement_id, limite = 50) {
+async function obtenir_artistes_mouvement(mouvement_id, limite = 50, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les artistes associés à un mouvement via GraphQL";
-  var donnees = await executer_requete_graphql("artists_by_movement.graphql", {["movementId"]: mouvement_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artists_by_movement.graphql", {["movementId"]: mouvement_id, ["languageCode"]: langue});
   var edges = ((((donnees)?.["searchItems"] ?? {}))?.["edges"] ?? []);
   var resultats = [];
   for (const edge of __ml_iterate(edges)) {
@@ -515,9 +515,9 @@ async function obtenir_artistes_mouvement(mouvement_id, limite = 50) {
   return resultats;
 }
 
-async function obtenir_influences_artiste(artiste_id) {
+async function obtenir_influences_artiste(artiste_id, langue = LANGUE_PAR_DEFAUT) {
   "Récupère le réseau d'influences d'un artiste via GraphQL";
-  var donnees = await executer_requete_graphql("artist_influences.graphql", {["id"]: artiste_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artist_influences.graphql", {["id"]: artiste_id, ["languageCode"]: langue});
   var item = ((donnees)?.["item"] ?? {});
   var influence_recue = _extraire_item(((item)?.["influencedBy"] ?? []));
   var influence_donnee = _extraire_item(((item)?.["influenced"] ?? []));
@@ -531,9 +531,9 @@ async function obtenir_influences_artiste_complet(artiste_id) {
   return {["artiste_id"]: artiste_id, ["artistLabel"]: ((item)?.["artistLabel"] ?? ""), ["influencedBy"]: _extraire_items(((item)?.["influencedBy"] ?? [])), ["influenced"]: _extraire_items(((item)?.["influenced"] ?? []))};
 }
 
-async function obtenir_oeuvre_details(oeuvre_id) {
+async function obtenir_oeuvre_details(oeuvre_id, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les détails d'une œuvre via GraphQL";
-  var donnees = await executer_requete_graphql("artwork_details.graphql", {["id"]: oeuvre_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artwork_details.graphql", {["id"]: oeuvre_id, ["languageCode"]: langue});
   var item = ((donnees)?.["item"] ?? {});
   if (__ml_truthy(item)) {
     return _normaliser_oeuvre_detail(item);
@@ -541,9 +541,9 @@ async function obtenir_oeuvre_details(oeuvre_id) {
   return {};
 }
 
-async function obtenir_oeuvres_artiste(artiste_id, limite = 50) {
+async function obtenir_oeuvres_artiste(artiste_id, limite = 50, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les œuvres notables d'un artiste via GraphQL";
-  var donnees = await executer_requete_graphql("artworks_by_artist.graphql", {["artistId"]: artiste_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artworks_by_artist.graphql", {["artistId"]: artiste_id, ["languageCode"]: langue});
   var edges = ((((donnees)?.["searchItems"] ?? {}))?.["edges"] ?? []);
   var resultats = [];
   for (const edge of __ml_iterate(edges)) {
@@ -555,9 +555,9 @@ async function obtenir_oeuvres_artiste(artiste_id, limite = 50) {
   return resultats;
 }
 
-async function obtenir_oeuvres_par_sujet(sujet_id, limite = 50) {
+async function obtenir_oeuvres_par_sujet(sujet_id, limite = 50, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les œuvres qui dépeignent un sujet via GraphQL";
-  var donnees = await executer_requete_graphql("artworks_by_subject.graphql", {["subjectId"]: sujet_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artworks_by_subject.graphql", {["subjectId"]: sujet_id, ["languageCode"]: langue});
   var edges = ((((donnees)?.["searchItems"] ?? {}))?.["edges"] ?? []);
   var resultats = [];
   for (const edge of __ml_iterate(edges)) {
@@ -602,9 +602,9 @@ async function obtenir_diffusion_geographique(mouvement_id) {
   return resultats;
 }
 
-async function obtenir_oeuvres_musee(musee_id, limite = 50) {
+async function obtenir_oeuvres_musee(musee_id, limite = 50, langue = LANGUE_PAR_DEFAUT) {
   "Récupère les œuvres d'un musée via GraphQL";
-  var donnees = await executer_requete_graphql("artworks_by_museum.graphql", {["museumId"]: musee_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artworks_by_museum.graphql", {["museumId"]: musee_id, ["languageCode"]: langue});
   var edges = ((((donnees)?.["searchItems"] ?? {}))?.["edges"] ?? []);
   var resultats = [];
   for (const edge of __ml_iterate(edges)) {
@@ -638,7 +638,7 @@ async function obtenir_etiquette_entite(entite_id, langue = LANGUE_PAR_DEFAUT) {
   return {["id"]: ((item)?.["id"] ?? ""), ["label"]: ((item)?.["label"] ?? "")};
 }
 
-async function obtenir_etiquettes_entite(entite_id, langues = ["fr", "en"]) {
+async function obtenir_etiquettes_entite(entite_id, langues = ["fr", "en", "es"]) {
   "Recuperer plusieurs etiquettes d'une meme entite.";
   var etiquettes = {};
   for (const langue of __ml_iterate((langues || []))) {
@@ -651,24 +651,24 @@ async function obtenir_etiquettes_entite(entite_id, langues = ["fr", "en"]) {
   return etiquettes;
 }
 
-async function obtenir_graphe_mouvement(mouvement_id, limite = 50) {
+async function obtenir_graphe_mouvement(mouvement_id, limite = 50, langue = LANGUE_PAR_DEFAUT) {
   "Retourner le contrat de graphe canonique pour un mouvement.";
-  var mouvement = await obtenir_mouvement_details(mouvement_id);
-  var artistes = await obtenir_artistes_mouvement(mouvement_id, limite);
+  var mouvement = await obtenir_mouvement_details(mouvement_id, langue);
+  var artistes = await obtenir_artistes_mouvement(mouvement_id, limite, langue);
   return {["mouvement"]: mouvement, ["artistes"]: artistes};
 }
 
-async function obtenir_graphe_artiste(artiste_id, limite = 50) {
+async function obtenir_graphe_artiste(artiste_id, limite = 50, langue = LANGUE_PAR_DEFAUT) {
   "Retourner le contrat de graphe canonique pour un artiste.";
-  var artiste = await obtenir_artiste_details(artiste_id);
-  var oeuvres = await obtenir_oeuvres_artiste(artiste_id, limite);
-  var influences = await obtenir_influences_artiste(artiste_id);
+  var artiste = await obtenir_artiste_details(artiste_id, langue);
+  var oeuvres = await obtenir_oeuvres_artiste(artiste_id, limite, langue);
+  var influences = await obtenir_influences_artiste(artiste_id, langue);
   return {["artiste"]: artiste, ["oeuvres"]: oeuvres, ["influences"]: influences};
 }
 
-async function obtenir_graphe_oeuvre(oeuvre_id) {
+async function obtenir_graphe_oeuvre(oeuvre_id, langue = LANGUE_PAR_DEFAUT) {
   "Retourner le contrat de graphe canonique pour une oeuvre.";
-  var donnees = await executer_requete_graphql("artwork_details.graphql", {["id"]: oeuvre_id, ["languageCode"]: LANGUE_PAR_DEFAUT});
+  var donnees = await executer_requete_graphql("artwork_details.graphql", {["id"]: oeuvre_id, ["languageCode"]: langue});
   var item = ((donnees)?.["item"] ?? {});
   var oeuvre = {};
   if (__ml_truthy(item)) {
@@ -677,9 +677,9 @@ async function obtenir_graphe_oeuvre(oeuvre_id) {
   return {["oeuvre"]: oeuvre, ["musee"]: _extraire_item(((item)?.["museum"] ?? [])), ["musees"]: _extraire_items(((item)?.["museum"] ?? [])), ["sujets"]: _extraire_items(((item)?.["depicts"] ?? [])), ["materiaux"]: _extraire_items(((item)?.["material"] ?? []))};
 }
 
-async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres = "") {
+async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres = "", langue = LANGUE_PAR_DEFAUT) {
   "Récupère une page d'artistes pour un mouvement avec pagination curseur.";
-  var variables = {["movementId"]: mouvement_id, ["languageCode"]: LANGUE_PAR_DEFAUT, ["first"]: premier};
+  var variables = {["movementId"]: mouvement_id, ["languageCode"]: langue, ["first"]: premier};
   if (__ml_truthy(apres)) {
     variables["after"] = apres;
   }
@@ -697,9 +697,9 @@ async function obtenir_artistes_mouvement_page(mouvement_id, premier = 20, apres
   return {["artistes"]: artistes, ["a_page_suivante"]: ((page_info)?.["hasNextPage"] ?? false), ["curseur_fin"]: ((page_info)?.["endCursor"] ?? "")};
 }
 
-async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = "") {
+async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = "", langue = LANGUE_PAR_DEFAUT) {
   "Récupère une page d'œuvres pour un artiste avec pagination curseur.";
-  var variables = {["artistId"]: artiste_id, ["languageCode"]: LANGUE_PAR_DEFAUT, ["first"]: premier};
+  var variables = {["artistId"]: artiste_id, ["languageCode"]: langue, ["first"]: premier};
   if (__ml_truthy(apres)) {
     variables["after"] = apres;
   }
@@ -717,9 +717,9 @@ async function obtenir_oeuvres_artiste_page(artiste_id, premier = 20, apres = ""
   return {["oeuvres"]: oeuvres, ["a_page_suivante"]: ((page_info)?.["hasNextPage"] ?? false), ["curseur_fin"]: ((page_info)?.["endCursor"] ?? "")};
 }
 
-async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = "") {
+async function obtenir_oeuvres_musee_page(musee_id, premier = 20, apres = "", langue = LANGUE_PAR_DEFAUT) {
   "Récupère une page d'œuvres pour un musée avec pagination curseur.";
-  var variables = {["museumId"]: musee_id, ["languageCode"]: LANGUE_PAR_DEFAUT, ["first"]: premier};
+  var variables = {["museumId"]: musee_id, ["languageCode"]: langue, ["first"]: premier};
   if (__ml_truthy(apres)) {
     variables["after"] = apres;
   }
@@ -1012,7 +1012,7 @@ __ml_signals['oeuvre_etendue_id'] = _engine.declare('oeuvre_etendue_id', "");
 
 __ml_signals['oeuvre_focus_id'] = _engine.declare('oeuvre_focus_id', "");
 
-__ml_signals['mode_langue_actif'] = _engine.declare('mode_langue_actif', "fr");
+__ml_signals['mode_langue_actif'] = _engine.declare('mode_langue_actif', "en");
 
 __ml_signals['afficher_surfaces_paralleles'] = _engine.declare('afficher_surfaces_paralleles', true);
 
@@ -1099,7 +1099,7 @@ async function _rafraichir_etiquettes_multilingues(entite_id) {
   if ((!__ml_truthy(entite_id))) {
     return;
   }
-  _engine.get('etiquettes_multilingues').setIndex(entite_id, {["fr"]: "", ["en"]: ""});
+  _engine.get('etiquettes_multilingues').setIndex(entite_id, await donnees.requetes.obtenir_etiquettes_entite(entite_id, ["fr", "en", "es"]));
 }
 
 function obtenir_noeud_graphe(entite_id) {
@@ -1226,9 +1226,9 @@ function _ajouter_references_oeuvre(oeuvre_id, references, type_noeud, type_rela
   }
 }
 
-async function charger_mouvement(mouvement_id) {
+async function charger_mouvement(mouvement_id, forcer_rechargement = false) {
   "Charger les details d'un mouvement et son branchement artiste.";
-  if ((__ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == mouvement_id)))) {
+  if (((!__ml_truthy(forcer_rechargement)) && __ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == mouvement_id)))) {
     _reduire_branche_mouvement(mouvement_id);
     _mettre_a_jour_selection(mouvement_id, "mouvement");
     return obtenir_entite_selectionnee();
@@ -1243,7 +1243,7 @@ async function charger_mouvement(mouvement_id) {
   _engine.get('message_erreur').set("");
   _mettre_a_jour_selection(mouvement_id, "mouvement");
   try {
-    var contrat = await donnees.requetes.obtenir_graphe_mouvement(mouvement_id);
+    var contrat = await donnees.requetes.obtenir_graphe_mouvement(mouvement_id, 50, _engine.get('mode_langue_actif').get());
     var mouvement = ((contrat)?.["mouvement"] ?? {});
     var artistes = ((contrat)?.["artistes"] ?? []);
     if ((!__ml_truthy(mouvement))) {
@@ -1281,9 +1281,9 @@ async function charger_mouvement(mouvement_id) {
   }
 }
 
-async function charger_artiste(artiste_id) {
+async function charger_artiste(artiste_id, forcer_rechargement = false) {
   "Charger les details d'un artiste et son branchement oeuvre.";
-  if ((__ml_truthy((_engine.get('artiste_etendu_id').get() == artiste_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == artiste_id)))) {
+  if (((!__ml_truthy(forcer_rechargement)) && __ml_truthy((_engine.get('artiste_etendu_id').get() == artiste_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == artiste_id)))) {
     _reduire_branche_artiste(artiste_id);
     _mettre_a_jour_selection(artiste_id, "artiste");
     return obtenir_entite_selectionnee();
@@ -1295,7 +1295,7 @@ async function charger_artiste(artiste_id) {
   _engine.get('message_erreur').set("");
   _mettre_a_jour_selection(artiste_id, "artiste");
   try {
-    var contrat = await donnees.requetes.obtenir_graphe_artiste(artiste_id);
+    var contrat = await donnees.requetes.obtenir_graphe_artiste(artiste_id, 50, _engine.get('mode_langue_actif').get());
     var artiste = ((contrat)?.["artiste"] ?? {});
     var oeuvres = ((contrat)?.["oeuvres"] ?? []);
     var influences = ((contrat)?.["influences"] ?? {});
@@ -1340,9 +1340,9 @@ async function charger_artiste(artiste_id) {
   }
 }
 
-async function charger_oeuvre(oeuvre_id) {
+async function charger_oeuvre(oeuvre_id, forcer_rechargement = false) {
   "Charger les details d'une oeuvre et ses noeuds de detail.";
-  if ((__ml_truthy((_engine.get('oeuvre_etendue_id').get() == oeuvre_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == oeuvre_id)))) {
+  if (((!__ml_truthy(forcer_rechargement)) && __ml_truthy((_engine.get('oeuvre_etendue_id').get() == oeuvre_id)) && __ml_truthy((_engine.get('entite_selectionnee_id').get() == oeuvre_id)))) {
     _reduire_branche_oeuvre(oeuvre_id);
     _mettre_a_jour_selection(oeuvre_id, "oeuvre");
     return obtenir_entite_selectionnee();
@@ -1354,7 +1354,7 @@ async function charger_oeuvre(oeuvre_id) {
   _engine.get('message_erreur').set("");
   _mettre_a_jour_selection(oeuvre_id, "oeuvre");
   try {
-    var contrat = await donnees.requetes.obtenir_graphe_oeuvre(oeuvre_id);
+    var contrat = await donnees.requetes.obtenir_graphe_oeuvre(oeuvre_id, _engine.get('mode_langue_actif').get());
     var oeuvre = ((contrat)?.["oeuvre"] ?? {});
     if ((!__ml_truthy(oeuvre))) {
       _engine.get('message_erreur').set("Oeuvre non trouvee");
@@ -1533,11 +1533,26 @@ async function executer_recherche(requete) {
 }
 
 async function basculer_langue(langue) {
-  "Basculer entre les langues (fr/en) en mode polyglot-studio.";
-  if (__ml_truthy((!__ml_contains(["fr", "en"], langue)))) {
+  "Basculer entre les langues (fr/en/es) dans toute l'interface.";
+  if (__ml_truthy((!__ml_contains(["fr", "en", "es"], langue)))) {
     return;
   }
   _engine.get('mode_langue_actif').set(langue);
+  if ((__ml_truthy(_engine.get('entite_selectionnee_id').get()) && __ml_truthy((_engine.get('entite_selectionnee_type').get() == "mouvement")))) {
+    await charger_mouvement(_engine.get('entite_selectionnee_id').get(), true);
+  }
+  else if ((__ml_truthy(_engine.get('entite_selectionnee_id').get()) && __ml_truthy((_engine.get('entite_selectionnee_type').get() == "artiste")))) {
+    await charger_artiste(_engine.get('entite_selectionnee_id').get(), true);
+  }
+  else if ((__ml_truthy(_engine.get('entite_selectionnee_id').get()) && __ml_truthy((_engine.get('entite_selectionnee_type').get() == "oeuvre")))) {
+    await charger_oeuvre(_engine.get('entite_selectionnee_id').get(), true);
+  }
+  else if ((__ml_truthy(_engine.get('entite_selectionnee_id').get()) && __ml_truthy((_engine.get('entite_selectionnee_type').get() == "musee")))) {
+    await charger_musee(_engine.get('entite_selectionnee_id').get(), true);
+  }
+  else if ((__ml_truthy(_engine.get('entite_selectionnee_id').get()) && __ml_truthy((_engine.get('entite_selectionnee_type').get() == "sujet")))) {
+    await charger_sujet(_engine.get('entite_selectionnee_id').get(), true);
+  }
   if ((__ml_truthy((_engine.get('mode_visualisation').get() == "polyglot-studio")) && __ml_truthy(_engine.get('entite_multilingue_focus').get()))) {
     await _charger_multilingue_complet(_engine.get('entite_multilingue_focus').get());
   }
@@ -1834,7 +1849,7 @@ async function charger_mouvement_artistes_page_suivante() {
   }
   _engine.get('affichage_chargement').set(true);
   try {
-    var page = await donnees.requetes.obtenir_artistes_mouvement_page(_engine.get('source_id_artistes_mouvement').get(), 20, _engine.get('curseur_artistes_mouvement').get());
+    var page = await donnees.requetes.obtenir_artistes_mouvement_page(_engine.get('source_id_artistes_mouvement').get(), 20, _engine.get('curseur_artistes_mouvement').get(), _engine.get('mode_langue_actif').get());
     for (const artiste of __ml_iterate(((page)?.["artistes"] ?? []))) {
       var artiste_id = _extraire_id_entite(((artiste)?.["artist"] ?? {}));
       var artiste_label = _etiquette_entite(artiste, ["artistLabel"], "Artiste inconnu");
@@ -1862,7 +1877,7 @@ async function charger_artiste_oeuvres_page_suivante() {
   }
   _engine.get('affichage_chargement').set(true);
   try {
-    var page = await donnees.requetes.obtenir_oeuvres_artiste_page(_engine.get('source_id_oeuvres_artiste').get(), 20, _engine.get('curseur_oeuvres_artiste').get());
+    var page = await donnees.requetes.obtenir_oeuvres_artiste_page(_engine.get('source_id_oeuvres_artiste').get(), 20, _engine.get('curseur_oeuvres_artiste').get(), _engine.get('mode_langue_actif').get());
     for (const oeuvre of __ml_iterate(((page)?.["oeuvres"] ?? []))) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.["artwork"] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ["artworkLabel"], "Oeuvre inconnue");
@@ -1890,7 +1905,7 @@ async function charger_musee_oeuvres_page_suivante() {
   }
   _engine.get('affichage_chargement').set(true);
   try {
-    var page = await donnees.requetes.obtenir_oeuvres_musee_page(_engine.get('source_id_oeuvres_musee').get(), 20, _engine.get('curseur_oeuvres_musee').get());
+    var page = await donnees.requetes.obtenir_oeuvres_musee_page(_engine.get('source_id_oeuvres_musee').get(), 20, _engine.get('curseur_oeuvres_musee').get(), _engine.get('mode_langue_actif').get());
     for (const oeuvre of __ml_iterate(((page)?.["oeuvres"] ?? []))) {
       var oeuvre_id = _extraire_id_entite(((oeuvre)?.["artwork"] ?? {}));
       var oeuvre_label = _etiquette_entite(oeuvre, ["artworkLabel"], "Oeuvre inconnue");
@@ -1911,14 +1926,14 @@ async function charger_musee_oeuvres_page_suivante() {
   }
 }
 
-async function charger_musee(musee_id) {
+async function charger_musee(musee_id, forcer_rechargement = false) {
   "Charger les oeuvres d'un musee et les ajouter au graphe.";
   _engine.get('affichage_chargement').set(true);
   _engine.get('message_erreur').set("");
   _mettre_a_jour_selection(musee_id, "musee");
   try {
-    var oeuvres = await donnees.requetes.obtenir_oeuvres_musee(musee_id, 20);
-    var etiquette_info = await donnees.requetes.obtenir_etiquette_entite(musee_id);
+    var oeuvres = await donnees.requetes.obtenir_oeuvres_musee(musee_id, 20, _engine.get('mode_langue_actif').get());
+    var etiquette_info = await donnees.requetes.obtenir_etiquette_entite(musee_id, _engine.get('mode_langue_actif').get());
     var etiquette_musee = ((etiquette_info)?.["label"] ?? musee_id);
     if ((!__ml_truthy(etiquette_musee))) {
       etiquette_musee = musee_id;
@@ -1948,14 +1963,14 @@ async function charger_musee(musee_id) {
   }
 }
 
-async function charger_sujet(sujet_id) {
+async function charger_sujet(sujet_id, forcer_rechargement = false) {
   "Charger les oeuvres representant un sujet donne et les ajouter au graphe.";
   _engine.get('affichage_chargement').set(true);
   _engine.get('message_erreur').set("");
   _mettre_a_jour_selection(sujet_id, "sujet");
   try {
-    var oeuvres = await donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20);
-    var etiquette_info = await donnees.requetes.obtenir_etiquette_entite(sujet_id);
+    var oeuvres = await donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20, _engine.get('mode_langue_actif').get());
+    var etiquette_info = await donnees.requetes.obtenir_etiquette_entite(sujet_id, _engine.get('mode_langue_actif').get());
     var etiquette_sujet = ((etiquette_info)?.["label"] ?? sujet_id);
     if ((!__ml_truthy(etiquette_sujet))) {
       etiquette_sujet = sujet_id;
@@ -1996,7 +2011,7 @@ async function reinitialiser_etat() {
   _engine.get('artiste_etendu_id').set("");
   _engine.get('oeuvre_etendue_id').set("");
   _engine.get('oeuvre_focus_id').set("");
-  _engine.get('mode_langue_actif').set("fr");
+  _engine.get('mode_langue_actif').set("en");
   _engine.get('afficher_surfaces_paralleles').set(true);
   _engine.get('entite_multilingue_focus').set("");
   _engine.get('cache_entites').set({});
@@ -3918,6 +3933,9 @@ function rendre_surface_polyglotte(entite_selectionnee, labels, langue, entite_i
   var langue_badge = "FR";
   if (__ml_truthy((langue == "en"))) {
     langue_badge = "EN";
+  }
+  else if (__ml_truthy((langue == "es"))) {
+    langue_badge = "ES";
   }
   var html = (((((((("<div class='polyglot-surface surface-" + langue) + "' lang='") + langue) + "' role='region' aria-label='") + _t("polyglot.surface.aria", langue)) + " ") + langue_badge) + "'>");
   html = "<div class='entity-header'>";

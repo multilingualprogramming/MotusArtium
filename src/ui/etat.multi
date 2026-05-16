@@ -13,7 +13,7 @@ observer var message_erreur = ""
 # Donnees en cache
 observer var cache_entites = {}  # id -> entite complete
 observer var cache_relations = {}  # id -> contrat de graphe charge
-observer var etiquettes_multilingues = {}  # id -> {fr, en}
+observer var etiquettes_multilingues = {}  # id -> {fr, en, es}
 
 # Filtre et plage temporelle
 observer var plage_temporelle_debut = 1400
@@ -30,7 +30,7 @@ observer var oeuvre_etendue_id = ""
 observer var oeuvre_focus_id = ""
 
 # Polyglot studio mode state
-observer var mode_langue_actif = "fr"  # "fr" ou "en"
+observer var mode_langue_actif = "en"  # "fr", "en" ou "es"
 observer var afficher_surfaces_paralleles = vrai  # afficher cote a cote ou par onglets
 observer var entite_multilingue_focus = ""  # id de l'entite en focus pour polyglot-studio
 
@@ -99,7 +99,7 @@ déf _mettre_en_cache(entite_id: chaine, donnees: dictionnaire):
 asynchrone déf _rafraichir_etiquettes_multilingues(entite_id: chaine):
     si non entite_id:
         retour
-    etiquettes_multilingues[entite_id] = {"fr": "", "en": ""}
+    etiquettes_multilingues[entite_id] = attendre donnees.requetes.obtenir_etiquettes_entite(entite_id, ["fr", "en", "es"])
 
 
 déf obtenir_noeud_graphe(entite_id: chaine) -> dictionnaire:
@@ -218,9 +218,9 @@ déf _ajouter_references_oeuvre(oeuvre_id: chaine, references: liste, type_noeud
             _ajouter_relation(oeuvre_id, reference_id, type_relation)
 
 
-asynchrone déf charger_mouvement(mouvement_id: chaine):
+asynchrone déf charger_mouvement(mouvement_id: chaine, forcer_rechargement: booleen = faux):
     """Charger les details d'un mouvement et son branchement artiste."""
-    si mouvement_etendu_id == mouvement_id et entite_selectionnee_id == mouvement_id:
+    si non forcer_rechargement et mouvement_etendu_id == mouvement_id et entite_selectionnee_id == mouvement_id:
         _reduire_branche_mouvement(mouvement_id)
         _mettre_a_jour_selection(mouvement_id, "mouvement")
         retour obtenir_entite_selectionnee()
@@ -236,7 +236,7 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
     _mettre_a_jour_selection(mouvement_id, "mouvement")
 
     essayer:
-        contrat = attendre donnees.requetes.obtenir_graphe_mouvement(mouvement_id)
+        contrat = attendre donnees.requetes.obtenir_graphe_mouvement(mouvement_id, 50, mode_langue_actif)
         mouvement = contrat.obtenir("mouvement", {})
         artistes = contrat.obtenir("artistes", [])
 
@@ -276,9 +276,9 @@ asynchrone déf charger_mouvement(mouvement_id: chaine):
         retour {}
 
 
-asynchrone déf charger_artiste(artiste_id: chaine):
+asynchrone déf charger_artiste(artiste_id: chaine, forcer_rechargement: booleen = faux):
     """Charger les details d'un artiste et son branchement oeuvre."""
-    si artiste_etendu_id == artiste_id et entite_selectionnee_id == artiste_id:
+    si non forcer_rechargement et artiste_etendu_id == artiste_id et entite_selectionnee_id == artiste_id:
         _reduire_branche_artiste(artiste_id)
         _mettre_a_jour_selection(artiste_id, "artiste")
         retour obtenir_entite_selectionnee()
@@ -291,7 +291,7 @@ asynchrone déf charger_artiste(artiste_id: chaine):
     _mettre_a_jour_selection(artiste_id, "artiste")
 
     essayer:
-        contrat = attendre donnees.requetes.obtenir_graphe_artiste(artiste_id)
+        contrat = attendre donnees.requetes.obtenir_graphe_artiste(artiste_id, 50, mode_langue_actif)
         artiste = contrat.obtenir("artiste", {})
         oeuvres = contrat.obtenir("oeuvres", [])
         influences = contrat.obtenir("influences", {})
@@ -338,9 +338,9 @@ asynchrone déf charger_artiste(artiste_id: chaine):
         retour {}
 
 
-asynchrone déf charger_oeuvre(oeuvre_id: chaine):
+asynchrone déf charger_oeuvre(oeuvre_id: chaine, forcer_rechargement: booleen = faux):
     """Charger les details d'une oeuvre et ses noeuds de detail."""
-    si oeuvre_etendue_id == oeuvre_id et entite_selectionnee_id == oeuvre_id:
+    si non forcer_rechargement et oeuvre_etendue_id == oeuvre_id et entite_selectionnee_id == oeuvre_id:
         _reduire_branche_oeuvre(oeuvre_id)
         _mettre_a_jour_selection(oeuvre_id, "oeuvre")
         retour obtenir_entite_selectionnee()
@@ -353,7 +353,7 @@ asynchrone déf charger_oeuvre(oeuvre_id: chaine):
     _mettre_a_jour_selection(oeuvre_id, "oeuvre")
 
     essayer:
-        contrat = attendre donnees.requetes.obtenir_graphe_oeuvre(oeuvre_id)
+        contrat = attendre donnees.requetes.obtenir_graphe_oeuvre(oeuvre_id, mode_langue_actif)
         oeuvre = contrat.obtenir("oeuvre", {})
 
         si non oeuvre:
@@ -566,11 +566,22 @@ asynchrone déf executer_recherche(requete: chaine):
 
 
 asynchrone déf basculer_langue(langue: chaine):
-    """Basculer entre les langues (fr/en) en mode polyglot-studio."""
-    si langue non dans ["fr", "en"]:
+    """Basculer entre les langues (fr/en/es) dans toute l'interface."""
+    si langue non dans ["fr", "en", "es"]:
         retour
 
     mode_langue_actif = langue
+
+    si entite_selectionnee_id et entite_selectionnee_type == "mouvement":
+        attendre charger_mouvement(entite_selectionnee_id, vrai)
+    sinon si entite_selectionnee_id et entite_selectionnee_type == "artiste":
+        attendre charger_artiste(entite_selectionnee_id, vrai)
+    sinon si entite_selectionnee_id et entite_selectionnee_type == "oeuvre":
+        attendre charger_oeuvre(entite_selectionnee_id, vrai)
+    sinon si entite_selectionnee_id et entite_selectionnee_type == "musee":
+        attendre charger_musee(entite_selectionnee_id, vrai)
+    sinon si entite_selectionnee_id et entite_selectionnee_type == "sujet":
+        attendre charger_sujet(entite_selectionnee_id, vrai)
 
     si mode_visualisation == "polyglot-studio" et entite_multilingue_focus:
         attendre _charger_multilingue_complet(entite_multilingue_focus)
@@ -881,7 +892,8 @@ asynchrone déf charger_mouvement_artistes_page_suivante():
         page = attendre donnees.requetes.obtenir_artistes_mouvement_page(
             source_id_artistes_mouvement,
             20,
-            curseur_artistes_mouvement
+            curseur_artistes_mouvement,
+            mode_langue_actif
         )
 
         pour artiste dans page.obtenir("artistes", []):
@@ -914,7 +926,8 @@ asynchrone déf charger_artiste_oeuvres_page_suivante():
         page = attendre donnees.requetes.obtenir_oeuvres_artiste_page(
             source_id_oeuvres_artiste,
             20,
-            curseur_oeuvres_artiste
+            curseur_oeuvres_artiste,
+            mode_langue_actif
         )
 
         pour oeuvre dans page.obtenir("oeuvres", []):
@@ -947,7 +960,8 @@ asynchrone déf charger_musee_oeuvres_page_suivante():
         page = attendre donnees.requetes.obtenir_oeuvres_musee_page(
             source_id_oeuvres_musee,
             20,
-            curseur_oeuvres_musee
+            curseur_oeuvres_musee,
+            mode_langue_actif
         )
 
         pour oeuvre dans page.obtenir("oeuvres", []):
@@ -969,15 +983,15 @@ asynchrone déf charger_musee_oeuvres_page_suivante():
         retour nul
 
 
-asynchrone déf charger_musee(musee_id: chaine):
+asynchrone déf charger_musee(musee_id: chaine, forcer_rechargement: booleen = faux):
     """Charger les oeuvres d'un musee et les ajouter au graphe."""
     affichage_chargement = vrai
     message_erreur = ""
     _mettre_a_jour_selection(musee_id, "musee")
 
     essayer:
-        oeuvres = attendre donnees.requetes.obtenir_oeuvres_musee(musee_id, 20)
-        etiquette_info = attendre donnees.requetes.obtenir_etiquette_entite(musee_id)
+        oeuvres = attendre donnees.requetes.obtenir_oeuvres_musee(musee_id, 20, mode_langue_actif)
+        etiquette_info = attendre donnees.requetes.obtenir_etiquette_entite(musee_id, mode_langue_actif)
         etiquette_musee = etiquette_info.obtenir("label", musee_id)
         si non etiquette_musee:
             etiquette_musee = musee_id
@@ -1006,15 +1020,15 @@ asynchrone déf charger_musee(musee_id: chaine):
         retour {}
 
 
-asynchrone déf charger_sujet(sujet_id: chaine):
+asynchrone déf charger_sujet(sujet_id: chaine, forcer_rechargement: booleen = faux):
     """Charger les oeuvres representant un sujet donne et les ajouter au graphe."""
     affichage_chargement = vrai
     message_erreur = ""
     _mettre_a_jour_selection(sujet_id, "sujet")
 
     essayer:
-        oeuvres = attendre donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20)
-        etiquette_info = attendre donnees.requetes.obtenir_etiquette_entite(sujet_id)
+        oeuvres = attendre donnees.requetes.obtenir_oeuvres_par_sujet(sujet_id, 20, mode_langue_actif)
+        etiquette_info = attendre donnees.requetes.obtenir_etiquette_entite(sujet_id, mode_langue_actif)
         etiquette_sujet = etiquette_info.obtenir("label", sujet_id)
         si non etiquette_sujet:
             etiquette_sujet = sujet_id
@@ -1054,7 +1068,7 @@ asynchrone déf reinitialiser_etat():
     artiste_etendu_id = ""
     oeuvre_etendue_id = ""
     oeuvre_focus_id = ""
-    mode_langue_actif = "fr"
+    mode_langue_actif = "en"
     afficher_surfaces_paralleles = vrai
     entite_multilingue_focus = ""
     cache_entites = {}

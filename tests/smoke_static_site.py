@@ -179,18 +179,20 @@ def validate_bundle_graph_runtime(bundle_js: str) -> None:
     """Check the generated graph-loading path used by the main display."""
     quote_normalized_bundle_js = bundle_js.replace('"', "'")
     expected_markers = [
-        "async function obtenir_graphe_mouvement(mouvement_id, limite = 50)",
-        "async function obtenir_artistes_mouvement(mouvement_id, limite = 50)",
+        "async function obtenir_graphe_mouvement(mouvement_id, limite = 50, langue = LANGUE_PAR_DEFAUT)",
+        "donnees.requetes.obtenir_graphe_mouvement(mouvement_id, 50, _engine.get('mode_langue_actif').get())",
+        "await charger_mouvement(_engine.get('entite_selectionnee_id').get(), true)",
+        "async function obtenir_artistes_mouvement(mouvement_id, limite = 50, langue = LANGUE_PAR_DEFAUT)",
         "var POINT_TERMINAL_WIKIDATA_GRAPHQL =",
         "var CACHE_DOCUMENTS_GRAPHQL = {}",
         "setIndex(index, value)",
         "_engine.get('cache_entites').setIndex(entite_id, donnees)",
         "_engine.get('cache_relations').setIndex(mouvement_id, contrat)",
-        "await donnees.requetes.obtenir_graphe_mouvement(mouvement_id)",
+        "await donnees.requetes.obtenir_graphe_mouvement(mouvement_id, 50, _engine.get('mode_langue_actif').get())",
         "_ajouter_noeud(mouvement_id, 'mouvement'",
         "_ajouter_noeud(artiste_id, 'artiste'",
         "_ajouter_relation(mouvement_id, artiste_id, 'contient_artiste')",
-        "if ((__ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id)) &&",
+        "if (((!__ml_truthy(forcer_rechargement)) && __ml_truthy((_engine.get('mouvement_etendu_id').get() == mouvement_id)) &&",
         "function __ml_truthy(value)",
         "if (__ml_truthy(erreurs))",
         "return (Object.keys(this.noeuds)).length",
@@ -231,10 +233,21 @@ def validate_i18n_contract(site_root: pathlib.Path) -> None:
     assert_contains(app_js, "window.ui.i18n", "app.js i18n")
     assert_contains(app_js, "charger_textes_interface", "app.js i18n")
     assert_contains(app_js, "window.motusI18nReady", "app.js i18n")
+    assert_contains(app_js, 'const supportedLanguages = ["fr", "en", "es"]', "app.js i18n")
+    assert_contains(app_js, "function detectPreferredLanguage", "app.js i18n")
+    assert_contains(app_js, "navigator.languages", "app.js i18n")
+    assert_contains(app_js, "const initialLanguage = detectPreferredLanguage()", "app.js i18n")
+    assert_contains(app_js, "window.motusInitialLanguage = initialLanguage", "app.js i18n")
+    assert_contains(app_js, "await applyLanguage(window.motusInitialLanguage", "app.js i18n")
+    assert_contains(app_js, "async function applyLanguage", "app.js i18n")
+    assert_contains(app_js, "window.ui.etat.basculer_langue(language)", "app.js i18n")
+    assert_contains(app_js, "renderStoryTier", "app.js i18n")
     if "fetch(\"src/i18n/locales/\" + langue + \".json\")" in app_js:
         raise AssertionError("app.js must not load locale JSON directly; ui.i18n owns loading")
     if "\"session.clear\": \"Clear Session\"" in app_js:
         raise AssertionError("app.js must load locale JSON instead of embedding translation tables")
+    if "runtimeState.currentLanguage = runtimeState.currentVariables.languageCode" in app_js:
+        raise AssertionError("GraphQL request language must not silently change the interface language")
 
     i18n_multi = (site_root / "src/ui/i18n.multi").read_text(encoding="utf-8")
     assert_contains(i18n_multi, "déf obtenir_texte", "src/ui/i18n.multi")
@@ -260,6 +273,11 @@ def validate_i18n_contract(site_root: pathlib.Path) -> None:
         "preset.cross-language.title",
         "collection.loadMoreArtists",
         "search.placeholder.entity",
+        "tier.story",
+        "story.heading",
+        "explorer.heading",
+        "search.mode.entity",
+        "polyglot.surface.es.label",
     }
     for key in required_keys:
         if key not in reference_keys:
@@ -273,6 +291,14 @@ def validate_i18n_contract(site_root: pathlib.Path) -> None:
             raise AssertionError(
                 f"{code} locale keys differ; missing={missing}, extra={extra}"
             )
+
+    index_html = (site_root / "index.html").read_text(encoding="utf-8")
+    assert_contains(index_html, 'data-language="es"', "index.html language controls")
+    assert_contains(index_html, 'data-language="en" aria-pressed="true"', "index.html default language")
+
+    bundle_js = (site_root / "bundle.js").read_text(encoding="utf-8")
+    assert_contains(bundle_js, '_engine.declare(\'mode_langue_actif\', "en")', "bundle.js default language")
+    assert_contains(bundle_js, '["fr", "en", "es"]', "bundle.js language support")
 
 
 def validate_graph_display_contract(site_root: pathlib.Path) -> None:

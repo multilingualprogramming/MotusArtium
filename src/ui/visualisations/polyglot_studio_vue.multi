@@ -333,6 +333,8 @@ déf rendre_surface_polyglotte(entite_selectionnee: dictionnaire, labels: dictio
     langue_badge = "FR"
     si langue == "en":
         langue_badge = "EN"
+    sinon si langue == "es":
+        langue_badge = "ES"
 
     html = "<div class='polyglot-surface surface-" + langue + "' lang='" + langue + "' role='region' aria-label='" + _t("polyglot.surface.aria", langue) + " " + langue_badge + "'>"
 

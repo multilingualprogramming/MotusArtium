@@ -55,13 +55,13 @@
         window.motusI18nReady = attendreTextesInterface();
 
         function traduireInterface(cle, parametres = {}, langue) {
-            let langueActive = langue || "fr";
+            let langueActive = langue || "en";
             try {
                 if (!langue && typeof runtimeState !== "undefined" && runtimeState.currentLanguage) {
                     langueActive = runtimeState.currentLanguage;
                 }
             } catch (error) {
-                langueActive = langue || "fr";
+                langueActive = langue || "en";
             }
             const i18n = obtenirI18nInterface();
             const modele = i18n && typeof i18n.obtenir_texte === "function" ? i18n.obtenir_texte(cle, langueActive) : cle;
@@ -88,17 +88,49 @@
             "polyglot-card-1-copy": "shell.polyglot.card1.copy",
             "polyglot-card-2-title": "shell.polyglot.card2.title",
             "polyglot-card-2-copy": "shell.polyglot.card2.copy",
-            "polyglot-card-3-title": "shell.polyglot.card3.title"
+            "polyglot-card-3-title": "shell.polyglot.card3.title",
+            "story-heading": "story.heading",
+            "story-subheading": "story.subheading",
+            "story-to-explorer": "story.action.explorer",
+            "story-to-observatory": "story.action.observatory",
+            "search-mode-hint": "search.hint.entity"
         };
+
+        const supportedLanguages = ["fr", "en", "es"];
+
+        function detectPreferredLanguage() {
+            const candidates = [];
+            try {
+                if (navigator.language) {
+                    candidates.push(navigator.language);
+                }
+                if (navigator.languages && navigator.languages.length) {
+                    candidates.push(...navigator.languages);
+                }
+            } catch (error) {
+                return "en";
+            }
+
+            for (const candidate of candidates) {
+                const code = String(candidate || "").toLowerCase().split("-")[0];
+                if (supportedLanguages.includes(code)) {
+                    return code;
+                }
+            }
+            return "en";
+        }
+
+        const initialLanguage = detectPreferredLanguage();
+        window.motusInitialLanguage = initialLanguage;
 
         const runtimeState = {
             knownDocs: [],
             currentDocument: "movement_details.graphql",
             currentVariables: {
                 id: "Q40415",
-                languageCode: "fr"
+                languageCode: initialLanguage
             },
-            currentLanguage: "fr",
+            currentLanguage: initialLanguage,
             currentMode: "observatory",
             selectedEntity: {
                 id: "Q40415",
@@ -298,11 +330,11 @@
         }
 
         function summariseVariables(variables) {
-            return _sr()?.decrire_variables(variables || {}, runtimeState.currentLanguage || "fr") ?? "";
+            return _sr()?.decrire_variables(variables || {}, runtimeState.currentLanguage || "en") ?? "";
         }
 
         function narrativeForDocument(documentName, variables) {
-            return _sr()?.narratif_document(documentName, variables || {}, runtimeState.currentLanguage || "fr") ?? "";
+            return _sr()?.narratif_document(documentName, variables || {}, runtimeState.currentLanguage || "en") ?? "";
         }
 
         function beginQuerySession(documentName, variables) {
@@ -354,7 +386,7 @@
         }
 
         function describeResponse(data) {
-            return _sr()?.decrire_reponse(data, runtimeState.currentLanguage || "fr") ?? "";
+            return _sr()?.decrire_reponse(data, runtimeState.currentLanguage || "en") ?? "";
         }
 
         function renderQueryDocList() {
@@ -396,7 +428,7 @@
             querySessionListEl.innerHTML = sr.rendre_session_requetes(
                 runtimeState.querySession || [],
                 runtimeState.replayingSessionId || 0,
-                runtimeState.currentLanguage || "fr"
+                runtimeState.currentLanguage || "en"
             );
         }
 
@@ -405,7 +437,7 @@
             runtimeState.currentDocument = "movement_details.graphql";
             runtimeState.currentVariables = {
                 id: "Q40415",
-                languageCode: runtimeState.currentLanguage || "fr"
+                languageCode: runtimeState.currentLanguage || "en"
             };
             runtimeState.currentMode = "observatory";
             runtimeState.responseShape = "{\n  item: {\n    id,\n    label,\n    statements(...)\n  }\n}";
@@ -525,6 +557,8 @@
         }
 
         function applyInterfaceLanguage(languageCode) {
+            document.documentElement.lang = supportedLanguages.includes(languageCode) ? languageCode : "en";
+
             Object.entries(translatableElements).forEach(([id, key]) => {
                 const element = document.getElementById(id);
                 if (!element) {
@@ -536,6 +570,12 @@
                 } else {
                     element.textContent = value;
                 }
+            });
+
+            langButtons.forEach((button) => {
+                const isActive = button.dataset.language === languageCode;
+                button.classList.toggle("is-active", isActive);
+                button.setAttribute("aria-pressed", isActive ? "true" : "false");
             });
 
             modeButtons.forEach((button) => {
@@ -571,6 +611,36 @@
             if (sourceSnippetEl) {
                 sourceSnippetEl.textContent = traduireInterface("source.polyglotSnippet", {}, languageCode);
             }
+
+            document.querySelectorAll(".tier-button[data-tier]").forEach((button) => {
+                const label = button.querySelector(".tier-label") || button;
+                label.textContent = traduireInterface("tier." + button.dataset.tier, {}, languageCode);
+                button.title = traduireInterface("tier." + button.dataset.tier + ".title", {}, languageCode);
+            });
+
+            document.querySelectorAll(".search-mode-btn[data-search-mode]").forEach((button) => {
+                const mode = button.dataset.searchMode;
+                button.textContent = traduireInterface("search.mode." + mode, {}, languageCode);
+                button.title = traduireInterface("search.mode." + mode + ".title", {}, languageCode);
+            });
+
+            const localizedSelectors = [
+                [".story-journey .section-title", "story.section.featuredJourney"],
+                [".story-themes .section-title", "story.section.browseByTheme"],
+                [".explorer-header .eyebrow", "tier.explorer"],
+                [".explorer-header h2", "explorer.heading"],
+                [".explorer-themes .section-title", "story.section.browseByTheme"],
+                ["#explorer-comparison-section .section-title", "comparison.title"],
+                ["#explorer-comparison-section .explorer-section-hint", "explorer.comparison.hint"],
+                ["#explorer-trajectory-section .section-title", "trajectory.title"],
+                ["#explorer-trajectory-section .explorer-section-hint", "explorer.trajectory.hint"]
+            ];
+            localizedSelectors.forEach(([selector, key]) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.innerHTML = traduireInterface(key, {}, languageCode);
+                }
+            });
 
             renderHeroActions(languageCode, runtimeState.currentMode);
         }
@@ -890,7 +960,7 @@ function setActiveTier(tier, options = {}) {
                 const snapshot = currentSnapshot();
                 const selectedEntity = snapshot.entite_selectionnee || {};
                 const labels = snapshot.entite_selectionnee?.labels_multilingues || {};
-                const currentLang = runtimeState.currentLanguage || "fr";
+                const currentLang = runtimeState.currentLanguage || "en";
                 const displaySideBySide = snapshot.afficher_surfaces_paralleles !== false;
 
                 // Render polyglot studio HTML directly
@@ -903,8 +973,9 @@ function setActiveTier(tier, options = {}) {
                 html += "<span class='polyglot-hint'>" + escapeHtml(traduireInterface("polyglot.hint")) + "</span>";
                 html += "</div>";
                 html += "<div class='polyglot-controls' role='toolbar' aria-label='" + escapeHtml(traduireInterface("polyglot.controlsAria")) + "'>";
-                html += "<button class='language-toggle " + (currentLang === "fr" ? "is-active" : "") + "' data-lang='fr' title='" + escapeHtml(traduireInterface("polyglot.surface.fr.title")) + "' aria-pressed='" + (currentLang === "fr" ? "true" : "false") + "'>" + escapeHtml(traduireInterface("polyglot.surface.fr.label")) + "</button>";
-                html += "<button class='language-toggle " + (currentLang === "en" ? "is-active" : "") + "' data-lang='en' title='" + escapeHtml(traduireInterface("polyglot.surface.en.title")) + "' aria-pressed='" + (currentLang === "en" ? "true" : "false") + "'>" + escapeHtml(traduireInterface("polyglot.surface.en.label")) + "</button>";
+                supportedLanguages.forEach((lang) => {
+                    html += "<button class='language-toggle " + (currentLang === lang ? "is-active" : "") + "' data-lang='" + lang + "' title='" + escapeHtml(traduireInterface("polyglot.surface." + lang + ".title")) + "' aria-pressed='" + (currentLang === lang ? "true" : "false") + "'>" + escapeHtml(traduireInterface("polyglot.surface." + lang + ".label")) + "</button>";
+                });
                 html += "<button class='view-toggle' id='polyglot-toggle-view' title='" + escapeHtml(traduireInterface("polyglot.viewToggle.title")) + "' aria-label='" + escapeHtml(traduireInterface("polyglot.viewToggle.aria")) + "'>" + escapeHtml(traduireInterface("polyglot.viewToggle.label")) + "</button>";
                 html += "</div>";
                 html += "</div>";
@@ -912,8 +983,9 @@ function setActiveTier(tier, options = {}) {
                 if (displaySideBySide) {
                     // Side-by-side view
                     html += "<div class='polyglot-surfaces'>";
-                    html += renderPolyglotSurface(selectedEntity, labels, "fr", entityId);
-                    html += renderPolyglotSurface(selectedEntity, labels, "en", entityId);
+                    supportedLanguages.forEach((lang) => {
+                        html += renderPolyglotSurface(selectedEntity, labels, lang, entityId);
+                    });
                     html += "</div>";
                 } else {
                     // Tabbed view
@@ -946,11 +1018,7 @@ function setActiveTier(tier, options = {}) {
             langButtons.forEach((btn) => {
                 btn.addEventListener("click", async () => {
                     const lang = btn.dataset.lang;
-                    if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_langue === "function") {
-                        await window.ui.etat.basculer_langue(lang);
-                    }
-                    runtimeState.currentLanguage = lang;
-                    initializePolyglotStudioVisualization(entityId);
+                    await applyLanguage(lang);
                 });
             });
 
@@ -1298,7 +1366,7 @@ function setActiveTier(tier, options = {}) {
             }
 
             const existingLabels = selectedEntity.labels_multilingues || {};
-            if (existingLabels.fr || existingLabels.en) {
+            if (existingLabels.fr || existingLabels.en || existingLabels.es) {
                 runtimeState.multilingualEntityLabels = existingLabels;
                 const summary = Object.entries(existingLabels)
                     .filter(([, label]) => label)
@@ -1311,7 +1379,7 @@ function setActiveTier(tier, options = {}) {
                 return;
             }
 
-            const languages = ["fr", "en"];
+            const languages = supportedLanguages;
             const labels = {};
 
             for (const languageCode of languages) {
@@ -1357,7 +1425,7 @@ function setActiveTier(tier, options = {}) {
             const trailItems = [
                 { label: traduireInterface("runtime.trail.document"), value: runtimeState.currentDocument },
                 { label: runtimeState.selectedEntity.type || traduireInterface("runtime.entity"), value: runtimeState.selectedEntity.name || runtimeState.selectedEntity.id || traduireInterface("runtime.awaitingResponse") },
-                { label: traduireInterface("runtime.trail.language"), value: runtimeState.currentMode === "polyglot-studio" ? (snapshot.mode_langue_actif || "fr").toUpperCase() : runtimeState.currentLanguage },
+                { label: traduireInterface("runtime.trail.language"), value: runtimeState.currentMode === "polyglot-studio" ? (snapshot.mode_langue_actif || "en").toUpperCase() : runtimeState.currentLanguage },
                 { label: traduireInterface("runtime.trail.result"), value: runtimeState.selectedEntity.meta || traduireInterface("runtime.liveGraphQL") }
             ];
 
@@ -1792,7 +1860,7 @@ function setActiveTier(tier, options = {}) {
         function buildTimelineModel(entityType, entity) {
             const c = _chron();
             if (c) {
-                return c.construire_modele_temporel(entityType, entity, runtimeState.currentLanguage || "fr");
+                return c.construire_modele_temporel(entityType, entity, runtimeState.currentLanguage || "en");
             }
             return { rangeStart: 1400, rangeEnd: 2000, windowStart: 1540, windowEnd: 1760, label: "", caption: "" };
         }
@@ -2344,6 +2412,7 @@ function setActiveTier(tier, options = {}) {
                 entite_selectionnee_type: selectedType,
                 panneau_detail_visible: browserAdapterState.panneau_detail_visible,
                 mode_visualisation: browserAdapterState.mode_visualisation,
+                mode_langue_actif: runtimeState.currentLanguage || "en",
                 affichage_chargement: browserAdapterState.affichage_chargement,
                 message_erreur: browserAdapterState.message_erreur,
                 plage_temporelle_debut: browserAdapterState.plage_temporelle_debut,
@@ -3325,7 +3394,6 @@ function setActiveTier(tier, options = {}) {
 
         function recordGraphQLRequest(payload) {
             runtimeState.currentVariables = payload.variables || {};
-            runtimeState.currentLanguage = runtimeState.currentVariables.languageCode || runtimeState.currentLanguage;
             const selectedId = findSelectedEntityId(runtimeState.currentVariables);
             runtimeState.queryNarrative = narrativeForDocument(runtimeState.currentDocument, runtimeState.currentVariables);
             runtimeState.selectedEntity = {
@@ -3426,11 +3494,11 @@ function setActiveTier(tier, options = {}) {
         }
 
         function obtenirLignesSurfaceLangue(languageCode) {
-            const langue = languageCode === "en" ? "en" : "fr";
-            const codes = langue === "en" ? ["EN", "FR"] : ["FR", "EN"];
+            const langue = supportedLanguages.includes(languageCode) ? languageCode : "en";
+            const codes = [langue, ...supportedLanguages.filter((code) => code !== langue)].map((code) => code.toUpperCase());
             return codes.map((code, index) => ({
                 code,
-                textKey: "languageSurface." + langue + "." + (index === 0 ? "primary" : "secondary")
+                textKey: "languageSurface." + langue + "." + (index === 0 ? "primary" : "secondary" + index)
             }));
         }
 
@@ -3463,6 +3531,35 @@ function setActiveTier(tier, options = {}) {
 
             renderRuntimeState();
         }
+
+        async function applyLanguage(languageCode) {
+            const language = supportedLanguages.includes(languageCode) ? languageCode : "en";
+            try {
+                if (window.ui && window.ui.etat && typeof window.ui.etat.basculer_langue === "function") {
+                    await window.ui.etat.basculer_langue(language);
+                } else if (typeof window.basculer_langue === "function") {
+                    await window.basculer_langue(language);
+                }
+            } catch (error) {
+                runtimeState.lastError = traduireInterface("runtime.languageSwitchFailed", { error: error.message }, language);
+            }
+
+            updateLanguageSurface(language);
+            applyInterfaceLanguage(language);
+            updateSearchModeSurface(typeof window.getActiveSearchMode === "function" ? window.getActiveSearchMode() : "entity");
+
+            if (runtimeState.currentMode === "polyglot-studio" && runtimeState.selectedEntity && runtimeState.selectedEntity.id) {
+                initializePolyglotStudioVisualization(runtimeState.selectedEntity.id);
+            }
+
+            window.renderDetailPanel?.();
+            window.renderComparisonPanel?.();
+            window.renderTrajectoirePanel?.();
+            window.renderStoryTier?.();
+            renderExplorerFocus();
+            renderRuntimeState();
+        }
+        window.applyLanguage = applyLanguage;
 
         // Map HTML button modes to multilingual visualization modes
         const modeMapping = {
@@ -3559,12 +3656,7 @@ function setActiveTier(tier, options = {}) {
             button.addEventListener("click", async () => {
                 const language = button.dataset.language;
                 try {
-                    setActiveButton(langButtons, button);
-                    if (runtimeState.currentMode === "polyglot-studio" && typeof window.basculer_langue === "function") {
-                        await window.basculer_langue(language);
-                    } else {
-                        updateLanguageSurface(language);
-                    }
+                    await applyLanguage(language);
                 } catch (error) {
                     runtimeState.lastError = traduireInterface("runtime.languageSwitchFailed", { error: error.message });
                     renderRuntimeState();
@@ -3749,7 +3841,7 @@ function setActiveTier(tier, options = {}) {
 
         window.searchEntities = async function searchEntities(query) {
             if (!query || query.length < 2) return [];
-            const lang = runtimeState.currentLanguage || "fr";
+            const lang = runtimeState.currentLanguage || "en";
             const mode = typeof window.getActiveSearchMode === "function" ? window.getActiveSearchMode() : currentSearchMode;
             const queryLower = query.toLowerCase();
             const seen = new Set();
@@ -3796,8 +3888,8 @@ function setActiveTier(tier, options = {}) {
 
         buildShellFilter();
         loadQueryInventory();
-        window.motusI18nReady.finally(() => {
-            updateLanguageSurface("fr");
+        window.motusI18nReady.finally(async () => {
+            await applyLanguage(window.motusInitialLanguage || runtimeState.currentLanguage || "en");
             updateSearchModeSurface(currentSearchMode);
             // Render Story tier content on load (body starts as data-tier="story")
             renderStoryTier();

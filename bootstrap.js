@@ -88,6 +88,9 @@
                     if (window.motusI18nReady && typeof window.motusI18nReady.then === "function") {
                         await window.motusI18nReady;
                     }
+                    if (typeof window.applyLanguage === "function") {
+                        await window.applyLanguage(window.motusInitialLanguage || runtimeState.currentLanguage || "en");
+                    }
 
                     async function loadInitialEntity(entityId, frenchType) {
                         if (window.ui && window.ui.etat) {

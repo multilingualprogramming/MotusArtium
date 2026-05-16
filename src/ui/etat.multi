@@ -144,7 +144,7 @@ déf _supprimer_entites_graphe(ids: liste):
 déf _obtenir_cibles_relations(source_id: chaine, type_relation: chaine) -> liste:
     ids = []
     pour relation dans graphe.relations:
-        si relation.source_id == source_id et relation.type == type_relation:
+        si relation.source_id == source_id et relation.type_noeud == type_relation:
             ids.ajouter(relation.target_id)
     retour ids
 

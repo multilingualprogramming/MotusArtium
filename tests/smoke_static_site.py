@@ -396,7 +396,12 @@ def validate_recit_comparaison_contract(site_root: pathlib.Path) -> None:
         assert_contains(src, "_rendre_recit_mouvement", "recit.multi")
         assert_contains(src, "_rendre_recit_artiste", "recit.multi")
         assert_contains(src, "_rendre_recit_oeuvre", "recit.multi")
-        assert_contains(src, "data-mode=observatory", "recit.multi Voir la Constellation")
+        assert_contains(src, "data-explorer-open-observatory", "recit.multi Voir la Constellation")
+
+    etat_multi = (site_root / "src/ui/etat.multi")
+    if etat_multi.exists():
+        src = etat_multi.read_text(encoding="utf-8")
+        assert_contains(src, "relation.type_noeud == type_relation", "etat.multi relation lookup")
 
     intersections_multi = (site_root / "src/semantique/intersections.multi")
     if intersections_multi.exists():

@@ -1150,7 +1150,7 @@ function _supprimer_entites_graphe(ids) {
 function _obtenir_cibles_relations(source_id, type_relation) {
   var ids = [];
   for (const relation of __ml_iterate(_engine.get('graphe').get().relations)) {
-    if ((__ml_truthy((relation.source_id == source_id)) && __ml_truthy((relation.type == type_relation)))) {
+    if ((__ml_truthy((relation.source_id == source_id)) && __ml_truthy((relation.type_noeud == type_relation)))) {
       __ml_add(ids, relation.target_id);
     }
   }
@@ -2802,7 +2802,7 @@ function _rendre_recit_mouvement(entite) {
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
+  html = (((html + "<button type=\"button\" class=\"recit-btn-explorer\" data-explorer-open-observatory>") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2879,7 +2879,7 @@ function _rendre_recit_artiste(entite) {
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
+  html = (((html + "<button type=\"button\" class=\"recit-btn-explorer\" data-explorer-open-observatory>") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2934,7 +2934,7 @@ function _rendre_recit_oeuvre(entite) {
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
+  html = (((html + "<button type=\"button\" class=\"recit-btn-explorer\" data-explorer-open-observatory>") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -2978,7 +2978,7 @@ function _rendre_recit_musee(entite) {
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
+  html = (((html + "<button type=\"button\" class=\"recit-btn-explorer\" data-explorer-open-observatory>") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;
@@ -3022,7 +3022,7 @@ function _rendre_recit_sujet(entite) {
   }
   html = (html + "</div>");
   html = (html + "<footer class=\"recit-footer\">");
-  html = (((html + "<button class=\"recit-btn-explorer\" data-target=\"[data-mode=observatory]\" onclick=\"document.querySelector(this.dataset.target).click()\">") + _t("recit.button.constellation")) + "</button>");
+  html = (((html + "<button type=\"button\" class=\"recit-btn-explorer\" data-explorer-open-observatory>") + _t("recit.button.constellation")) + "</button>");
   html = (html + "</footer>");
   html = (html + "</article>");
   return html;

@@ -128,7 +128,7 @@ déf _rendre_recit_mouvement(entite: dictionnaire) -> chaine:
 
     # Pied — invitation à explorer la constellation
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">' + _t("recit.button.constellation") + '</button>'
+    html = html + '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>' + _t("recit.button.constellation") + '</button>'
     html = html + '</footer>'
     html = html + '</article>'
 
@@ -207,7 +207,7 @@ déf _rendre_recit_artiste(entite: dictionnaire) -> chaine:
 
     html = html + '</div>'
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">' + _t("recit.button.constellation") + '</button>'
+    html = html + '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>' + _t("recit.button.constellation") + '</button>'
     html = html + '</footer>'
     html = html + '</article>'
 
@@ -265,7 +265,7 @@ déf _rendre_recit_oeuvre(entite: dictionnaire) -> chaine:
 
     html = html + '</div>'
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">' + _t("recit.button.constellation") + '</button>'
+    html = html + '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>' + _t("recit.button.constellation") + '</button>'
     html = html + '</footer>'
     html = html + '</article>'
 
@@ -309,7 +309,7 @@ déf _rendre_recit_musee(entite: dictionnaire) -> chaine:
 
     html = html + '</div>'
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">' + _t("recit.button.constellation") + '</button>'
+    html = html + '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>' + _t("recit.button.constellation") + '</button>'
     html = html + '</footer>'
     html = html + '</article>'
     retour html
@@ -351,7 +351,7 @@ déf _rendre_recit_sujet(entite: dictionnaire) -> chaine:
 
     html = html + '</div>'
     html = html + '<footer class="recit-footer">'
-    html = html + '<button class="recit-btn-explorer" data-target="[data-mode=observatory]" onclick="document.querySelector(this.dataset.target).click()">' + _t("recit.button.constellation") + '</button>'
+    html = html + '<button type="button" class="recit-btn-explorer" data-explorer-open-observatory>' + _t("recit.button.constellation") + '</button>'
     html = html + '</footer>'
     html = html + '</article>'
     retour html

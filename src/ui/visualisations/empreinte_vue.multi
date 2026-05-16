@@ -1,0 +1,46 @@
+importer semantique.empreinte
+importer ui.etat
+importer ui.i18n
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
+
+
+déf rendre_empreinte_thematique(frequences: dictionnaire) -> chaine:
+    """Rendre un graphique en barres HTML de l'empreinte thématique."""
+    si non frequences:
+        retour ""
+
+    # Calculer le maximum pour normaliser les barres
+    valeurs = []
+    pour lentille dans frequences:
+        valeurs.ajouter(frequences.obtenir(lentille, 0))
+
+    maximum = 0
+    pour v dans valeurs:
+        si v > maximum:
+            maximum = v
+
+    si maximum == 0:
+        retour ""
+
+    html = '<div class="empreinte-container">'
+    html = html + "<h4 class='empreinte-titre'>" + _t("detail.movement.empreinte") + "</h4>"
+    html = html + '<div class="empreinte-bars">'
+
+    pour lentille dans frequences:
+        compteur = frequences.obtenir(lentille, 0)
+        pourcentage = round(compteur * 100 / maximum)
+        label_lentille = semantique.empreinte.obtenir_label_lentille(lentille)
+        html = html + '<div class="empreinte-row">'
+        html = html + '<span class="empreinte-label">' + label_lentille + '</span>'
+        html = html + '<div class="empreinte-bar-track">'
+        html = html + '<div class="empreinte-bar empreinte-bar--' + lentille + '" style="width:' + chaine(pourcentage) + '%"></div>'
+        html = html + '</div>'
+        html = html + '<span class="empreinte-count">' + chaine(compteur) + '</span>'
+        html = html + '</div>'
+
+    html = html + '</div>'
+    html = html + '</div>'
+    retour html

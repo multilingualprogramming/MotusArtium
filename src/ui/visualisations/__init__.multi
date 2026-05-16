@@ -5,3 +5,4 @@ importer .chronologie_vue
 importer .heatmap_vue
 importer .polyglot_studio_vue
 importer .utilitaires_rendu
+importer .empreinte_vue

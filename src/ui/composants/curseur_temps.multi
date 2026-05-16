@@ -1,0 +1,35 @@
+importer ui.etat
+importer ui.i18n
+
+
+déf _t(cle: chaine) -> chaine:
+    retour ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif)
+
+
+déf rendre_curseur_temps(debut: nombre, fin: nombre, actuelle: nombre) -> chaine:
+    """Rendre le contrôle de curseur temporel pour l'animation de diffusion géographique."""
+    si debut >= fin:
+        retour ""
+
+    debut_str = chaine(round(debut))
+    fin_str = chaine(round(fin))
+    actuelle_str = chaine(round(actuelle))
+
+    change_handler = "window.ui&&window.ui.etat&&window.ui.etat.definir_annee_heatmap&&window.ui.etat.definir_annee_heatmap(Number(this.value));window.filtrerHeatmapParAnnee&&window.filtrerHeatmapParAnnee(Number(this.value));window.renderCurseurTemps&&window.renderCurseurTemps()"
+    play_handler = "window.jouerAnimationHeatmap&&window.jouerAnimationHeatmap(" + debut_str + "," + fin_str + ",60)"
+    pause_handler = "window.arreterAnimationHeatmap&&window.arreterAnimationHeatmap()"
+
+    html = "<div class='curseur-temps'>"
+    html = html + "<div class='curseur-temps-header'>"
+    html = html + "<span class='curseur-temps-titre'>" + _t("heatmap.temporalCursor") + "</span>"
+    html = html + "<span class='curseur-temps-annee'>" + actuelle_str + "</span>"
+    html = html + "</div>"
+    html = html + "<input type='range' class='curseur-temps-slider' min='" + debut_str + "' max='" + fin_str + "' value='" + actuelle_str + "' onchange='" + change_handler + "' />"
+    html = html + "<div class='curseur-temps-controls'>"
+    html = html + "<span class='curseur-temps-borne'>" + debut_str + "</span>"
+    html = html + "<button class='curseur-temps-btn' onclick='" + play_handler + "'>" + _t("heatmap.play") + "</button>"
+    html = html + "<button class='curseur-temps-btn' onclick='" + pause_handler + "'>" + _t("heatmap.pause") + "</button>"
+    html = html + "<span class='curseur-temps-borne'>" + fin_str + "</span>"
+    html = html + "</div>"
+    html = html + "</div>"
+    retour html

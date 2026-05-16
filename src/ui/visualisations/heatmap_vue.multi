@@ -15,16 +15,18 @@ classe VueHeatmapGeographique:
     centre_lon: nombre
     largeur_pixels: nombre
     hauteur_pixels: nombre
+    annee_filtre: nombre   # 0 = aucun filtre temporel
 
     déf __init__(canvas: element):
-        observer self.canvas = canvas
-        observer self.contexte = canvas.obtenir_contexte("2d")
-        observer self.visualisation = nul
-        observer self.echelle_zoom = 100  # pixels par degré
-        observer self.centre_lat = 48.8566  # Défaut: Paris
-        observer self.centre_lon = 2.3522
-        observer self.largeur_pixels = canvas.largeur
-        observer self.hauteur_pixels = canvas.hauteur
+        self.canvas = canvas
+        self.contexte = canvas.obtenir_contexte("2d")
+        self.visualisation = nul
+        self.echelle_zoom = 100  # pixels par degré
+        self.centre_lat = 48.8566  # Défaut: Paris
+        self.centre_lon = 2.3522
+        self.largeur_pixels = canvas.largeur
+        self.hauteur_pixels = canvas.hauteur
+        self.annee_filtre = 0
 
         # Gestionnaires d'événements
         canvas.gerer_roulette = self.gerer_roulette
@@ -32,12 +34,12 @@ classe VueHeatmapGeographique:
 
     asynchrone déf charger_mouvement(mouvement_id: chaine):
         """Charger les données géographiques d'un mouvement"""
-        observer visualisation = semantique.geographique.VisualisationCartographique()
+        visualisation = semantique.geographique.VisualisationCartographique()
         attendre visualisation.charger_mouvement(mouvement_id)
 
-        self.rendre()
+        self.rafraichir()
 
-    déf convertir_coords_pixel(latitude: nombre, longitude: nombre) -> {x: nombre, y: nombre}:
+    déf convertir_coords_pixel(latitude: nombre, longitude: nombre) -> dictionnaire:
         """Convertir des coordonnées géographiques en pixels canvas"""
         centre_x = self.largeur_pixels / 2
         centre_y = self.hauteur_pixels / 2
@@ -45,9 +47,9 @@ classe VueHeatmapGeographique:
         x = centre_x + (longitude - self.centre_lon) * self.echelle_zoom
         y = centre_y - (latitude - self.centre_lat) * self.echelle_zoom
 
-        retour {x: x, y: y}
+        retour {"x": x, "y": y}
 
-    déf convertir_pixel_coords(x: nombre, y: nombre) -> {latitude: nombre, longitude: nombre}:
+    déf convertir_pixel_coords(x: nombre, y: nombre) -> dictionnaire:
         """Convertir des pixels en coordonnées géographiques"""
         centre_x = self.largeur_pixels / 2
         centre_y = self.hauteur_pixels / 2
@@ -55,9 +57,9 @@ classe VueHeatmapGeographique:
         longitude = self.centre_lon + (x - centre_x) / self.echelle_zoom
         latitude = self.centre_lat - (y - centre_y) / self.echelle_zoom
 
-        retour {latitude: latitude, longitude: longitude}
+        retour {"latitude": latitude, "longitude": longitude}
 
-    déf rendre():
+    déf rafraichir():
         """Rendre la heatmap"""
         si non self.visualisation:
             retour
@@ -72,13 +74,13 @@ classe VueHeatmapGeographique:
         points_chaleur = self.visualisation.obtenir_heatmap()
 
         # Rendre les points de chaleur
-        pour point in points_chaleur:
+        pour point dans points_chaleur:
             pixel = self.convertir_coords_pixel(point.obtenir("latitude", 0), point.obtenir("longitude", 0))
 
             # Couleur basée sur l'intensité (rouge pour forte, bleu pour faible)
             intensite = point.obtenir("intensite", 0)
-            r = int(255 * intensite)
-            b = int(255 * (1 - intensite))
+            r = round(255 * intensite)
+            b = round(255 * (1 - intensite))
             g = 100
 
             couleur_hex = "rgb(" + chaine(r) + "," + chaine(g) + "," + chaine(b) + ")"
@@ -108,6 +110,15 @@ classe VueHeatmapGeographique:
         # Rendre la légende
         self.rendre_legende(ctx)
 
+        # Afficher l'année de filtre si active
+        si self.annee_filtre > 0:
+            ctx.couleur_remplissage = "rgba(0,0,0,0.7)"
+            ctx.rect_rempli(self.largeur_pixels / 2 - 50, 8, 100, 28)
+            ctx.couleur_texte = "#FFFFFF"
+            ctx.fonte = "bold 14px Arial"
+            ctx.alignement_texte = "centre"
+            ctx.texte_rempli(chaine(round(self.annee_filtre)), self.largeur_pixels / 2, 27)
+
     déf rendre_legende(ctx):
         """Rendre la légende de couleurs"""
         legende_x = 20
@@ -130,16 +141,18 @@ classe VueHeatmapGeographique:
         ctx.texte_rempli("Intensité", legende_x + 10, legende_y + 20)
 
         # Gradient de couleurs
-        pour i dans intervalle(10):
+        i = 0
+        tantque i < 10:
             intensite = i / 10.0
-            r = int(255 * intensite)
-            b = int(255 * (1 - intensite))
+            r = round(255 * intensite)
+            b = round(255 * (1 - intensite))
             g = 100
 
             couleur_hex = "rgb(" + chaine(r) + "," + chaine(g) + "," + chaine(b) + ")"
 
             ctx.couleur_remplissage = couleur_hex
             ctx.rect_rempli(legende_x + 10 + i * 18, legende_y + 35, 16, 16)
+            i = i + 1
 
         # Étiquettes
         ctx.fonte = "9px Arial"
@@ -149,14 +162,14 @@ classe VueHeatmapGeographique:
     déf gerer_zoom(x: nombre, y: nombre, direction: nombre):
         """Gérer le zoom"""
         ancien_zoom = self.echelle_zoom
-        observer self.echelle_zoom = max(10, min(500, self.echelle_zoom + direction * 20))
+        self.echelle_zoom = max(10, min(500, self.echelle_zoom + direction * 20))
 
         # Ajuster le centre pour garder le point de zoom stable
         coords = self.convertir_pixel_coords(x, y)
-        observer self.centre_lat = coords.obtenir("latitude", 0)
-        observer self.centre_lon = coords.obtenir("longitude", 0)
+        self.centre_lat = coords.obtenir("latitude", 0)
+        self.centre_lon = coords.obtenir("longitude", 0)
 
-        self.rendre()
+        self.rafraichir()
 
     déf gerer_clic(x: nombre, y: nombre):
         """Gestionnaire de clic"""
@@ -165,7 +178,7 @@ classe VueHeatmapGeographique:
         # Obtenir les clusters à cette position
         clusters = self.visualisation.obtenir_points_cluster()
 
-        pour cluster in clusters:
+        pour cluster dans clusters:
             pixel = self.convertir_coords_pixel(cluster.obtenir("latitude", 0), cluster.obtenir("longitude", 0))
             distance = math.sqrt((x - pixel.obtenir("x", 0)) ** 2 + (y - pixel.obtenir("y", 0)) ** 2)
 
@@ -178,6 +191,17 @@ classe VueHeatmapGeographique:
     déf gerer_roulette(x: nombre, y: nombre, direction: nombre):
         """Gestionnaire de roulette de souris"""
         self.gerer_zoom(x, y, direction)
+
+    déf filtrer_par_annee(annee: nombre):
+        """Définir l'année de filtre et re-rendre."""
+        self.annee_filtre = annee
+        self.rafraichir()
+
+    déf animer_diffusion(debut: nombre, fin: nombre, vitesse: nombre):
+        """Initialiser l'état pour l'animation temporelle.
+        Le pas d'animation est piloté par window.jouerAnimationHeatmap() en JS."""
+        self.annee_filtre = debut
+        self.rafraichir()
 
 
 asynchrone déf creer_vue_heatmap(canvas: element, mouvement_id: chaine) -> VueHeatmapGeographique:

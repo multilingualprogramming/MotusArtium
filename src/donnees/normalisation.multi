@@ -122,7 +122,8 @@ déf normaliser_artiste(element: dictionnaire) -> dictionnaire:
         "deathplace": _envelopper_elements(lieu_deces),
         "deathplaceLabel": _etiquettes_jointes(lieu_deces),
         "movement": _envelopper_elements(mouvement),
-        "movementLabel": _etiquettes_jointes(mouvement)
+        "movementLabel": _etiquettes_jointes(mouvement),
+        "image": {"value": _premiere_valeur_contenu(element.obtenir("image", []))}
     }
 
 

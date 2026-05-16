@@ -1,0 +1,50 @@
+# Distribution des sujets P180 par lentille sémantique.
+# Mapping embarqué pour éviter les problèmes d'accès aux constantes inter-modules.
+
+_LENTILLES_SUJETS = {
+    "couleur": ["Q1075", "Q571", "Q1379522", "Q1076"],
+    "geometrie": ["Q10307", "Q127020", "Q188913", "Q192762"],
+    "symbolisme": ["Q34379", "Q6881637", "Q45621"],
+    "emotion": ["Q9415", "Q26742", "Q40241"],
+    "mythologie": ["Q34379", "Q178885", "Q11042"],
+    "religion": ["Q45621", "Q9176", "Q645883"],
+    "nature": ["Q441", "Q15284", "Q25306", "Q45"],
+    "politique": ["Q7163", "Q6256", "Q5"],
+    "industrialisation": ["Q2016", "Q28823", "Q11019"]
+}
+
+_LABELS_LENTILLES = {
+    "couleur": "Couleur",
+    "geometrie": "Géométrie",
+    "symbolisme": "Symbolisme",
+    "emotion": "Émotion",
+    "mythologie": "Mythologie",
+    "religion": "Religion",
+    "nature": "Nature",
+    "politique": "Politique",
+    "industrialisation": "Industrialisation"
+}
+
+
+déf calculer_empreinte_depuis_sujets(sujets_ids: liste) -> dictionnaire:
+    """Compter combien de sujets P180 tombent dans chaque lentille sémantique."""
+    sujets_vus = {}
+    pour s dans sujets_ids:
+        sujets_vus[s] = vrai
+
+    frequences = {}
+    pour lentille dans _LENTILLES_SUJETS:
+        sujets_lentille = _LENTILLES_SUJETS.obtenir(lentille, [])
+        compteur = 0
+        pour sujet dans sujets_lentille:
+            si sujet dans sujets_vus:
+                compteur = compteur + 1
+        si compteur > 0:
+            frequences[lentille] = compteur
+
+    retour frequences
+
+
+déf obtenir_label_lentille(lentille: chaine) -> chaine:
+    """Retourner le libellé français d'une lentille."""
+    retour _LABELS_LENTILLES.obtenir(lentille, lentille)

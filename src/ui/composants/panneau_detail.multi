@@ -1,5 +1,8 @@
 importer ui.etat
 importer ui.i18n
+importer utilitaires.media
+importer semantique.empreinte
+importer ui.visualisations.empreinte_vue
 
 
 déf _t(cle: chaine) -> chaine:
@@ -69,6 +72,21 @@ déf _rendre_detail_mouvement(entite: dictionnaire) -> chaine:
     si pays_label:
         html = html + '<p class="detail-row">' + _ti("detail.country", {"value": pays_label}) + '</p>'
 
+    # Bouton diffusion géographique
+    mouvement_id = entite.obtenir("id", "")
+    si mouvement_id:
+        html = html + '<div class="detail-actions">'
+        html = html + '<button class="detail-geo-btn" onclick="window.afficherHeatmapPanel&&window.afficherHeatmapPanel(\'' + mouvement_id + '\')">' + _t("detail.movement.geo") + '</button>'
+        html = html + '</div>'
+
+    # Empreinte thématique — basée sur les œuvres chargées dans le graphe
+    sujets = ui.etat.obtenir_sujets_oeuvres_graphe()
+    si sujets:
+        frequences = semantique.empreinte.calculer_empreinte_depuis_sujets(sujets)
+        html = html + ui.visualisations.empreinte_vue.rendre_empreinte_thematique(frequences)
+    sinon:
+        html = html + "<p class='empreinte-hint'>" + _t("detail.movement.empreinteHint") + "</p>"
+
     html = html + '</div>'
     retour html
 
@@ -100,7 +118,11 @@ déf _rendre_detail_artiste(entite: dictionnaire) -> chaine:
         traj_label = _t("detail.trajectory.add")
         traj_onclick = "window.ui&&window.ui.etat&&window.ui.etat.basculer_artiste_trajectoire&&window.ui.etat.basculer_artiste_trajectoire('" + entite_id + "','" + label_esc + "').then(()=>window.renderTrajectoirePanel())"
 
+    image_val = donnees.obtenir("image", {}).obtenir("value", "")
     html = '<div class="detail-section">'
+    si image_val:
+        url_vignette = utilitaires.media.construire_url_vignette(image_val, 200)
+        html = html + '<div class="detail-image"><img src="' + url_vignette + '" alt="' + label + '" loading="lazy" class="detail-thumb" /></div>'
     html = html + '<h3>' + label + '</h3>'
 
     si naissance ou deces:
@@ -134,8 +156,12 @@ déf _rendre_detail_oeuvre(entite: dictionnaire) -> chaine:
     musee_label = ""
     si musee:
         musee_label = musee.obtenir("label", "")
+    image_val = donnees.obtenir("image", {}).obtenir("value", "")
 
     html = '<div class="detail-section">'
+    si image_val:
+        url_vignette = utilitaires.media.construire_url_vignette(image_val, 300)
+        html = html + '<div class="detail-image"><img src="' + url_vignette + '" alt="' + label + '" loading="lazy" class="detail-thumb" /></div>'
     html = html + '<h3>' + label + '</h3>'
 
     si createur_label:

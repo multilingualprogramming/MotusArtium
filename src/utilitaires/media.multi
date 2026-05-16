@@ -1,0 +1,6 @@
+déf construire_url_vignette(nom_fichier: chaine, largeur: nombre) -> chaine:
+    """Construire une URL de vignette Wikimedia Commons depuis un nom de fichier P18."""
+    si non nom_fichier:
+        retour ""
+    nom_nettoye = nom_fichier.remplacer(" ", "_")
+    retour "https://commons.wikimedia.org/wiki/Special:FilePath/" + nom_nettoye + "?width=" + chaine(largeur)

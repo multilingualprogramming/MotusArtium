@@ -53,6 +53,9 @@ observer var trajectoire_arrivee_id = ""
 observer var trajectoire_chemin = []    # [id, id, ...] du BFS
 observer var trajectoire_labels = {}    # id -> etiquette
 
+# Etat de la diffusion géographique animée
+observer var annee_heatmap_courante = 1400
+
 # Etat de pagination curseur pour le chargement progressif
 observer var curseur_artistes_mouvement = ""
 observer var a_page_suivante_artistes_mouvement = faux
@@ -818,6 +821,31 @@ déf obtenir_noeud_selectionne() -> NoeudGraphe:
     si entite_selectionnee_id:
         retour graphe.obtenir_noeud(entite_selectionnee_id)
     retour nul
+
+
+déf obtenir_sujets_oeuvres_graphe() -> liste:
+    """Retourner tous les Q-IDs sujets P180 des œuvres chargées dans le graphe."""
+    tous_sujets = []
+    noeuds_oeuvres = graphe.obtenir_noeuds_par_type("oeuvre")
+    pour noeud dans noeuds_oeuvres:
+        depicts = noeud.donnees.obtenir("depicts", [])
+        pour d dans depicts:
+            sujet_id = d.obtenir("value", {}).obtenir("id", "")
+            si sujet_id:
+                tous_sujets.ajouter(sujet_id)
+    retour tous_sujets
+
+
+déf obtenir_annee_heatmap() -> nombre:
+    retour annee_heatmap_courante
+
+
+déf definir_annee_heatmap(annee: nombre):
+    annee_heatmap_courante = annee
+
+
+déf obtenir_plage_heatmap() -> dictionnaire:
+    retour {"debut": plage_temporelle_debut, "fin": plage_temporelle_fin}
 
 
 déf obtenir_instantane_etat() -> dictionnaire:

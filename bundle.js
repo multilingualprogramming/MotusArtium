@@ -1043,6 +1043,8 @@ __ml_signals['trajectoire_chemin'] = _engine.declare('trajectoire_chemin', []);
 
 __ml_signals['trajectoire_labels'] = _engine.declare('trajectoire_labels', {});
 
+__ml_signals['annee_heatmap_courante'] = _engine.declare('annee_heatmap_courante', 1400);
+
 __ml_signals['curseur_artistes_mouvement'] = _engine.declare('curseur_artistes_mouvement', "");
 
 __ml_signals['a_page_suivante_artistes_mouvement'] = _engine.declare('a_page_suivante_artistes_mouvement', false);
@@ -1791,6 +1793,34 @@ function obtenir_noeud_selectionne() {
   return null;
 }
 
+function obtenir_sujets_oeuvres_graphe() {
+  "Retourner tous les Q-IDs sujets P180 des œuvres chargées dans le graphe.";
+  var tous_sujets = [];
+  var noeuds_oeuvres = _engine.get('graphe').get().obtenir_noeuds_par_type("oeuvre");
+  for (const noeud of __ml_iterate(noeuds_oeuvres)) {
+    var depicts = ((noeud.donnees)?.["depicts"] ?? []);
+    for (const d of __ml_iterate(depicts)) {
+      var sujet_id = ((((d)?.["value"] ?? {}))?.["id"] ?? "");
+      if (__ml_truthy(sujet_id)) {
+        __ml_add(tous_sujets, sujet_id);
+      }
+    }
+  }
+  return tous_sujets;
+}
+
+function obtenir_annee_heatmap() {
+  return _engine.get('annee_heatmap_courante').get();
+}
+
+function definir_annee_heatmap(annee) {
+  _engine.get('annee_heatmap_courante').set(annee);
+}
+
+function obtenir_plage_heatmap() {
+  return {["debut"]: _engine.get('plage_temporelle_debut').get(), ["fin"]: _engine.get('plage_temporelle_fin').get()};
+}
+
 function obtenir_instantane_etat() {
   "Construire un instantane riche de l'etat pour la coquille web.";
   return {["entite_selectionnee_id"]: _engine.get('entite_selectionnee_id').get(), ["entite_selectionnee_type"]: _engine.get('entite_selectionnee_type').get(), ["mode_visualisation"]: _engine.get('mode_visualisation').get(), ["affichage_chargement"]: _engine.get('affichage_chargement').get(), ["message_erreur"]: _engine.get('message_erreur').get(), ["plage_temporelle_debut"]: _engine.get('plage_temporelle_debut').get(), ["plage_temporelle_fin"]: _engine.get('plage_temporelle_fin').get(), ["mouvement_etendu_id"]: _engine.get('mouvement_etendu_id').get(), ["artiste_etendu_id"]: _engine.get('artiste_etendu_id').get(), ["oeuvre_etendue_id"]: _engine.get('oeuvre_etendue_id').get(), ["oeuvre_focus_id"]: _engine.get('oeuvre_focus_id').get(), ["mode_langue_actif"]: _engine.get('mode_langue_actif').get(), ["afficher_surfaces_paralleles"]: _engine.get('afficher_surfaces_paralleles').get(), ["entite_multilingue_focus"]: _engine.get('entite_multilingue_focus').get(), ["entite_selectionnee"]: obtenir_entite_selectionnee(), ["graphe"]: _engine.get('graphe').get().exporter_json()};
@@ -1977,7 +2007,7 @@ async function reinitialiser_etat() {
 
 window.ui = window.ui || {};
 window.ui.etat = window.ui.etat || {};
-Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, obtenir_noeud_graphe: obtenir_noeud_graphe, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, charger_musee: charger_musee, charger_sujet: charger_sujet, reinitialiser_etat: reinitialiser_etat});
+Object.assign(window.ui.etat, {_extraire_id_entite: _extraire_id_entite, _etiquette_entite: _etiquette_entite, _mettre_a_jour_selection: _mettre_a_jour_selection, _mettre_en_cache: _mettre_en_cache, _rafraichir_etiquettes_multilingues: _rafraichir_etiquettes_multilingues, obtenir_noeud_graphe: obtenir_noeud_graphe, _ajouter_noeud: _ajouter_noeud, _ajouter_relation: _ajouter_relation, _supprimer_entites_graphe: _supprimer_entites_graphe, _obtenir_cibles_relations: _obtenir_cibles_relations, _reduire_branche_oeuvre: _reduire_branche_oeuvre, _reduire_branche_artiste: _reduire_branche_artiste, _reduire_branche_mouvement: _reduire_branche_mouvement, _focaliser_oeuvre_dans_branche_artiste: _focaliser_oeuvre_dans_branche_artiste, _ajouter_references_oeuvre: _ajouter_references_oeuvre, charger_mouvement: charger_mouvement, charger_artiste: charger_artiste, charger_oeuvre: charger_oeuvre, charger_chronologie: charger_chronologie, basculer_visualisation: basculer_visualisation, _charger_donnees_heatmap: _charger_donnees_heatmap, _initialiser_galaxie: _initialiser_galaxie, _charger_multilingue_complet: _charger_multilingue_complet, appliquer_filtre: appliquer_filtre, reinitialiser_filtre: reinitialiser_filtre, executer_recherche: executer_recherche, basculer_langue: basculer_langue, basculer_affichage_surfaces: basculer_affichage_surfaces, obtenir_artistes_mouvement: obtenir_artistes_mouvement, basculer_comparaison: basculer_comparaison, charger_donnees_comparaison: charger_donnees_comparaison, construire_graphe_influences: construire_graphe_influences, trouver_trajectoire_influence: trouver_trajectoire_influence, basculer_artiste_trajectoire: basculer_artiste_trajectoire, effacer_trajectoire: effacer_trajectoire, obtenir_trajectoire_depart_id: obtenir_trajectoire_depart_id, obtenir_trajectoire_arrivee_id: obtenir_trajectoire_arrivee_id, obtenir_trajectoire_chemin: obtenir_trajectoire_chemin, obtenir_trajectoire_labels: obtenir_trajectoire_labels, obtenir_affichage_chargement: obtenir_affichage_chargement, obtenir_entites_comparaison: obtenir_entites_comparaison, obtenir_donnees_comparaison: obtenir_donnees_comparaison, effacer_comparaison: effacer_comparaison, obtenir_entite_selectionnee: obtenir_entite_selectionnee, obtenir_noeud_selectionne: obtenir_noeud_selectionne, obtenir_sujets_oeuvres_graphe: obtenir_sujets_oeuvres_graphe, obtenir_annee_heatmap: obtenir_annee_heatmap, definir_annee_heatmap: definir_annee_heatmap, obtenir_plage_heatmap: obtenir_plage_heatmap, obtenir_instantane_etat: obtenir_instantane_etat, charger_mouvement_artistes_page_suivante: charger_mouvement_artistes_page_suivante, charger_artiste_oeuvres_page_suivante: charger_artiste_oeuvres_page_suivante, charger_musee_oeuvres_page_suivante: charger_musee_oeuvres_page_suivante, charger_musee: charger_musee, charger_sujet: charger_sujet, reinitialiser_etat: reinitialiser_etat});
 })();
 
 (() => {
@@ -2339,6 +2369,107 @@ Object.assign(window.ui.composants.barre_recherche, {_t: _t, ouvrir_barre_recher
 })();
 
 (() => {
+function construire_url_vignette(nom_fichier, largeur) {
+  "Construire une URL de vignette Wikimedia Commons depuis un nom de fichier P18.";
+  if ((!__ml_truthy(nom_fichier))) {
+    return "";
+  }
+  var nom_nettoye = nom_fichier.replace(" ", "_");
+  return ((("https://commons.wikimedia.org/wiki/Special:FilePath/" + nom_nettoye) + "?width=") + String(largeur));
+}
+
+window.utilitaires = window.utilitaires || {};
+window.utilitaires.media = window.utilitaires.media || {};
+Object.assign(window.utilitaires.media, {construire_url_vignette: construire_url_vignette});
+})();
+
+(() => {
+var _LENTILLES_SUJETS = {["couleur"]: ["Q1075", "Q571", "Q1379522", "Q1076"], ["geometrie"]: ["Q10307", "Q127020", "Q188913", "Q192762"], ["symbolisme"]: ["Q34379", "Q6881637", "Q45621"], ["emotion"]: ["Q9415", "Q26742", "Q40241"], ["mythologie"]: ["Q34379", "Q178885", "Q11042"], ["religion"]: ["Q45621", "Q9176", "Q645883"], ["nature"]: ["Q441", "Q15284", "Q25306", "Q45"], ["politique"]: ["Q7163", "Q6256", "Q5"], ["industrialisation"]: ["Q2016", "Q28823", "Q11019"]};
+
+var _LABELS_LENTILLES = {["couleur"]: "Couleur", ["geometrie"]: "Géométrie", ["symbolisme"]: "Symbolisme", ["emotion"]: "Émotion", ["mythologie"]: "Mythologie", ["religion"]: "Religion", ["nature"]: "Nature", ["politique"]: "Politique", ["industrialisation"]: "Industrialisation"};
+
+function calculer_empreinte_depuis_sujets(sujets_ids) {
+  "Compter combien de sujets P180 tombent dans chaque lentille sémantique.";
+  var sujets_vus = {};
+  for (const s of __ml_iterate(sujets_ids)) {
+    sujets_vus[s] = true;
+  }
+  var frequences = {};
+  for (const lentille of __ml_iterate(_LENTILLES_SUJETS)) {
+    var sujets_lentille = ((_LENTILLES_SUJETS)?.[lentille] ?? []);
+    var compteur = 0;
+    for (const sujet of __ml_iterate(sujets_lentille)) {
+      if (__ml_truthy(__ml_contains(sujets_vus, sujet))) {
+        compteur = (compteur + 1);
+      }
+    }
+    if (__ml_truthy((compteur > 0))) {
+      frequences[lentille] = compteur;
+    }
+  }
+  return frequences;
+}
+
+function obtenir_label_lentille(lentille) {
+  "Retourner le libellé français d'une lentille.";
+  return ((_LABELS_LENTILLES)?.[lentille] ?? lentille);
+}
+
+window.semantique = window.semantique || {};
+window.semantique.empreinte = window.semantique.empreinte || {};
+Object.assign(window.semantique.empreinte, {calculer_empreinte_depuis_sujets: calculer_empreinte_depuis_sujets, obtenir_label_lentille: obtenir_label_lentille});
+})();
+
+(() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function rendre_empreinte_thematique(frequences) {
+  "Rendre un graphique en barres HTML de l'empreinte thématique.";
+  if ((!__ml_truthy(frequences))) {
+    return "";
+  }
+  var valeurs = [];
+  for (const lentille of __ml_iterate(frequences)) {
+    __ml_add(valeurs, ((frequences)?.[lentille] ?? 0));
+  }
+  var maximum = 0;
+  for (const v of __ml_iterate(valeurs)) {
+    if (__ml_truthy((v > maximum))) {
+      maximum = v;
+    }
+  }
+  if (__ml_truthy((maximum == 0))) {
+    return "";
+  }
+  var html = "<div class=\"empreinte-container\">";
+  html = (((html + "<h4 class='empreinte-titre'>") + _t("detail.movement.empreinte")) + "</h4>");
+  html = (html + "<div class=\"empreinte-bars\">");
+  for (const lentille of __ml_iterate(frequences)) {
+    var compteur = ((frequences)?.[lentille] ?? 0);
+    var pourcentage = round(((compteur * 100) / maximum));
+    var label_lentille = semantique.empreinte.obtenir_label_lentille(lentille);
+    html = (html + "<div class=\"empreinte-row\">");
+    html = (((html + "<span class=\"empreinte-label\">") + label_lentille) + "</span>");
+    html = (html + "<div class=\"empreinte-bar-track\">");
+    html = (((((html + "<div class=\"empreinte-bar empreinte-bar--") + lentille) + "\" style=\"width:") + String(pourcentage)) + "%\"></div>");
+    html = (html + "</div>");
+    html = (((html + "<span class=\"empreinte-count\">") + String(compteur)) + "</span>");
+    html = (html + "</div>");
+  }
+  html = (html + "</div>");
+  html = (html + "</div>");
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.visualisations = window.ui.visualisations || {};
+window.ui.visualisations.empreinte_vue = window.ui.visualisations.empreinte_vue || {};
+Object.assign(window.ui.visualisations.empreinte_vue, {_t: _t, rendre_empreinte_thematique: rendre_empreinte_thematique});
+})();
+
+(() => {
 function _t(cle) {
   return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
 }
@@ -2411,6 +2542,20 @@ function _rendre_detail_mouvement(entite) {
   if (__ml_truthy(pays_label)) {
     html = (((html + "<p class=\"detail-row\">") + _ti("detail.country", {["value"]: pays_label})) + "</p>");
   }
+  var mouvement_id = ((entite)?.["id"] ?? "");
+  if (__ml_truthy(mouvement_id)) {
+    html = (html + "<div class=\"detail-actions\">");
+    html = (((((html + "<button class=\"detail-geo-btn\" onclick=\"window.afficherHeatmapPanel&&window.afficherHeatmapPanel('") + mouvement_id) + "')\">") + _t("detail.movement.geo")) + "</button>");
+    html = (html + "</div>");
+  }
+  var sujets = ui.etat.obtenir_sujets_oeuvres_graphe();
+  if (__ml_truthy(sujets)) {
+    var frequences = semantique.empreinte.calculer_empreinte_depuis_sujets(sujets);
+    html = (html + ui.visualisations.empreinte_vue.rendre_empreinte_thematique(frequences));
+  }
+  else {
+    html = (((html + "<p class='empreinte-hint'>") + _t("detail.movement.empreinteHint")) + "</p>");
+  }
   html = (html + "</div>");
   return html;
 }
@@ -2442,7 +2587,12 @@ function _rendre_detail_artiste(entite) {
     traj_label = _t("detail.trajectory.add");
     traj_onclick = (((("window.ui&&window.ui.etat&&window.ui.etat.basculer_artiste_trajectoire&&window.ui.etat.basculer_artiste_trajectoire('" + entite_id) + "','") + label_esc) + "').then(()=>window.renderTrajectoirePanel())");
   }
+  var image_val = ((((donnees)?.["image"] ?? {}))?.["value"] ?? "");
   var html = "<div class=\"detail-section\">";
+  if (__ml_truthy(image_val)) {
+    var url_vignette = utilitaires.media.construire_url_vignette(image_val, 200);
+    html = (((((html + "<div class=\"detail-image\"><img src=\"") + url_vignette) + "\" alt=\"") + label) + "\" loading=\"lazy\" class=\"detail-thumb\" /></div>");
+  }
   html = (((html + "<h3>") + label) + "</h3>");
   if ((__ml_truthy(naissance) || __ml_truthy(deces))) {
     var periodes = [];
@@ -2479,7 +2629,12 @@ function _rendre_detail_oeuvre(entite) {
   if (__ml_truthy(musee)) {
     musee_label = ((musee)?.["label"] ?? "");
   }
+  var image_val = ((((donnees)?.["image"] ?? {}))?.["value"] ?? "");
   var html = "<div class=\"detail-section\">";
+  if (__ml_truthy(image_val)) {
+    var url_vignette = utilitaires.media.construire_url_vignette(image_val, 300);
+    html = (((((html + "<div class=\"detail-image\"><img src=\"") + url_vignette) + "\" alt=\"") + label) + "\" loading=\"lazy\" class=\"detail-thumb\" /></div>");
+  }
   html = (((html + "<h3>") + label) + "</h3>");
   if (__ml_truthy(createur_label)) {
     html = (((html + "<p class=\"detail-row\">") + _ti("detail.artwork.creator", {["value"]: createur_label})) + "</p>");
@@ -3378,7 +3533,7 @@ function normaliser_artiste(element) {
   var lieu_naissance = elements(((element)?.["birthplace"] ?? []));
   var lieu_deces = elements(((element)?.["deathplace"] ?? []));
   var mouvement = elements(((element)?.["movement"] ?? []));
-  return {["id"]: ((element)?.["id"] ?? ""), ["artistLabel"]: ((element)?.["artistLabel"] ?? ""), ["birthDate"]: {["value"]: _premiere_valeur_temps(((element)?.["birthDate"] ?? []))}, ["deathDate"]: {["value"]: _premiere_valeur_temps(((element)?.["deathDate"] ?? []))}, ["birthplace"]: _envelopper_elements(lieu_naissance), ["birthplaceLabel"]: _etiquettes_jointes(lieu_naissance), ["deathplace"]: _envelopper_elements(lieu_deces), ["deathplaceLabel"]: _etiquettes_jointes(lieu_deces), ["movement"]: _envelopper_elements(mouvement), ["movementLabel"]: _etiquettes_jointes(mouvement)};
+  return {["id"]: ((element)?.["id"] ?? ""), ["artistLabel"]: ((element)?.["artistLabel"] ?? ""), ["birthDate"]: {["value"]: _premiere_valeur_temps(((element)?.["birthDate"] ?? []))}, ["deathDate"]: {["value"]: _premiere_valeur_temps(((element)?.["deathDate"] ?? []))}, ["birthplace"]: _envelopper_elements(lieu_naissance), ["birthplaceLabel"]: _etiquettes_jointes(lieu_naissance), ["deathplace"]: _envelopper_elements(lieu_deces), ["deathplaceLabel"]: _etiquettes_jointes(lieu_deces), ["movement"]: _envelopper_elements(mouvement), ["movementLabel"]: _etiquettes_jointes(mouvement), ["image"]: {["value"]: _premiere_valeur_contenu(((element)?.["image"] ?? []))}};
 }
 
 function normaliser_oeuvre(element) {
@@ -4330,6 +4485,206 @@ window.ui = window.ui || {};
 window.ui.composants = window.ui.composants || {};
 window.ui.composants.session_requete = window.ui.composants.session_requete || {};
 Object.assign(window.ui.composants.session_requete, {_t: _t, trouver_id_entite: trouver_id_entite, _inferer_id: _inferer_id, _inferer_label: _inferer_label, raccourcir_texte: raccourcir_texte, decrire_variables: decrire_variables, narratif_document: narratif_document, extraire_entite_principale: extraire_entite_principale, decrire_reponse: decrire_reponse, rendre_session_requetes: rendre_session_requetes});
+})();
+
+(() => {
+function _t(cle) {
+  return ui.i18n.obtenir_texte(cle, ui.etat.mode_langue_actif);
+}
+
+function rendre_curseur_temps(debut, fin, actuelle) {
+  "Rendre le contrôle de curseur temporel pour l'animation de diffusion géographique.";
+  if (__ml_truthy((debut >= fin))) {
+    return "";
+  }
+  var debut_str = String(round(debut));
+  var fin_str = String(round(fin));
+  var actuelle_str = String(round(actuelle));
+  var change_handler = "window.ui&&window.ui.etat&&window.ui.etat.definir_annee_heatmap&&window.ui.etat.definir_annee_heatmap(Number(this.value));window.filtrerHeatmapParAnnee&&window.filtrerHeatmapParAnnee(Number(this.value));window.renderCurseurTemps&&window.renderCurseurTemps()";
+  var play_handler = (((("window.jouerAnimationHeatmap&&window.jouerAnimationHeatmap(" + debut_str) + ",") + fin_str) + ",60)");
+  var pause_handler = "window.arreterAnimationHeatmap&&window.arreterAnimationHeatmap()";
+  var html = "<div class='curseur-temps'>";
+  html = (html + "<div class='curseur-temps-header'>");
+  html = (((html + "<span class='curseur-temps-titre'>") + _t("heatmap.temporalCursor")) + "</span>");
+  html = (((html + "<span class='curseur-temps-annee'>") + actuelle_str) + "</span>");
+  html = (html + "</div>");
+  html = (((((((((html + "<input type='range' class='curseur-temps-slider' min='") + debut_str) + "' max='") + fin_str) + "' value='") + actuelle_str) + "' onchange='") + change_handler) + "' />");
+  html = (html + "<div class='curseur-temps-controls'>");
+  html = (((html + "<span class='curseur-temps-borne'>") + debut_str) + "</span>");
+  html = (((((html + "<button class='curseur-temps-btn' onclick='") + play_handler) + "'>") + _t("heatmap.play")) + "</button>");
+  html = (((((html + "<button class='curseur-temps-btn' onclick='") + pause_handler) + "'>") + _t("heatmap.pause")) + "</button>");
+  html = (((html + "<span class='curseur-temps-borne'>") + fin_str) + "</span>");
+  html = (html + "</div>");
+  html = (html + "</div>");
+  return html;
+}
+
+window.ui = window.ui || {};
+window.ui.composants = window.ui.composants || {};
+window.ui.composants.curseur_temps = window.ui.composants.curseur_temps || {};
+Object.assign(window.ui.composants.curseur_temps, {_t: _t, rendre_curseur_temps: rendre_curseur_temps});
+})();
+
+(() => {
+class VueHeatmapGeographique {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.contexte = canvas.obtenir_contexte("2d");
+    this.visualisation = null;
+    this.echelle_zoom = 100;
+    this.centre_lat = 48.8566;
+    this.centre_lon = 2.3522;
+    this.largeur_pixels = canvas.largeur;
+    this.hauteur_pixels = canvas.hauteur;
+    this.annee_filtre = 0;
+    canvas.gerer_roulette = this.gerer_roulette;
+    canvas.gerer_clic = this.gerer_clic;
+  }
+  async charger_mouvement(mouvement_id) {
+    "Charger les données géographiques d'un mouvement";
+    var visualisation = new semantique.geographique.VisualisationCartographique();
+    await visualisation.charger_mouvement(mouvement_id);
+    this.rafraichir();
+  }
+  convertir_coords_pixel(latitude, longitude) {
+    "Convertir des coordonnées géographiques en pixels canvas";
+    var centre_x = (this.largeur_pixels / 2);
+    var centre_y = (this.hauteur_pixels / 2);
+    var x = (centre_x + ((longitude - this.centre_lon) * this.echelle_zoom));
+    var y = (centre_y - ((latitude - this.centre_lat) * this.echelle_zoom));
+    return {["x"]: x, ["y"]: y};
+  }
+  convertir_pixel_coords(x, y) {
+    "Convertir des pixels en coordonnées géographiques";
+    var centre_x = (this.largeur_pixels / 2);
+    var centre_y = (this.hauteur_pixels / 2);
+    var longitude = (this.centre_lon + ((x - centre_x) / this.echelle_zoom));
+    var latitude = (this.centre_lat - ((y - centre_y) / this.echelle_zoom));
+    return {["latitude"]: latitude, ["longitude"]: longitude};
+  }
+  rafraichir() {
+    "Rendre la heatmap";
+    if ((!__ml_truthy(this.visualisation))) {
+      return;
+    }
+    var ctx = this.contexte;
+    ctx.couleur_remplissage = "#FFFFFF";
+    ctx.rect_rempli(0, 0, this.largeur_pixels, this.hauteur_pixels);
+    var points_chaleur = this.visualisation.obtenir_heatmap();
+    for (const point of __ml_iterate(points_chaleur)) {
+      var pixel = this.convertir_coords_pixel(((point)?.["latitude"] ?? 0), ((point)?.["longitude"] ?? 0));
+      var intensite = ((point)?.["intensite"] ?? 0);
+      var r = round((255 * intensite));
+      var b = round((255 * (1 - intensite)));
+      var g = 100;
+      var couleur_hex = (((((("rgb(" + String(r)) + ",") + String(g)) + ",") + String(b)) + ")");
+      var count = ((point)?.["count"] ?? 1);
+      var rayon = max(5, min(20, (math.sqrt(count) * 3)));
+      ctx.couleur_remplissage = couleur_hex;
+      ctx.couleur_trait = "#000000";
+      ctx.epaisseur_trait = 1;
+      ctx.debut_chemin();
+      ctx.arc(((pixel)?.["x"] ?? 0), ((pixel)?.["y"] ?? 0), rayon, 0, (2 * math.pi));
+      ctx.remplir();
+      ctx.tracer();
+      ctx.couleur_texte = "#000000";
+      ctx.fonte = "10px Arial";
+      ctx.alignement_texte = "centre";
+      var nom = ((point)?.["nom"] ?? "");
+      ctx.texte_rempli(nom, ((pixel)?.["x"] ?? 0), ((((pixel)?.["y"] ?? 0) + rayon) + 15));
+    }
+    this.rendre_legende(ctx);
+    if (__ml_truthy((this.annee_filtre > 0))) {
+      ctx.couleur_remplissage = "rgba(0,0,0,0.7)";
+      ctx.rect_rempli(((this.largeur_pixels / 2) - 50), 8, 100, 28);
+      ctx.couleur_texte = "#FFFFFF";
+      ctx.fonte = "bold 14px Arial";
+      ctx.alignement_texte = "centre";
+      ctx.texte_rempli(String(round(this.annee_filtre)), (this.largeur_pixels / 2), 27);
+    }
+  }
+  rendre_legende(ctx) {
+    "Rendre la légende de couleurs";
+    var legende_x = 20;
+    var legende_y = 20;
+    var legende_largeur = 200;
+    var legende_hauteur = 120;
+    ctx.couleur_remplissage = "rgba(255, 255, 255, 0.9)";
+    ctx.rect_rempli(legende_x, legende_y, legende_largeur, legende_hauteur);
+    ctx.couleur_trait = "#000000";
+    ctx.epaisseur_trait = 1;
+    ctx.rect_contour(legende_x, legende_y, legende_largeur, legende_hauteur);
+    ctx.couleur_texte = "#000000";
+    ctx.fonte = "12px Arial";
+    ctx.alignement_texte = "gauche";
+    ctx.texte_rempli("Intensité", (legende_x + 10), (legende_y + 20));
+    var i = 0;
+    while (__ml_truthy((i < 10))) {
+      var intensite = (i / 10.0);
+      var r = round((255 * intensite));
+      var b = round((255 * (1 - intensite)));
+      var g = 100;
+      var couleur_hex = (((((("rgb(" + String(r)) + ",") + String(g)) + ",") + String(b)) + ")");
+      ctx.couleur_remplissage = couleur_hex;
+      ctx.rect_rempli(((legende_x + 10) + (i * 18)), (legende_y + 35), 16, 16);
+      i = (i + 1);
+    }
+    ctx.fonte = "9px Arial";
+    ctx.texte_rempli("Faible", (legende_x + 10), (legende_y + 60));
+    ctx.texte_rempli("Fort", (legende_x + 150), (legende_y + 60));
+  }
+  gerer_zoom(x, y, direction) {
+    "Gérer le zoom";
+    var ancien_zoom = this.echelle_zoom;
+    this.echelle_zoom = max(10, min(500, (this.echelle_zoom + (direction * 20))));
+    var coords = this.convertir_pixel_coords(x, y);
+    this.centre_lat = ((coords)?.["latitude"] ?? 0);
+    this.centre_lon = ((coords)?.["longitude"] ?? 0);
+    this.rafraichir();
+  }
+  gerer_clic(x, y) {
+    "Gestionnaire de clic";
+    var coords = this.convertir_pixel_coords(x, y);
+    var clusters = this.visualisation.obtenir_points_cluster();
+    for (const cluster of __ml_iterate(clusters)) {
+      var pixel = this.convertir_coords_pixel(((cluster)?.["latitude"] ?? 0), ((cluster)?.["longitude"] ?? 0));
+      var distance = math.sqrt((((x - ((pixel)?.["x"] ?? 0)) ** 2) + ((y - ((pixel)?.["y"] ?? 0)) ** 2)));
+      if (__ml_truthy((distance < 20))) {
+        afficher;
+        ("Cluster: " + ((cluster)?.["titre"] ?? ""));
+        afficher;
+        ("Entités: " + String((((cluster)?.["entites"] ?? [])).length));
+        break;
+      }
+    }
+  }
+  gerer_roulette(x, y, direction) {
+    "Gestionnaire de roulette de souris";
+    this.gerer_zoom(x, y, direction);
+  }
+  filtrer_par_annee(annee) {
+    "Définir l'année de filtre et re-rendre.";
+    this.annee_filtre = annee;
+    this.rafraichir();
+  }
+  animer_diffusion(debut, fin, vitesse) {
+    "Initialiser l'état pour l'animation temporelle.\n        Le pas d'animation est piloté par window.jouerAnimationHeatmap() en JS.";
+    this.annee_filtre = debut;
+    this.rafraichir();
+  }
+}
+
+async function creer_vue_heatmap(canvas, mouvement_id) {
+  "Créer et initialiser une vue heatmap";
+  var vue = new VueHeatmapGeographique(canvas);
+  await vue.charger_mouvement(mouvement_id);
+  return vue;
+}
+
+window.ui = window.ui || {};
+window.ui.visualisations = window.ui.visualisations || {};
+window.ui.visualisations.heatmap_vue = window.ui.visualisations.heatmap_vue || {};
+Object.assign(window.ui.visualisations.heatmap_vue, {VueHeatmapGeographique: VueHeatmapGeographique, creer_vue_heatmap: creer_vue_heatmap});
 })();
 
 async function charger_mouvement(mouvement_id) {

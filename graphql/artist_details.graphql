@@ -36,5 +36,10 @@ query ArtistDetails($id: ItemId!, $languageCode: LanguageCode!) {
         }
       }
     }
+    image: statements(propertyId: "P18") {
+      value {
+        ... on StringValue { content }
+      }
+    }
   }
 }

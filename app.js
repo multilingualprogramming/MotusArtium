@@ -822,6 +822,54 @@ function setActiveTier(tier, options = {}) {
             if (entry) await replayQuerySession(entry);
         };
 
+        // Heatmap panel rendering and temporal animation bridges
+        window.renderCurseurTemps = function() {
+            const container = document.getElementById("curseur-temps-container");
+            if (!container) return;
+            const render = window.ui?.composants?.curseur_temps?.rendre_curseur_temps;
+            if (typeof render !== "function") return;
+            const plage = window.ui?.etat?.obtenir_plage_heatmap?.() ?? { debut: 1400, fin: 2000 };
+            const courante = window.ui?.etat?.obtenir_annee_heatmap?.() ?? plage.debut;
+            container.innerHTML = render(plage.debut, plage.fin, courante);
+        };
+
+        window.filtrerHeatmapParAnnee = function(annee) {
+            const vue = window._heatmapVue;
+            if (vue && typeof vue.filtrer_par_annee === "function") vue.filtrer_par_annee(annee);
+        };
+
+        let _heatmapAnimId = null;
+        window.jouerAnimationHeatmap = function(debut, fin, vitesse) {
+            if (_heatmapAnimId) clearInterval(_heatmapAnimId);
+            const step = vitesse || 60;
+            let annee = debut ?? (window.ui?.etat?.obtenir_plage_heatmap?.()?.debut ?? 1400);
+            const end = fin ?? (window.ui?.etat?.obtenir_plage_heatmap?.()?.fin ?? 2000);
+            _heatmapAnimId = setInterval(() => {
+                annee += 1;
+                if (annee > end) { clearInterval(_heatmapAnimId); _heatmapAnimId = null; return; }
+                window.ui?.etat?.definir_annee_heatmap?.(annee);
+                window.filtrerHeatmapParAnnee(annee);
+                window.renderCurseurTemps?.();
+            }, step);
+        };
+
+        window.arreterAnimationHeatmap = function() {
+            if (_heatmapAnimId) { clearInterval(_heatmapAnimId); _heatmapAnimId = null; }
+        };
+
+        window.afficherHeatmapPanel = async function(mouvementId) {
+            const container = document.getElementById("heatmap-panel-container");
+            if (!container) return;
+            container.hidden = false;
+            const canvas = document.getElementById("heatmap-canvas");
+            if (!canvas) return;
+            const creer = window.ui?.visualisations?.heatmap_vue?.creer_vue_heatmap;
+            if (typeof creer === "function") {
+                window._heatmapVue = await creer(canvas, mouvementId);
+            }
+            window.renderCurseurTemps?.();
+        };
+
         function applyTierFromUrl() {
             const params = new URLSearchParams(window.location.search);
             const tier = params.get("tier");

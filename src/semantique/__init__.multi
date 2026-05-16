@@ -3,3 +3,4 @@ importer .graphe
 importer .filtres
 importer .geographique
 importer .temporel
+importer .empreinte

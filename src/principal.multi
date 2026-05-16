@@ -16,7 +16,12 @@ importer ui.visualisations.polyglot_studio_vue
 importer ui.visualisations.chronologie_vue
 importer ui.visualisations.graphe_vue
 importer ui.composants.session_requete
+importer ui.composants.curseur_temps
 importer semantique.intersections
+importer ui.visualisations.heatmap_vue
+importer ui.visualisations.empreinte_vue
+importer semantique.empreinte
+importer utilitaires.media
 
 # ui.etat is intentionally owned by Multilingual. The browser shell may keep a
 # temporary compatibility fallback, but new application state belongs here.

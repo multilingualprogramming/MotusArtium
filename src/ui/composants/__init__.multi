@@ -2,6 +2,8 @@
 importer .panneau_filtres
 importer .barre_recherche
 importer .panneau_detail
+importer .curseur_temps
 
 exporter barre_recherche.rendre_barre_recherche
 exporter panneau_detail.rendre_panneau_detail
+exporter curseur_temps.rendre_curseur_temps
